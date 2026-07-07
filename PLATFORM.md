@@ -147,8 +147,10 @@ zig build test
 From workspace root:
 
 ```sh
-zig build test-core      # hydro + stability + compose + example
-zig build run-example    # canonical box-barge case
+zig build test-core           # 75 tests: core + viz + examples
+zig build run-example         # canonical box-barge case
+zig build run-full-assessment # stability + Holtrop resistance
+python tools/cli/yard-cli.py stability --L 10 --B 4 --T 1.5 --kg 1.0 --json
 ```
 
 ---
@@ -186,6 +188,25 @@ python tools/eval/harness.py --dataset tools/dataset/out/seed.jsonl --mode oracl
 ```
 
 See [docs/03-dataset-finetune.md](docs/03-dataset-finetune.md) for the full 6-step execution plan.
+Frontier vision: [docs/04-frontier-vision.md](docs/04-frontier-vision.md).
+Deep playbook: [docs/05-deep-execution-playbook.md](docs/05-deep-execution-playbook.md).
+
+### Gap audit baseline (proven, 2026-07-07)
+
+| Metric | qwen2.5-coder:1.5b | Post-FT target |
+|--------|-------------------|----------------|
+| GM_corr ±2cm | **0.5%** | ≥95% |
+| 6 criteria exact | **3.0%** | ≥90% |
+| omitted_free_surface | **24%** | ≤5% |
+
+### Phase 1 status
+
+| Artifact | Status |
+|----------|--------|
+| 5k text SFT dataset | ✅ Generated + filtered |
+| Multimodal GZ SVG pipeline | ✅ `render_multimodal.py` |
+| Fine-tune (QLoRA 4GB) | ⏳ Blocked on CUDA reboot |
+| Post-FT eval proof | ⏳ Pending fine-tune |
 
 ---
 
@@ -212,7 +233,10 @@ See [docs/03-dataset-finetune.md](docs/03-dataset-finetune.md) for the full 6-st
 | **Python oracle** | `tools/oracle/` | Fast dataset generation, external tool parity |
 | **JSON schema** | `tools/dataset/schema.json` | Structured I/O for agents and UIs |
 | **Eval harness** | `tools/eval/harness.py` | Regression gate for models and prompts |
-| **FFI / CLI** | *planned* `yard-cli` | Non-Zig consumers |
+| **CLI** | `tools/cli/yard-cli.py` | Python stability + render + eval |
+| **Viz (SVG)** | `viz/gz_svg.zig` | Deterministic GZ curves for multimodal dataset |
+| **Agent orchestration** | `tools/agent/orchestrate.py` | Module calls → report + assets |
+| **Vulkan viz** | `viz-vulkan/` (Phase 2) | 3D hull + overlay rendering |
 | **FMI co-simulation** | `fmi/` module | CFD/MBD coupling |
 
 ---

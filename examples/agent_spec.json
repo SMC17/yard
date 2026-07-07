@@ -1,0 +1,10 @@
+{
+  "query": "Assess intact stability for box barge with one slack tank",
+  "L": 10.0,
+  "B": 4.0,
+  "T": 1.5,
+  "kg_m": 1.0,
+  "tanks": [
+    { "l_m": 5.0, "b_m": 3.0, "rho_fluid": 1000.0 }
+  ]
+}
