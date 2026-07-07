@@ -1,4 +1,10 @@
 .zig-cache/
 __pycache__/
 *.pyc
-.zig-cache/
+
+# Large generated datasets — regenerate via tools/pipeline.sh
+tools/dataset/out/raw_train.jsonl
+tools/dataset/out/train.jsonl
+tools/dataset/out/train_chat.jsonl
+tools/dataset/out/val.jsonl
+models/

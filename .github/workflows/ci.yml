@@ -45,3 +45,7 @@ jobs:
         run: python tools/dataset/generate.py --samples 20 --output /tmp/seed.jsonl
       - name: Verify dataset integrity
         run: python tools/eval/harness.py --dataset /tmp/seed.jsonl --mode oracle
+      - name: Gap audit baseline
+        run: |
+          python tools/dataset/generate.py --samples 30 --output /tmp/eval.jsonl --split eval --seed 9999
+          python tools/gap_audit/gap_audit.py --dataset /tmp/eval.jsonl --baseline naive_no_fs --limit 30
