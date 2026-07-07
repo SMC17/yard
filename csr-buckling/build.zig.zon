@@ -1,0 +1,8 @@
+.{
+    .name = .yard_csr_buckling,
+    .version = "0.0.0",
+    .fingerprint = 0x7b8c1662a0eb1ebc,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{ "build.zig", "build.zig.zon", "LICENSE", "README.md", "STATUS.md", "CHANGELOG.md", "src" },
+}

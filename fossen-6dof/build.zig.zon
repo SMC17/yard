@@ -1,0 +1,8 @@
+.{
+    .name = .yard_fossen_6dof,
+    .version = "0.0.0",
+    .fingerprint = 0x60a222d7fe19bc2f,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{ "build.zig", "build.zig.zon", "LICENSE", "README.md", "STATUS.md", "CHANGELOG.md", "src" },
+}

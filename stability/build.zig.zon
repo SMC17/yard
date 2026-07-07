@@ -1,0 +1,16 @@
+.{
+    .name = .yard_stability,
+    .version = "0.0.0",
+    .fingerprint = 0x6f1340359b6a0ed7,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "README.md",
+        "STATUS.md",
+        "CHANGELOG.md",
+        "src",
+    },
+}
