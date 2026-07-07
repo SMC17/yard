@@ -1,18 +1,25 @@
-//! By convention, root.zig is the root source file when making a package.
-const std = @import("std");
-const Io = std.Io;
+//! yard-naval-arch — shared types and units for yard composition.
+//!
+//! Primitive modules (hydro, stability, resistance, …) stay independent.
+//! This package defines the interchange contract for compose/ and examples/.
 
-/// This is a documentation comment to explain the `printAnotherMessage` function below.
-///
-/// Accepting an `Io.Writer` instance is a handy way to write reusable code.
-pub fn printAnotherMessage(writer: *Io.Writer) Io.Writer.Error!void {
-    try writer.print("Run `zig build test` to run the tests.\n", .{});
-}
+pub const types = @import("types.zig");
+pub const units = @import("units.zig");
 
-pub fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
+// Re-export commonly used types at package root.
+pub const PhysicalConstants = types.PhysicalConstants;
+pub const PrincipalParticulars = types.PrincipalParticulars;
+pub const TankSpec = types.TankSpec;
+pub const LoadingCondition = types.LoadingCondition;
+pub const Hydrostatics = types.Hydrostatics;
+pub const StabilitySummary = types.StabilitySummary;
+pub const GzSample = types.GzSample;
+pub const IsCodeResult = types.IsCodeResult;
+pub const ValidityFlag = types.ValidityFlag;
+pub const ValidityFlags = types.ValidityFlags;
+pub const ProofLevel = types.ProofLevel;
 
-test "basic add functionality" {
-    try std.testing.expect(add(3, 7) == 10);
+test {
+    _ = types;
+    _ = units;
 }

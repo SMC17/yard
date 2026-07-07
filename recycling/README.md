@@ -35,4 +35,4 @@ Expected: `Build Summary: 3/3 steps succeeded; 37/37 tests passed`.
 - ILO. *Safety and health in shipbreaking: Guidelines for Asian
   countries and Turkey* (2004).
 
-AGPL-3.0-or-later.
+Apache-2.0.

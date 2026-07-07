@@ -32,4 +32,4 @@ Expected: `Build Summary: 3/3 steps succeeded; 42/42 tests passed`.
 - US DoD 6055.09-M. *DoD Ammunition and Explosives Safety
   Standards*.
 
-AGPL-3.0-or-later.
+Apache-2.0.

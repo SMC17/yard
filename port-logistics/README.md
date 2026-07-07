@@ -35,4 +35,4 @@ Expected: `Build Summary: 3/3 steps succeeded; 37/37 tests passed`.
 - Little, J. D. C. (1961). *A Proof for the Queuing Formula
   L = lambda W*. Operations Research 9.
 
-AGPL-3.0-or-later.
+Apache-2.0.

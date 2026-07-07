@@ -31,4 +31,4 @@ Expected: `Build Summary: 3/3 steps succeeded; 43/43 tests passed`.
 - Goodchild, A. V., Daganzo, C. F. (2005). *Crane Double Cycling
   in Container Ports*. UC Berkeley Tech Report.
 
-AGPL-3.0-or-later.
+Apache-2.0.

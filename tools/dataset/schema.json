@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yard.naval/schema/stability-sft-v1.json",
+  "title": "Yard Stability SFT Record",
+  "description": "Single training/eval record for IMO IS Code 2008 Part A 2.2 box-barge stability fine-tuning.",
+  "type": "object",
+  "required": ["id", "instruction", "reasoning", "answer", "verification", "input"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique record identifier (UUID or deterministic hash)"
+    },
+    "instruction": {
+      "type": "string",
+      "description": "Natural-language problem statement with principal particulars and loading"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Step-by-step solution with explicit formula citation and assumption checks"
+    },
+    "answer": {
+      "type": "object",
+      "required": ["GM0", "GM_corrected", "overall", "imo_criteria", "flags"],
+      "properties": {
+        "GM0": { "type": "number" },
+        "GM_corrected": { "type": "number" },
+        "GG_prime": { "type": "number" },
+        "KB": { "type": "number" },
+        "BM_T": { "type": "number" },
+        "KM_T": { "type": "number" },
+        "GZ_at_30": { "type": "number" },
+        "imo_criteria": {
+          "type": "object",
+          "properties": {
+            "area_0_30": { "enum": ["PASS", "FAIL"] },
+            "area_0_40": { "enum": ["PASS", "FAIL"] },
+            "area_30_40": { "enum": ["PASS", "FAIL"] },
+            "gz_at_30": { "enum": ["PASS", "FAIL"] },
+            "angle_gz_max": { "enum": ["PASS", "FAIL"] },
+            "gm_0": { "enum": ["PASS", "FAIL"] }
+          }
+        },
+        "overall": { "enum": ["PASS", "FAIL"] },
+        "flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "required": ["L", "B", "T", "kg_m"],
+      "properties": {
+        "L": { "type": "number", "minimum": 5, "maximum": 200 },
+        "B": { "type": "number", "minimum": 2, "maximum": 50 },
+        "T": { "type": "number", "minimum": 0.5, "maximum": 20 },
+        "kg_m": { "type": "number" },
+        "tanks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["l_m", "b_m", "rho_fluid"],
+            "properties": {
+              "l_m": { "type": "number" },
+              "b_m": { "type": "number" },
+              "rho_fluid": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["source", "tolerance"],
+      "properties": {
+        "source": { "type": "string", "const": "yard-stability-oracle-v0.1" },
+        "tolerance": { "type": "number", "default": 1e-6 },
+        "zig_module": { "type": "string" }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "instruction_style": { "enum": ["formal", "conversational", "exam", "checklist"] },
+        "difficulty": { "enum": ["canonical", "random", "edge"] },
+        "split": { "enum": ["train", "val", "eval", "gap-audit"] }
+      }
+    }
+  }
+}

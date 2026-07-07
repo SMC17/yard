@@ -98,4 +98,4 @@ available claim: `stable-on-zig-0.16-today`.
 
 ## License
 
-AGPL-3.0-or-later. See `LICENSE`.
+Apache-2.0. See `LICENSE`.
