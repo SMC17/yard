@@ -33,4 +33,4 @@ Expected: `Build Summary: 3/3 steps succeeded; 49/49 tests passed`.
   underwater vehicle for oceanographic research*. IEEE J. Oceanic
   Eng. 26.
 
-AGPL-3.0-or-later.
+Apache-2.0.

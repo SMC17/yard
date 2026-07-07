@@ -133,4 +133,4 @@ semver spirit. The strongest available claim is
 
 ## License
 
-AGPL-3.0-or-later. See `LICENSE`.
+Apache-2.0. See `LICENSE`.

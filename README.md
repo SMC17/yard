@@ -78,4 +78,22 @@ and test suite.
 | [vimstab](vimstab/) | container-stack lateral load and stability |
 | [windaero](windaero/) | ship wind-coefficient estimation |
 
-License: Apache-2.0 (per-module LICENSE files retained).
+## Platform
+
+See [PLATFORM.md](PLATFORM.md) for the composition layer, dataset pipeline, eval harness,
+and extension architecture ("naval Excel").
+
+```sh
+zig build test-core      # hydro + stability + compose + example
+zig build run-example    # canonical box-barge intact stability
+python tools/dataset/generate.py --samples 100 --output tools/dataset/out/seed.jsonl
+```
+
+| Layer | Path | Purpose |
+|-------|------|---------|
+| Primitives | 69 modules below | Narrow, tested kernels |
+| Composition | `compose/`, `examples/` | Multi-module workflows |
+| Intelligence | `tools/oracle/`, `tools/dataset/`, `tools/eval/` | SFT data + eval |
+| Docs | `docs/` | Architecture + deep dives |
+
+License: Apache-2.0 (unified across all modules).

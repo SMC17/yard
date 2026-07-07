@@ -24,8 +24,8 @@ lost-buoyancy box-barge damage solver, and an IMO 2008 IS Code Part A
 
 ## What it is not (v0.0.0)
 
-- No general hull GZ computation from offsets (requires yard-hydro-zig
-  composition; pending).
+- No general hull GZ computation from offsets (requires hydro + KN
+  composition; see `compose/` and `examples/box-barge-intact-stability/`).
 - No 2.3 weather criterion (phi_1 = 109 k X_1 X_2 sqrt(r s)).
 - No probabilistic damage stability (SOLAS II-1 A index).
 - No cross-flooding or progressive flooding.
@@ -102,4 +102,4 @@ available claim: `stable-on-zig-0.16-today`.
 
 ## License
 
-AGPL-3.0-or-later. See `LICENSE`.
+Apache-2.0. See `LICENSE`.

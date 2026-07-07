@@ -37,4 +37,4 @@ Expected: `Build Summary: 3/3 steps succeeded; 40/40 tests passed`.
 - Merian, J. R. (1828). *Ueber die Bewegung tropfbarer
   Fluessigkeiten*.
 
-AGPL-3.0-or-later.
+Apache-2.0.

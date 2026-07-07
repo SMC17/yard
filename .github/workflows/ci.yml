@@ -1,0 +1,47 @@
+name: Yard CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-core:
+    name: Core composition chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Test core modules + composition
+        run: zig build test-core --summary all
+      - name: Run canonical example
+        run: zig build run-example
+
+  test-all:
+    name: All primitive modules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Test all 69 modules
+        run: zig build test-all --summary all
+
+  oracle-and-dataset:
+    name: Oracle + dataset integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Oracle self-test
+        run: python tools/oracle/yard_stability_oracle.py
+      - name: Generate seed dataset
+        run: python tools/dataset/generate.py --samples 20 --output /tmp/seed.jsonl
+      - name: Verify dataset integrity
+        run: python tools/eval/harness.py --dataset /tmp/seed.jsonl --mode oracle

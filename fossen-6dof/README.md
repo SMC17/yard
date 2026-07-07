@@ -75,4 +75,4 @@ Per `~/CONVENTIONS.md` C2: bound by Zig 0.16 (pre-1.0).
 
 ## License
 
-AGPL-3.0-or-later.
+Apache-2.0.
