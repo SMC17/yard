@@ -28,6 +28,11 @@ python gap_audit/gap_audit.py --dataset dataset/out/eval.jsonl --baseline naive_
 python gap_audit/gap_audit.py --dataset dataset/out/eval.jsonl --baseline naive_overconfident \
   --output gap_audit/out/baseline_overconfident.jsonl
 
+echo "=== 7. Multimodal assets (sample) ==="
+python dataset/render_multimodal.py --input dataset/out/eval.jsonl \
+  --output dataset/out/eval_multimodal.jsonl \
+  --images-dir dataset/out/images --max 50
+
 echo "=== Done ==="
 echo "Train: $(wc -l < dataset/out/train.jsonl) records"
 echo "Eval:  $(wc -l < dataset/out/eval.jsonl) records"

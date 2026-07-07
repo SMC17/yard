@@ -5,6 +5,7 @@ const core_modules = [_][]const u8{
     "stability",
     "naval-arch",
     "compose",
+    "viz",
 };
 
 const all_modules = [_][]const u8{
@@ -44,13 +45,21 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const test_core = b.step("test-core", "Test hydro + stability + naval-arch + compose + example");
+    const test_core = b.step("test-core", "Test hydro + stability + naval-arch + compose + viz + examples");
 
     for (core_modules) |mod| {
-        if (!std.mem.eql(u8, mod, "compose")) {
+        if (!std.mem.eql(u8, mod, "compose") and !std.mem.eql(u8, mod, "viz")) {
             addModuleTest(b, mod, target, test_core);
         }
     }
+
+    const viz_mod = b.addModule("yard_viz_core", .{
+        .root_source_file = b.path("viz/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const viz_tests = b.addTest(.{ .root_module = viz_mod });
+    test_core.dependOn(&b.addRunArtifact(viz_tests).step);
 
     const hydro_mod = b.addModule("yard_hydro_core", .{
         .root_source_file = b.path("hydro/src/root.zig"),
@@ -59,6 +68,11 @@ pub fn build(b: *std.Build) void {
     });
     const stability_mod = b.addModule("yard_stability_core", .{
         .root_source_file = b.path("stability/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const resistance_mod = b.addModule("yard_resistance_core", .{
+        .root_source_file = b.path("resistance/src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -74,6 +88,7 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "yard_hydro", .module = hydro_mod },
             .{ .name = "yard_stability", .module = stability_mod },
+            .{ .name = "yard_resistance", .module = resistance_mod },
             .{ .name = "yard_naval_arch", .module = naval_mod },
         },
     });
@@ -104,4 +119,23 @@ pub fn build(b: *std.Build) void {
     });
     const run_cmd = b.addRunArtifact(exe);
     run_example.dependOn(&run_cmd.step);
+
+    const full_assess_mod = b.createModule(.{
+        .root_source_file = b.path("examples/full-vessel-assessment/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_compose", .module = compose_mod },
+            .{ .name = "yard_naval_arch", .module = naval_mod },
+        },
+    });
+    const full_assess_tests = b.addTest(.{ .root_module = full_assess_mod });
+    test_core.dependOn(&b.addRunArtifact(full_assess_tests).step);
+
+    const run_full = b.step("run-full-assessment", "Run stability + resistance assessment");
+    const full_exe = b.addExecutable(.{
+        .name = "full-vessel-assessment",
+        .root_module = full_assess_mod,
+    });
+    run_full.dependOn(&b.addRunArtifact(full_exe).step);
 }
