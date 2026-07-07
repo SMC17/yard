@@ -1,0 +1,17 @@
+=== Gap Audit Summary (qwen2.5-coder:1.5b) ===
+Cases:              200
+Overall match:      63/200 (31.5%)
+GM₀ within 2cm:     1/200
+GM_corr within 2cm: 1/200
+All 6 criteria:     6/200
+Flags superset:     199/200
+
+Failure mode catalog:
+  numerical_drift: 193/200 (96.5%)
+  wrong_is_code_threshold: 193/200 (96.5%)
+  overall_criteria_mismatch: 136/200 (68.0%)
+  omitted_free_surface: 48/200 (24.0%)
+  json_parse_failure: 1/200 (0.5%)
+  small_angle_instead_wall_sided: 1/200 (0.5%)
+
+Wrote 200 results to tools/gap_audit/out/qwen_gpu_full_200.jsonl

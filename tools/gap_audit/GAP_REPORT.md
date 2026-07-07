@@ -9,12 +9,12 @@ The gap is real and measurable. Models fail primarily on **free-surface correcti
 
 Fine-tune target metrics (beat these on held-out eval):
 
-| Metric | naive_no_fs | qwen2.5-coder:1.5b (n=10) | Target post-FT |
-|--------|-------------|---------------------------|----------------|
-| GM_corr within 2 cm | 77.5% | **0%** | ≥ 95% |
-| Flags superset | 58.5% | 100%* | ≥ 95% |
-| All 6 criteria exact | 97.5% | **0%** | ≥ 90% |
-| omitted_free_surface | 41.5% | 10% | ≤ 5% |
+| Metric | naive_no_fs | qwen2.5-coder:1.5b (n=200, GPU) | Target post-FT |
+|--------|-------------|--------------------------------|---------------|
+| GM_corr within 2 cm | 77.5% | **0.5%** | ≥ 95% |
+| Flags superset | 58.5% | 99.5%* | ≥ 95% |
+| All 6 criteria exact | 97.5% | **3.0%** | ≥ 90% |
+| omitted_free_surface | 41.5% | 24.0% | ≤ 5% |
 
 \* qwen2.5-coder:1.5b emits flags but with wrong numbers — flags without correct math is worthless.
 
@@ -30,17 +30,29 @@ numerical_drift:             8/200 ( 4.0%)
 wrong_is_code_threshold:     5/200 ( 2.5%)
 ```
 
-### Live model: `qwen2.5-coder:1.5b` (Ollama, CPU, n=10)
+### Live model: `qwen2.5-coder:1.5b` (Ollama, **Vulkan GPU**, n=200) — 2026-07-07
 
 ```
-numerical_drift:            10/10 (100.0%)  ← model hallucinates numbers
-wrong_is_code_threshold:    10/10 (100.0%)
-overall_criteria_mismatch:   7/10 ( 70.0%)
-omitted_free_surface:        1/10 ( 10.0%)
+numerical_drift:            193/200 (96.5%)  ← model hallucinates numbers
+wrong_is_code_threshold:    193/200 (96.5%)
+overall_criteria_mismatch:  136/200 (68.0%)
+omitted_free_surface:        48/200 (24.0%)
+json_parse_failure:           1/200 ( 0.5%)
 ```
 
-**Interpretation:** Small general models cannot do naval stability arithmetic from prompt alone.
-The behavior must be in the weights, trained on oracle-verified traces.
+| Metric | Score |
+|--------|-------|
+| Overall PASS/FAIL match | **63/200 (31.5%)** |
+| GM₀ within 2cm | **1/200 (0.5%)** |
+| GM_corr within 2cm | **1/200 (0.5%)** |
+| All 6 criteria exact | **6/200 (3.0%)** |
+| Flags superset | 199/200 (99.5%) |
+
+**Interpretation:** Models emit plausible flags and JSON but **cannot do stability arithmetic**
+from prompting alone. Flags without correct math are worthless. Fine-tune target is clear:
+internalize oracle-verified numerical workflow (GM → FS correction → IS Code).
+
+Raw results: `tools/gap_audit/out/qwen_gpu_full_200.jsonl`
 
 ## Dataset Status
 
