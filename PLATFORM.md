@@ -261,12 +261,24 @@ yard/
 
 ---
 
+## Gap Audit Results (2026-07-07)
+
+Held-out eval: 200 cases (seed 9999). See [`tools/gap_audit/GAP_REPORT.md`](tools/gap_audit/GAP_REPORT.md).
+
+| Failure mode | naive baseline | qwen2.5-coder:1.5b |
+|--------------|----------------|---------------------|
+| omitted_free_surface | **41.5%** | 10% |
+| numerical_drift | 4% | **100%** |
+| GM_corr within 2cm | 77.5% | **0%** |
+
+**Dataset shipped:** 5,000 train + 200 eval + 500 val (regenerate: `bash tools/pipeline.sh`).
+
 ## Next Concrete Steps
 
-1. Run `zig build test-core` — confirm composition chain is green.
-2. Generate seed dataset: `python tools/dataset/generate.py --samples 500`.
-3. Gap-audit frontier models on held-out eval cases.
-4. Fine-tune Phi-4 / Qwen3.5-7B with Unsloth QLoRA.
-5. Publish dataset + eval + ablation results.
+1. ~~Gap-audit~~ ✓ — gap confirmed on 200-case eval
+2. Fine-tune on CUDA (≥12GB): `python tools/finetune/train_unsloth.py`
+3. Eval + ablation (minimal prompt, FS-removal, paraphrase)
+4. Add `compose/cargo_resistance` to full design loop example
+5. Publish eval set + gap report + post-FT numbers
 
 **The substrate is built. The platform is composable. The dataset is the moat. Build your layer.**

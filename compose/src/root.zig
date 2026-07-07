@@ -3,7 +3,9 @@
 //! Proof level: unit-tested (inherits hydro + stability primitives).
 
 pub const box_barge = @import("box_barge.zig");
+pub const cargo_resistance = @import("cargo_resistance.zig");
 
 test {
     _ = box_barge;
+    _ = cargo_resistance;
 }

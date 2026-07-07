@@ -16,6 +16,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const resistance_mod = b.addModule("yard_resistance", .{
+        .root_source_file = b.path("../resistance/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const naval_arch_mod = b.addModule("yard_naval_arch", .{
         .root_source_file = b.path("../naval-arch/src/root.zig"),
         .target = target,
@@ -29,6 +35,7 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "yard_hydro", .module = hydro_mod },
             .{ .name = "yard_stability", .module = stability_mod },
+            .{ .name = "yard_resistance", .module = resistance_mod },
             .{ .name = "yard_naval_arch", .module = naval_arch_mod },
         },
     });
