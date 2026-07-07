@@ -43,7 +43,18 @@ else
 fi
 
 echo ""
+echo "--- nvidia-uvm health ---"
+python3 -c "import os; os.open('/dev/nvidia-uvm', os.O_RDWR); print('OK')" 2>&1 || {
+  echo "BROKEN: /dev/nvidia-uvm EIO → cuInit 999"
+  echo "Recovery: bash tools/finetune/fix_cuda.sh"
+  echo "Runbook:  ~/homelab/docs/cuda-uvm-recovery.md"
+}
+
+echo ""
 echo "=== Fixes ==="
+echo "0. UVM module reload (load-bearing if uvm EIO):"
+echo "   bash tools/finetune/fix_cuda.sh"
+echo ""
 echo "1. Remove corrupted nvidia pip metadata:"
 echo "   rm -rf ~/.local/share/mise/installs/python/*/lib/python*/site-packages/~vidia*"
 echo ""
