@@ -1,0 +1,8 @@
+.{
+    .name = .yard_submarine,
+    .version = "0.0.0",
+    .fingerprint = 0x479d251a2042e8bd,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{ "build.zig", "build.zig.zon", "LICENSE", "README.md", "STATUS.md", "CHANGELOG.md", "src" },
+}

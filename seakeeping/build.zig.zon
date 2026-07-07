@@ -1,0 +1,16 @@
+.{
+    .name = .yard_seakeeping,
+    .version = "0.0.0",
+    .fingerprint = 0x3f95d15e607273a1,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "README.md",
+        "STATUS.md",
+        "CHANGELOG.md",
+        "src",
+    },
+}

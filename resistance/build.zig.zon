@@ -1,0 +1,16 @@
+.{
+    .name = .yard_resistance,
+    .version = "0.1.0",
+    .fingerprint = 0x4713fbb53d60e6c1,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "README.md",
+        "STATUS.md",
+        "CHANGELOG.md",
+        "src",
+    },
+}

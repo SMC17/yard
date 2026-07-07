@@ -1,0 +1,8 @@
+.{
+    .name = .yard_mass,
+    .version = "0.0.0",
+    .fingerprint = 0xb9de912b67478d16,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{ "build.zig", "build.zig.zon", "LICENSE", "README.md", "STATUS.md", "CHANGELOG.md", "src" },
+}
