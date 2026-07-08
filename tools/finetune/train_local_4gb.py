@@ -131,6 +131,8 @@ def main() -> None:
     formatted = dataset.map(formatting_func, batched=True, remove_columns=dataset.column_names)
 
     args.output.mkdir(parents=True, exist_ok=True)
+    # Ensure log tee target exists when launched from shell wrappers.
+    (args.output / "train.log").touch(exist_ok=True)
     training_args = SFTConfig(
         output_dir=str(args.output),
         num_train_epochs=args.epochs,
