@@ -77,7 +77,7 @@ The 2026-07-07 ruthless audit described a **flat repo** (69 modules only). That 
 | Box-barge stability | `compose/src/box_barge.zig` | `examples/box-barge-intact-stability/` | ✅ |
 | Cargo resistance | `compose/src/cargo_resistance.zig` | — | ✅ |
 | Vessel assessment | `compose/src/vessel_assessment.zig` | `examples/full-vessel-assessment/` | ✅ |
-| Seakeeping assessment | `compose/src/seakeeping_assessment.zig` | `examples/seakeeping_assessment/` | ✅ |
+| Seakeeping assessment | `compose/src/seakeeping_assessment.zig` | `examples/seakeeping_assessment/` | ✅ + README + standalone build |
 
 **Next workflows:** trim/damage composition, offsets → GZ → IMO full-hull chain.
 
@@ -86,7 +86,9 @@ The 2026-07-07 ruthless audit described a **flat repo** (69 modules only). That 
 | Component | Path | Status |
 |-----------|------|--------|
 | Stability oracle | `tools/oracle/yard_stability_oracle.py` | ✅ Proven |
-| Seakeeping oracle | `tools/oracle/yard_seakeeping_oracle.py` | ✅ New |
+| Seakeeping oracle | `tools/oracle/yard_seakeeping_oracle.py` | ✅ RK4-matched |
+| Seakeeping dataset | `tools/dataset/generate_seakeeping.py` | ✅ New |
+| Seakeeping gap audit | `tools/gap_audit/gap_audit_seakeeping.py` | ✅ Baseline filed |
 | Dataset pipeline | `tools/dataset/` | ✅ 5.2k multimodal |
 | Eval harness | `tools/eval/harness.py` | ✅ |
 | Agent harness | `tools/agent/harness.py` | ✅ Unified dispatcher |
@@ -166,6 +168,8 @@ zig build test-all
 python tools/agent/harness.py --workflow box_barge --spec examples/agent_spec.json
 python tools/agent/harness.py --workflow seakeeping
 python tools/oracle/yard_seakeeping_oracle.py
+python tools/dataset/generate_seakeeping.py --samples 200 --output tools/dataset/out/seakeeping_train.jsonl
+python tools/gap_audit/gap_audit_seakeeping.py --dataset tools/dataset/out/seakeeping_eval.jsonl --baseline naive
 
 # Gap audit (post fine-tune)
 python tools/gap_audit/gap_audit.py --model qwen2.5-coder:1.5b --n 200
