@@ -42,18 +42,30 @@ def main() -> None:
     ap.add_argument("--input", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--tank-weight", type=int, default=1,
+                    help="Repeat records with tanks N times (free-surface emphasis)")
     args = ap.parse_args()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     count = 0
+    tank_dupes = 0
     with args.input.open() as fin, args.output.open("w") as fout:
         for line in fin:
             if args.limit and count >= args.limit:
                 break
             rec = json.loads(line)
-            fout.write(json.dumps(to_json_only_chat(rec)) + "\n")
-            count += 1
-    print(f"Exported {count} JSON-only records to {args.output}")
+            has_tanks = bool(rec.get("input", {}).get("tanks"))
+            reps = args.tank_weight if has_tanks else 1
+            for _ in range(reps):
+                fout.write(json.dumps(to_json_only_chat(rec)) + "\n")
+                count += 1
+                if has_tanks and reps > 1:
+                    tank_dupes += 1
+            if not args.limit:
+                continue
+            if count >= args.limit:
+                break
+    print(f"Exported {count} JSON-only records to {args.output} (tank dupes: {tank_dupes})")
 
 
 if __name__ == "__main__":
