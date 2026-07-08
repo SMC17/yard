@@ -26,6 +26,7 @@ from yard_seakeeping_oracle import (  # noqa: E402
     evaluate_seakeeping,
     to_answer_dict as seakeeping_to_answer,
 )
+from yard_damage_oracle import DamageInput, evaluate_damage, to_answer_dict as damage_to_answer  # noqa: E402
 from yard_stability_oracle import (  # noqa: E402
     Tank,
     WorkflowInput,
@@ -33,7 +34,7 @@ from yard_stability_oracle import (  # noqa: E402
     to_answer_dict as stability_to_answer,
 )
 
-WORKFLOWS = ("box_barge", "seakeeping")
+WORKFLOWS = ("box_barge", "seakeeping", "damage_stability")
 
 
 @dataclass
@@ -68,6 +69,23 @@ def _run_box_barge(spec: dict) -> dict:
     return stability_to_answer(wf)
 
 
+def _run_damage(spec: dict) -> dict:
+    tanks = [Tank(**t) for t in spec.get("tanks", [])]
+    out = evaluate_damage(
+        DamageInput(
+            L=spec["L"],
+            B=spec["B"],
+            T=spec["T"],
+            kg_m=spec["kg_m"],
+            l_lost_m=spec["l_lost_m"],
+            depth_m=spec["depth_m"],
+            mu=spec.get("mu", 1.0),
+            tanks=tanks,
+        )
+    )
+    return damage_to_answer(out)
+
+
 def _run_seakeeping(spec: dict) -> dict:
     if all(k in spec for k in ("L", "B", "T", "Hs_m", "Tz_s")):
         inp = default_barge_input(
@@ -95,6 +113,7 @@ def _run_seakeeping(spec: dict) -> dict:
 RUNNERS: dict[str, Callable[[dict], dict]] = {
     "box_barge": _run_box_barge,
     "seakeeping": _run_seakeeping,
+    "damage_stability": _run_damage,
 }
 
 
@@ -115,6 +134,16 @@ def verify_against_oracle(workflow: str, oracle: dict, model: dict) -> tuple[boo
         if "overall" in model and "overall" in oracle and model["overall"] != oracle["overall"]:
             ok = False
             notes.append(f"overall mismatch: model={model['overall']} oracle={oracle['overall']}")
+
+    elif workflow == "damage_stability":
+        for key in ("T_damaged_m", "GM_corrected_damaged_m"):
+            if key in model and key in oracle:
+                if not _rel_close(float(model[key]), float(oracle[key]), rtol=0.02, atol=0.05):
+                    ok = False
+                    notes.append(f"{key} mismatch: model={model[key]} oracle={oracle[key]}")
+        if "overall" in model and model["overall"] != oracle.get("overall"):
+            ok = False
+            notes.append("overall mismatch")
 
     elif workflow == "seakeeping":
         for key in ("significant_heave_m", "peak_rao", "m0_response"):
@@ -169,6 +198,8 @@ def main() -> int:
         spec = json.loads(Path(args.spec).read_text())
     elif args.workflow == "box_barge":
         spec = json.loads((Path(__file__).parent.parent.parent / "examples/agent_spec.json").read_text())
+    elif args.workflow == "damage_stability":
+        spec = {"L": 10.0, "B": 4.0, "T": 1.5, "kg_m": 1.0, "l_lost_m": 2.0, "depth_m": 3.0}
     else:
         spec = {"L": 100.0, "B": 16.0, "T": 6.0, "Hs_m": 2.0, "Tz_s": 8.0}
 
