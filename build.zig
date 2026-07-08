@@ -81,6 +81,26 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const seakeeping_mod = b.addModule("yard_seakeeping_core", .{
+        .root_source_file = b.path("seakeeping/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const rao_mod = b.addModule("yard_rao_spectrum_core", .{
+        .root_source_file = b.path("rao-spectrum/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const fossen_mod = b.addModule("yard_fossen_core", .{
+        .root_source_file = b.path("fossen-6dof/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const strip_mod = b.addModule("yard_strip_theory_core", .{
+        .root_source_file = b.path("strip-theory/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const compose_mod = b.addModule("yard_compose_core", .{
         .root_source_file = b.path("compose/src/root.zig"),
         .target = target,
@@ -90,6 +110,10 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_stability", .module = stability_mod },
             .{ .name = "yard_resistance", .module = resistance_mod },
             .{ .name = "yard_naval_arch", .module = naval_mod },
+            .{ .name = "yard_seakeeping", .module = seakeeping_mod },
+            .{ .name = "yard_rao_spectrum", .module = rao_mod },
+            .{ .name = "yard_fossen", .module = fossen_mod },
+            .{ .name = "yard_strip_theory", .module = strip_mod },
         },
     });
     const compose_tests = b.addTest(.{ .root_module = compose_mod });
@@ -138,4 +162,24 @@ pub fn build(b: *std.Build) void {
         .root_module = full_assess_mod,
     });
     run_full.dependOn(&b.addRunArtifact(full_exe).step);
+
+    const seakeeping_mod_example = b.createModule(.{
+        .root_source_file = b.path("examples/seakeeping_assessment/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_compose", .module = compose_mod },
+            .{ .name = "yard_hydro", .module = hydro_mod },
+            .{ .name = "yard_naval_arch", .module = naval_mod },
+        },
+    });
+    const seakeeping_tests = b.addTest(.{ .root_module = seakeeping_mod_example });
+    test_core.dependOn(&b.addRunArtifact(seakeeping_tests).step);
+
+    const run_seakeeping = b.step("run-seakeeping", "Run seakeeping assessment example");
+    const seakeeping_exe = b.addExecutable(.{
+        .name = "seakeeping-assessment",
+        .root_module = seakeeping_mod_example,
+    });
+    run_seakeeping.dependOn(&b.addRunArtifact(seakeeping_exe).step);
 }

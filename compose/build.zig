@@ -28,6 +28,27 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const seakeeping_mod = b.addModule("yard_seakeeping", .{
+        .root_source_file = b.path("../seakeeping/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const rao_mod = b.addModule("yard_rao_spectrum", .{
+        .root_source_file = b.path("../rao-spectrum/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const fossen_mod = b.addModule("yard_fossen", .{
+        .root_source_file = b.path("../fossen-6dof/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const strip_mod = b.addModule("yard_strip_theory", .{
+        .root_source_file = b.path("../strip-theory/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const mod = b.addModule("yard_compose", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
@@ -37,6 +58,10 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_stability", .module = stability_mod },
             .{ .name = "yard_resistance", .module = resistance_mod },
             .{ .name = "yard_naval_arch", .module = naval_arch_mod },
+            .{ .name = "yard_seakeeping", .module = seakeeping_mod },
+            .{ .name = "yard_rao_spectrum", .module = rao_mod },
+            .{ .name = "yard_fossen", .module = fossen_mod },
+            .{ .name = "yard_strip_theory", .module = strip_mod },
         },
     });
 
