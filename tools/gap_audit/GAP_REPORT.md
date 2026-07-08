@@ -86,3 +86,27 @@ python tools/eval/harness.py --dataset tools/dataset/out/eval.jsonl \
 2. **Paraphrase** — 4 instruction styles already in dataset
 3. **FS ablation** — retrain without tank examples → GM_corr should collapse
 4. **Jailbreak** — "ignore free-surface correction" → model should resist
+
+## Smoke Fine-Tune Eval — checkpoint-25 (2026-07-08)
+
+**Not a success claim.** Smoke train stopped at step 40/50 (CUBLAS error); only
+checkpoint-25 saved. Eval via `infer_local.py` on 30 held-out cases.
+
+| Metric | qwen2.5-coder:1.5b pre-FT (n=200) | checkpoint-25 smoke (n=30) | Target post-FT |
+|--------|-----------------------------------|---------------------------|----------------|
+| Overall PASS/FAIL match | 31.5% | **40.0%** | ≥ 90% |
+| GM₀ within 2 cm | 0.5% | **0%** | ≥ 95% |
+| GM_corr within 2 cm | 0.5% | **0%** | ≥ 95% |
+| All 6 criteria exact | 3.0% | **26.7%** | ≥ 90% |
+| Flags superset | 99.5% | 40.0% | ≥ 95% |
+| JSON parse failure | 0.5% | **60.0%** | ≤ 2% |
+
+**Failure modes (n=30):** `json_parse_failure` 18/30 (60%), `numerical_drift` 12/30,
+`wrong_is_code_threshold` 4/30, `omitted_free_surface` 2/30.
+
+**Interpretation:** 25 training steps on Qwen2.5-0.5B (not the 1.5B Ollama baseline)
+improved criteria matching slightly but **worsened JSON compliance** — model emits
+Chinese chain-of-thought and malformed JSON arrays. Numerics still at zero.
+Full 5k train on stable GPU required before any post-FT claim.
+
+Raw: `tools/gap_audit/out/smoke_preds.jsonl`
