@@ -57,8 +57,11 @@ def main() -> None:
                         help="0.5B default; try Qwen/Qwen2.5-1.5B-Instruct on 4GB at your risk")
     parser.add_argument("--epochs", type=int, default=2)
     parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--max-seq-len", type=int, default=512)
+    parser.add_argument("--max-seq-len", type=int, default=384,
+                        help="384 fits JSON-only; 512 for full CoT")
     parser.add_argument("--resume", type=Path, default=None, help="Resume from checkpoint dir")
+    parser.add_argument("--max-steps", type=int, default=None, help="Cap total steps (smoke/4GB)")
+    parser.add_argument("--save-steps", type=int, default=10, help="Checkpoint every N steps")
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--grad-accum", type=int, default=8)
     parser.add_argument("--max-samples", type=int, default=None,
@@ -131,11 +134,14 @@ def main() -> None:
     training_args = SFTConfig(
         output_dir=str(args.output),
         num_train_epochs=args.epochs,
+        max_steps=args.max_steps if args.max_steps else -1,
         per_device_train_batch_size=args.batch_size,
         gradient_accumulation_steps=args.grad_accum,
         learning_rate=args.lr,
         logging_steps=5,
-        save_strategy="epoch",
+        save_strategy="steps",
+        save_steps=args.save_steps,
+        save_total_limit=3,
         fp16=False,
         bf16=False,
         tf32=False,
@@ -156,11 +162,22 @@ def main() -> None:
         processing_class=tokenizer,
     )
 
+    # Clear GPU state before long run (mitigates CUBLAS_STATUS_INTERNAL_ERROR)
+    torch.cuda.empty_cache()
+    import gc
+    gc.collect()
+
     print("Starting training...")
-    if args.resume:
-        trainer.train(resume_from_checkpoint=str(args.resume))
-    else:
-        trainer.train()
+    try:
+        if args.resume:
+            trainer.train(resume_from_checkpoint=str(args.resume))
+        else:
+            trainer.train()
+    except RuntimeError as e:
+        if "CUBLAS" in str(e) or "cuda" in str(e).lower():
+            print(f"CUDA error — partial checkpoints in {args.output}", file=sys.stderr)
+            print("Recovery: bash tools/finetune/fix_cuda.sh && resume --resume <checkpoint>", file=sys.stderr)
+        raise
     model.save_pretrained(str(args.output / "lora"))
     tokenizer.save_pretrained(str(args.output / "lora"))
     print(f"Saved LoRA adapter to {args.output / 'lora'}")
