@@ -57,7 +57,8 @@ def main() -> None:
                         help="0.5B default; try Qwen/Qwen2.5-1.5B-Instruct on 4GB at your risk")
     parser.add_argument("--epochs", type=int, default=2)
     parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--max-seq-len", type=int, default=1024)
+    parser.add_argument("--max-seq-len", type=int, default=512)
+    parser.add_argument("--resume", type=Path, default=None, help="Resume from checkpoint dir")
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--grad-accum", type=int, default=8)
     parser.add_argument("--max-samples", type=int, default=None,
@@ -74,15 +75,15 @@ def main() -> None:
     print(f"GPU: {gpu_info}")
 
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-    from trl import SFTTrainer
+    from trl import SFTConfig, SFTTrainer
 
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_use_double_quant=True,
+        bnb_4bit_use_double_quant=False,
     )
 
     print(f"Loading {args.model} (4-bit)...")
@@ -109,6 +110,10 @@ def main() -> None:
         task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora)
+    # GTX 1650 (Turing): no bf16; keep trainable LoRA weights in fp32 for grad scaler.
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            param.data = param.data.float()
     model.print_trainable_parameters()
 
     dataset = load_dataset(args.data, args.max_samples)
@@ -123,7 +128,7 @@ def main() -> None:
     formatted = dataset.map(formatting_func, batched=True, remove_columns=dataset.column_names)
 
     args.output.mkdir(parents=True, exist_ok=True)
-    training_args = TrainingArguments(
+    training_args = SFTConfig(
         output_dir=str(args.output),
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
@@ -131,13 +136,17 @@ def main() -> None:
         learning_rate=args.lr,
         logging_steps=5,
         save_strategy="epoch",
-        fp16=True,
+        fp16=False,
+        bf16=False,
+        tf32=False,
         optim="paged_adamw_8bit",
         gradient_checkpointing=True,
         max_grad_norm=0.3,
         warmup_ratio=0.03,
         report_to="none",
         dataloader_pin_memory=False,
+        max_length=args.max_seq_len,
+        dataset_text_field="text",
     )
 
     trainer = SFTTrainer(
@@ -145,11 +154,13 @@ def main() -> None:
         args=training_args,
         train_dataset=formatted,
         processing_class=tokenizer,
-        max_seq_length=args.max_seq_len,
     )
 
     print("Starting training...")
-    trainer.train()
+    if args.resume:
+        trainer.train(resume_from_checkpoint=str(args.resume))
+    else:
+        trainer.train()
     model.save_pretrained(str(args.output / "lora"))
     tokenizer.save_pretrained(str(args.output / "lora"))
     print(f"Saved LoRA adapter to {args.output / 'lora'}")
