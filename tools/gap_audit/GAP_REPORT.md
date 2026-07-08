@@ -110,3 +110,24 @@ Chinese chain-of-thought and malformed JSON arrays. Numerics still at zero.
 Full 5k train on stable GPU required before any post-FT claim.
 
 Raw: `tools/gap_audit/out/smoke_preds.jsonl`
+
+## JSON-Only Fine-Tune — checkpoint-80 (2026-07-08) ✅ TRAIN COMPLETE
+
+**Train:** 500 JSON-only samples, 80 steps, seq_len=384, Qwen2.5-0.5B QLoRA  
+**Loss:** 2.88 → 0.27 | **Token accuracy:** 0.46 → 0.89 | **Runtime:** 42 min
+
+| Metric | pre-FT 1.5B (n=200) | CoT ckpt-25 (n=30) | **JSON ckpt-80 (n=30)** | Target |
+|--------|---------------------|-------------------|------------------------|--------|
+| Overall PASS/FAIL | 31.5% | 40.0% | **93.3%** | ≥ 90% |
+| JSON parse failure | 0.5% | 60.0% | **6.7%** | ≤ 2% |
+| All 6 criteria exact | 3.0% | 26.7% | **93.3%** | ≥ 90% |
+| GM_corr within 2 cm | 0.5% | 0% | **3.3%** | ≥ 95% |
+| omitted_free_surface | 24.0% | 6.7% | **26.7%** | ≤ 5% |
+| Flags superset | 99.5% | 40.0% | 6/30 (20%) | ≥ 95% |
+
+**Interpretation:** JSON-only training **fixed format compliance** (criteria matching
+93%). Model learned regulatory PASS/FAIL patterning but **still hallucinates GM
+numbers** (83% numerical_drift) and **skips free-surface** on tank cases. Next:
+full 5k JSON-only train + FS-weighted sampling + numeric loss emphasis in dataset.
+
+Raw: `tools/gap_audit/out/json_ft_preds_30.jsonl`
