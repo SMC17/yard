@@ -21,7 +21,7 @@ Microsoft made Excel. Goldman Sachs made more money *on* Excel than Microsoft ma
 │  yard-stability-oracle · SFT datasets · domain eval · agent tooling     │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  LAYER 2: Composition (compose/ + examples/ + CLI bindings)           │
-│  Multi-module workflows · shared types · JSON I/O · Python FFI           │
+│  box_barge · cargo_resistance · vessel_assessment · seakeeping_assessment │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  LAYER 1: Primitives (69 modules — hydro, stability, resistance, …)   │
 │  Unit-tested · analytically validated · explicit validity envelopes     │
