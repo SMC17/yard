@@ -14,22 +14,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "gap_audit"))
+sys.path.insert(0, str(Path(__file__).parent))
 from gap_audit import SYSTEM_PROMPT  # noqa: E402
-
-
-def extract_json(text: str) -> dict | None:
-    m = re.search(r"\{[\s\S]*\}", text)
-    if not m:
-        return None
-    try:
-        return json.loads(m.group())
-    except json.JSONDecodeError:
-        return None
+from json_extract import extract_json  # noqa: E402
 
 
 def main() -> None:
@@ -39,7 +30,9 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--max-new-tokens", type=int, default=1024)
+    parser.add_argument("--max-new-tokens", type=int, default=256,
+                        help="JSON-only answers need ~150-200 tokens")
+    parser.add_argument("--score", action="store_true", help="Run gap_audit score after infer")
     args = parser.parse_args()
 
     import torch
@@ -97,6 +90,16 @@ def main() -> None:
             print(f"  [{count}] {rec['id'][:8]}…", flush=True)
 
     print(f"Wrote {count} predictions to {args.output}")
+
+    if args.score:
+        import subprocess
+        subprocess.run([
+            sys.executable,
+            str(Path(__file__).parent.parent / "gap_audit" / "score_preds.py"),
+            "--dataset", str(args.dataset),
+            "--predictions", str(args.output),
+            "--model-name", str(args.adapter),
+        ], check=False)
 
 
 if __name__ == "__main__":
