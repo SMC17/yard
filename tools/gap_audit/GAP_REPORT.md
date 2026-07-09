@@ -172,9 +172,10 @@ Raw: `tools/gap_audit/out/json_ft_preds_200.jsonl`
 \* Regex extracts rounded dimensions from NL text; oracle math is exact for extracted spec.
 Production path: LLM extracts spec → oracle computes → 100% numerics with audit hash.
 
-Demo: `bash tools/agent/run_compliance_demo.sh`  
-Ollama pipeline: `bash tools/agent/run_ollama_agent.sh`  
-Eval: `python tools/agent/eval_oracle_agent.py --dataset tools/dataset/out/eval.jsonl`
+**CLI:** `python tools/agent/yard_agent.py assess --instruction "..." --output out/packet`  
+**Bench:** `tools/bench/yard-stability-bench-v0.1/`  
+Demo: `python tools/agent/yard_agent.py demo`  
+Eval: `python tools/agent/yard_agent.py eval --dataset tools/dataset/out/eval.jsonl`
 
 ### Ollama NL→spec extraction (n=30 smoke, 2026-07-09)
 
