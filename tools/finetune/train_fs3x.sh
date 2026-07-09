@@ -24,6 +24,7 @@ fi
 
 echo "=== FS3x Numerics Train ==="
 echo "Warm: $WARM  Out: $OUT  Samples: $SAMPLES  Steps: $STEPS  LR: $LR"
+mkdir -p "$OUT"
 
 python tools/finetune/train_local_4gb.py \
   --data "$DATA" \
