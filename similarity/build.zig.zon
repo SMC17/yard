@@ -1,0 +1,14 @@
+.{
+    .name = .yard_similarity,
+    .version = "0.1.0",
+    .fingerprint = 0xb3a91c4e7f2d8051,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "STATUS.md",
+        "src",
+    },
+}
