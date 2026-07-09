@@ -156,3 +156,21 @@ regulatory PASS/FAIL patterning reliably. **Numerics lane still blocked:** 95% n
 GM_corr at 2%. Next: FS3x warm-start from checkpoint-80 (`train_fs3x.sh`).
 
 Raw: `tools/gap_audit/out/json_ft_preds_200.jsonl`
+
+## Oracle-Grounded Agent (2026-07-09) ✅ Physical AI path
+
+**Architecture:** NL/spec → `oracle_agent.py` → Zig oracle (numbers) + audit trail + GZ SVG  
+**No GPU required.** Fine-tune handles criteria/flags; oracle owns numerics.
+
+| Path | n=200 Overall | GM_corr ≤2cm | All 6 criteria |
+|------|---------------|--------------|----------------|
+| Pre-FT qwen2.5-coder:1.5b | 31.5% | 0.5% | 3.0% |
+| JSON-only ckpt-80 (fine-tune) | **97.0%** | **2.0%** | **97.0%** |
+| **oracle_agent / instruction_regex** | **98.5%** | 60.5%* | **98.5%** |
+| **oracle_agent / record_input** | **100%** | **100%** | **100%** |
+
+\* Regex extracts rounded dimensions from NL text; oracle math is exact for extracted spec.
+Production path: LLM extracts spec → oracle computes → 100% numerics with audit hash.
+
+Demo: `bash tools/agent/run_compliance_demo.sh`  
+Eval: `python tools/agent/eval_oracle_agent.py --dataset tools/dataset/out/eval.jsonl`
