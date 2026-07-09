@@ -4,7 +4,9 @@
 //! Phase 2: Vulkan 3D hull + overlay rendering (see viz-vulkan/).
 
 pub const gz_svg = @import("gz_svg.zig");
+pub const pareto_svg = @import("pareto_svg.zig");
 
 test {
     _ = gz_svg;
+    _ = pareto_svg;
 }

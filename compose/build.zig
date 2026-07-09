@@ -58,6 +58,16 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const dynpos_mod = b.addModule("yard_dynpos", .{
+        .root_source_file = b.path("../dynpos/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const viz_mod = b.addModule("yard_viz", .{
+        .root_source_file = b.path("../viz/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const spiral_mod = b.addModule("yard_spiral", .{
         .root_source_file = b.path("../spiral/src/root.zig"),
         .target = target,
@@ -89,6 +99,8 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_fossen", .module = fossen_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
+            .{ .name = "yard_dynpos", .module = dynpos_mod },
+            .{ .name = "yard_viz", .module = viz_mod },
             .{ .name = "yard_spiral", .module = spiral_mod },
         },
     });

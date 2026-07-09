@@ -9,6 +9,8 @@ pub const seakeeping_assessment = @import("seakeeping_assessment.zig");
 pub const damage_stability = @import("damage_stability.zig");
 pub const time_domain_sim = @import("time_domain_sim.zig");
 pub const irregular_wave_sim = @import("irregular_wave_sim.zig");
+pub const dp_station_keeping = @import("dp_station_keeping.zig");
+pub const pareto_report = @import("pareto_report.zig");
 pub const design_spiral = @import("design_spiral.zig");
 
 test {
@@ -19,5 +21,7 @@ test {
     _ = damage_stability;
     _ = time_domain_sim;
     _ = irregular_wave_sim;
+    _ = dp_station_keeping;
+    _ = pareto_report;
     _ = design_spiral;
 }
