@@ -44,6 +44,9 @@ pub const DesignParameters = struct {
     /// Sea state for operability check.
     sea_Hs_m: f64 = 2.0,
     sea_Tz_s: f64 = 8.0,
+    /// DP station-keeping max horizontal excursion [m] (high-fidelity feedback).
+    dp_max_excursion_m: f64 = 0.0,
+    dp_capable: bool = false,
 };
 
 pub const StageResult = struct {
@@ -368,8 +371,15 @@ pub const Orchestrator = struct {
     }
 
     fn stageFeedback(self: Orchestrator, params: *DesignParameters) Error!StageResult {
-        if (self.fidelity == .high) {
+        var msg: []const u8 = "feedback to mission requirements";
+        if (self.fidelity == .high or self.fidelity == .ultra) {
             _ = try self.runHighFidelitySim(params);
+            params.dp_max_excursion_m = try self.estimateDpExcursion(params);
+            params.dp_capable = params.dp_max_excursion_m < 5.0 and params.gm_m >= 0.5;
+            msg = if (params.dp_capable)
+                "feedback: DP capable under proxy wave load"
+            else
+                "feedback: DP excursion or stability marginal";
         }
         return .{
             .stage = .feedback_requirements,
@@ -377,8 +387,14 @@ pub const Orchestrator = struct {
             .gm_m = params.gm_m,
             .power_kw = params.estimated_power_kw,
             .displacement_t = params.displacement / 1000.0,
-            .message = "feedback to mission requirements",
+            .message = msg,
         };
+    }
+
+    /// Crude DP excursion proxy: scaled significant heave as horizontal drift indicator.
+    fn estimateDpExcursion(self: Orchestrator, params: *DesignParameters) Error!f64 {
+        const heave = try self.estimateSignificantHeave(params);
+        return heave * 0.5 + params.sea_Hs_m * 0.2;
     }
 
     fn runHighFidelitySim(_: Orchestrator, params: *DesignParameters) Error!void {

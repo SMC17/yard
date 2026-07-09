@@ -152,6 +152,11 @@ pub fn build(b: *std.Build) void {
     const spiral_tests = b.addTest(.{ .root_module = spiral_mod });
     test_core.dependOn(&b.addRunArtifact(spiral_tests).step);
 
+    const dynpos_mod = b.addModule("yard_dynpos_core", .{
+        .root_source_file = b.path("dynpos/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const compose_mod = b.addModule("yard_compose_core", .{
         .root_source_file = b.path("compose/src/root.zig"),
         .target = target,
@@ -165,6 +170,8 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_fossen", .module = fossen_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
+            .{ .name = "yard_dynpos", .module = dynpos_mod },
+            .{ .name = "yard_viz", .module = viz_mod },
             .{ .name = "yard_spiral", .module = spiral_mod },
         },
     });
@@ -274,4 +281,22 @@ pub fn build(b: *std.Build) void {
         .root_module = bench_mod,
     });
     run_benchmark.dependOn(&b.addRunArtifact(bench_exe).step);
+
+    const sim_demo_mod = b.createModule(.{
+        .root_source_file = b.path("examples/sim-suite-demo/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_compose", .module = compose_mod },
+        },
+    });
+    const sim_demo_tests = b.addTest(.{ .root_module = sim_demo_mod });
+    test_core.dependOn(&b.addRunArtifact(sim_demo_tests).step);
+
+    const run_sim_suite = b.step("run-sim-suite", "Run DP + irregular waves + Pareto demo");
+    const sim_exe = b.addExecutable(.{
+        .name = "sim-suite-demo",
+        .root_module = sim_demo_mod,
+    });
+    run_sim_suite.dependOn(&b.addRunArtifact(sim_exe).step);
 }
