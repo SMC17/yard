@@ -71,6 +71,10 @@ pub fn main(init: std.process.Init) !u8 {
     try stdout.print("Loops: {d}  converged: {}\n", .{ spiral_out.loops, spiral_out.converged });
     try stdout.print("GM = {d:.3} m\n", .{spiral_out.final.gm_m});
     try stdout.print("P_E ≈ {d:.0} kW\n", .{spiral_out.final.estimated_power_kw});
+    try stdout.print("Sig heave (operability) = {d:.3} m\n", .{spiral_out.final.significant_heave_m});
+    try stdout.print("DP max excursion = {d:.3} m  capable = {}\n", .{
+        spiral_out.final.dp_max_excursion_m, spiral_out.final.dp_capable,
+    });
     try stdout.print("Objective score = {d:.4}\n\n", .{
         spiral.orchestrator.evaluateObjective(spiral_out.final, 0.5),
     });
