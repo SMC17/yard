@@ -131,3 +131,28 @@ numbers** (83% numerical_drift) and **skips free-surface** on tank cases. Next:
 full 5k JSON-only train + FS-weighted sampling + numeric loss emphasis in dataset.
 
 Raw: `tools/gap_audit/out/json_ft_preds_30.jsonl`
+
+## JSON-Only Fine-Tune — checkpoint-80 FULL EVAL (2026-07-09) ✅ n=200
+
+**Train:** 500 JSON-only samples, 80 steps, seq_len=384, Qwen2.5-0.5B QLoRA  
+**Eval:** `infer_local.py --batch-size 4` on full held-out `eval.jsonl`
+
+| Metric | pre-FT 1.5B (n=200) | JSON ckpt-80 (n=30) | **JSON ckpt-80 (n=200)** | Target |
+|--------|---------------------|---------------------|---------------------------|--------|
+| Overall PASS/FAIL | 31.5% | 93.3% | **97.0%** | ≥ 90% ✅ |
+| JSON parse failure | 0.5% | 6.7% | **0.5%** | ≤ 2% ✅ |
+| All 6 criteria exact | 3.0% | 93.3% | **97.0%** | ≥ 90% ✅ |
+| GM_corr within 2 cm | 0.5% | 3.3% | **2.0%** | ≥ 95% ❌ |
+| GM₀ within 2 cm | 0.5% | — | **2.0%** | ≥ 95% ❌ |
+| omitted_free_surface | 24.0% | 26.7% | **28.0%** | ≤ 5% ❌ |
+| Flags superset | 99.5% | 20% | **16.0%** | ≥ 95% ❌ |
+
+**Failure modes (n=200):** `numerical_drift` 190/200 (95%), `omitted_free_surface` 56/200 (28%),
+`no_assumption_flags` 52/200 (26%), `overall_criteria_mismatch` 5/200 (2.5%),
+`json_parse_failure` 1/200 (0.5%).
+
+**Interpretation:** Format/criteria lane **scales** — 97% on full held-out eval. Model learned
+regulatory PASS/FAIL patterning reliably. **Numerics lane still blocked:** 95% numerical_drift,
+GM_corr at 2%. Next: FS3x warm-start from checkpoint-80 (`train_fs3x.sh`).
+
+Raw: `tools/gap_audit/out/json_ft_preds_200.jsonl`
