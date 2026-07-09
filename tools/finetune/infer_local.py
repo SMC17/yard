@@ -32,6 +32,8 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--max-new-tokens", type=int, default=256,
                         help="JSON-only answers need ~150-200 tokens")
+    parser.add_argument("--batch-size", type=int, default=1,
+                        help="Batch prompts for faster eval on 4GB (try 2–4)")
     parser.add_argument("--score", action="store_true", help="Run gap_audit score after infer")
     args = parser.parse_args()
 
@@ -63,31 +65,53 @@ def main() -> None:
     model = PeftModel.from_pretrained(base, str(args.adapter))
     model.eval()
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    count = 0
-    with args.dataset.open() as fin, args.output.open("w") as fout:
-        for line in fin:
-            if args.limit and count >= args.limit:
-                break
-            rec = json.loads(line)
+    def load_records() -> list[dict]:
+        records: list[dict] = []
+        with args.dataset.open() as fin:
+            for line in fin:
+                if args.limit and len(records) >= args.limit:
+                    break
+                records.append(json.loads(line))
+        return records
+
+    def run_batch(batch: list[dict], fout) -> int:
+        prompts = []
+        for rec in batch:
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": rec["instruction"]},
             ]
-            prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-            with torch.no_grad():
-                out = model.generate(
-                    **inputs,
-                    max_new_tokens=args.max_new_tokens,
-                    do_sample=False,
-                    pad_token_id=tokenizer.pad_token_id,
-                )
-            raw = tokenizer.decode(out[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True)
+            prompts.append(tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True,
+            ))
+        inputs = tokenizer(
+            prompts, return_tensors="pt", padding=True, truncation=True,
+        ).to(model.device)
+        prompt_lens = (inputs["attention_mask"].sum(dim=1)).tolist()
+        with torch.no_grad():
+            out = model.generate(
+                **inputs,
+                max_new_tokens=args.max_new_tokens,
+                do_sample=False,
+                pad_token_id=tokenizer.pad_token_id,
+            )
+        written = 0
+        for i, rec in enumerate(batch):
+            raw = tokenizer.decode(out[i][prompt_lens[i]:], skip_special_tokens=True)
             pred = extract_json(raw) or {}
             fout.write(json.dumps({"id": rec["id"], "prediction": pred, "raw": raw[:2000]}) + "\n")
-            count += 1
-            print(f"  [{count}] {rec['id'][:8]}…", flush=True)
+            written += 1
+            print(f"  [{count + written}] {rec['id'][:8]}…", flush=True)
+        return written
+
+    records = load_records()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    count = 0
+    bs = max(1, args.batch_size)
+    with args.output.open("w") as fout:
+        for start in range(0, len(records), bs):
+            batch = records[start:start + bs]
+            count += run_batch(batch, fout)
 
     print(f"Wrote {count} predictions to {args.output}")
 
