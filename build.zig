@@ -5,6 +5,7 @@ const core_modules = [_][]const u8{
     "stability",
     "naval-arch",
     "similarity",
+    "benchmark",
     "spiral",
     "compose",
     "viz",
@@ -20,7 +21,7 @@ const all_modules = [_][]const u8{
     "foilcraft",     "fossen-6dof",   "fueltank",      "grounding",
     "helideck",      "hess-smith-3d", "hydro",         "icebreaker",
     "irf",           "ittc78",        "jacket",        "keel",
-    "similarity",    "spiral",
+    "similarity",    "benchmark",   "spiral",
     "launch",        "load-line",     "maneuvering",   "mass",
     "mooring",       "naval-arch",    "noise",         "pipeline",
     "port-engineering", "port-logistics", "propulsion", "rao-spectrum",
@@ -52,7 +53,7 @@ pub fn build(b: *std.Build) void {
 
     for (core_modules) |mod| {
         if (!std.mem.eql(u8, mod, "compose") and !std.mem.eql(u8, mod, "viz") and
-            !std.mem.eql(u8, mod, "spiral"))
+            !std.mem.eql(u8, mod, "spiral") and !std.mem.eql(u8, mod, "benchmark"))
         {
             addModuleTest(b, mod, target, test_core);
         }
@@ -116,6 +117,21 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const benchmark_mod = b.addModule("yard_benchmark_core", .{
+        .root_source_file = b.path("benchmark/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_hydro", .module = hydro_mod },
+            .{ .name = "yard_resistance", .module = resistance_mod },
+            .{ .name = "yard_naval_arch", .module = naval_mod },
+            .{ .name = "yard_similarity", .module = similarity_mod },
+            .{ .name = "yard_ittc78", .module = ittc78_mod },
+        },
+    });
+    const benchmark_tests = b.addTest(.{ .root_module = benchmark_mod });
+    test_core.dependOn(&b.addRunArtifact(benchmark_tests).step);
+
     const spiral_mod = b.addModule("yard_spiral_core", .{
         .root_source_file = b.path("spiral/src/root.zig"),
         .target = target,
@@ -128,6 +144,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_similarity", .module = similarity_mod },
             .{ .name = "yard_ittc78", .module = ittc78_mod },
             .{ .name = "yard_fossen", .module = fossen_mod },
+            .{ .name = "yard_seakeeping", .module = seakeeping_mod },
+            .{ .name = "yard_rao_spectrum", .module = rao_mod },
+            .{ .name = "yard_strip_theory", .module = strip_mod },
         },
     });
     const spiral_tests = b.addTest(.{ .root_module = spiral_mod });
@@ -237,4 +256,22 @@ pub fn build(b: *std.Build) void {
         .root_module = spiral_demo_mod,
     });
     run_spiral.dependOn(&b.addRunArtifact(spiral_exe).step);
+
+    const bench_mod = b.createModule(.{
+        .root_source_file = b.path("examples/benchmark-validation/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_benchmark", .module = benchmark_mod },
+        },
+    });
+    const bench_tests = b.addTest(.{ .root_module = bench_mod });
+    test_core.dependOn(&b.addRunArtifact(bench_tests).step);
+
+    const run_benchmark = b.step("run-benchmark", "Run standard-hull validation harness");
+    const bench_exe = b.addExecutable(.{
+        .name = "benchmark-validation",
+        .root_module = bench_mod,
+    });
+    run_benchmark.dependOn(&b.addRunArtifact(bench_exe).step);
 }
