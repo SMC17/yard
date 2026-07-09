@@ -4,6 +4,8 @@ const core_modules = [_][]const u8{
     "hydro",
     "stability",
     "naval-arch",
+    "similarity",
+    "spiral",
     "compose",
     "viz",
 };
@@ -18,6 +20,7 @@ const all_modules = [_][]const u8{
     "foilcraft",     "fossen-6dof",   "fueltank",      "grounding",
     "helideck",      "hess-smith-3d", "hydro",         "icebreaker",
     "irf",           "ittc78",        "jacket",        "keel",
+    "similarity",    "spiral",
     "launch",        "load-line",     "maneuvering",   "mass",
     "mooring",       "naval-arch",    "noise",         "pipeline",
     "port-engineering", "port-logistics", "propulsion", "rao-spectrum",
@@ -48,7 +51,9 @@ pub fn build(b: *std.Build) void {
     const test_core = b.step("test-core", "Test hydro + stability + naval-arch + compose + viz + examples");
 
     for (core_modules) |mod| {
-        if (!std.mem.eql(u8, mod, "compose") and !std.mem.eql(u8, mod, "viz")) {
+        if (!std.mem.eql(u8, mod, "compose") and !std.mem.eql(u8, mod, "viz") and
+            !std.mem.eql(u8, mod, "spiral"))
+        {
             addModuleTest(b, mod, target, test_core);
         }
     }
@@ -101,6 +106,33 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const similarity_mod = b.addModule("yard_similarity_core", .{
+        .root_source_file = b.path("similarity/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const ittc78_mod = b.addModule("yard_ittc78_core", .{
+        .root_source_file = b.path("ittc78/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const spiral_mod = b.addModule("yard_spiral_core", .{
+        .root_source_file = b.path("spiral/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_hydro", .module = hydro_mod },
+            .{ .name = "yard_stability", .module = stability_mod },
+            .{ .name = "yard_resistance", .module = resistance_mod },
+            .{ .name = "yard_naval_arch", .module = naval_mod },
+            .{ .name = "yard_similarity", .module = similarity_mod },
+            .{ .name = "yard_ittc78", .module = ittc78_mod },
+            .{ .name = "yard_fossen", .module = fossen_mod },
+        },
+    });
+    const spiral_tests = b.addTest(.{ .root_module = spiral_mod });
+    test_core.dependOn(&b.addRunArtifact(spiral_tests).step);
+
     const compose_mod = b.addModule("yard_compose_core", .{
         .root_source_file = b.path("compose/src/root.zig"),
         .target = target,
@@ -114,6 +146,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_fossen", .module = fossen_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
+            .{ .name = "yard_spiral", .module = spiral_mod },
         },
     });
     const compose_tests = b.addTest(.{ .root_module = compose_mod });
@@ -182,4 +215,26 @@ pub fn build(b: *std.Build) void {
         .root_module = seakeeping_mod_example,
     });
     run_seakeeping.dependOn(&b.addRunArtifact(seakeeping_exe).step);
+
+    const spiral_demo_mod = b.createModule(.{
+        .root_source_file = b.path("examples/design-spiral-wigley/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_hydro", .module = hydro_mod },
+            .{ .name = "yard_similarity", .module = similarity_mod },
+            .{ .name = "yard_compose", .module = compose_mod },
+            .{ .name = "yard_spiral", .module = spiral_mod },
+            .{ .name = "yard_naval_arch", .module = naval_mod },
+        },
+    });
+    const spiral_demo_tests = b.addTest(.{ .root_module = spiral_demo_mod });
+    test_core.dependOn(&b.addRunArtifact(spiral_demo_tests).step);
+
+    const run_spiral = b.step("run-spiral", "Run Evans design spiral Wigley demo");
+    const spiral_exe = b.addExecutable(.{
+        .name = "design-spiral-wigley",
+        .root_module = spiral_demo_mod,
+    });
+    run_spiral.dependOn(&b.addRunArtifact(spiral_exe).step);
 }

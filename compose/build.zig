@@ -48,6 +48,30 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const similarity_mod = b.addModule("yard_similarity", .{
+        .root_source_file = b.path("../similarity/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const ittc78_mod = b.addModule("yard_ittc78", .{
+        .root_source_file = b.path("../ittc78/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const spiral_mod = b.addModule("yard_spiral", .{
+        .root_source_file = b.path("../spiral/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_hydro", .module = hydro_mod },
+            .{ .name = "yard_stability", .module = stability_mod },
+            .{ .name = "yard_resistance", .module = resistance_mod },
+            .{ .name = "yard_naval_arch", .module = naval_arch_mod },
+            .{ .name = "yard_similarity", .module = similarity_mod },
+            .{ .name = "yard_ittc78", .module = ittc78_mod },
+            .{ .name = "yard_fossen", .module = fossen_mod },
+        },
+    });
 
     const mod = b.addModule("yard_compose", .{
         .root_source_file = b.path("src/root.zig"),
@@ -62,6 +86,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_fossen", .module = fossen_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
+            .{ .name = "yard_spiral", .module = spiral_mod },
         },
     });
 
