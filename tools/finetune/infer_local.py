@@ -54,6 +54,8 @@ def main() -> None:
     tokenizer = AutoTokenizer.from_pretrained(args.base, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    if args.batch_size > 1:
+        tokenizer.padding_side = "left"
 
     base = AutoModelForCausalLM.from_pretrained(
         args.base,
