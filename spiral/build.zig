@@ -39,6 +39,21 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const seakeeping_mod = b.addModule("yard_seakeeping", .{
+        .root_source_file = b.path("../seakeeping/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const rao_mod = b.addModule("yard_rao_spectrum", .{
+        .root_source_file = b.path("../rao-spectrum/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const strip_mod = b.addModule("yard_strip_theory", .{
+        .root_source_file = b.path("../strip-theory/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
     const mod = b.addModule("yard_spiral", .{
         .root_source_file = b.path("src/root.zig"),
@@ -52,6 +67,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_similarity", .module = similarity_mod },
             .{ .name = "yard_ittc78", .module = ittc78_mod },
             .{ .name = "yard_fossen", .module = fossen_mod },
+            .{ .name = "yard_seakeeping", .module = seakeeping_mod },
+            .{ .name = "yard_rao_spectrum", .module = rao_mod },
+            .{ .name = "yard_strip_theory", .module = strip_mod },
         },
     });
 

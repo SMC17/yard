@@ -6,6 +6,9 @@ const resistance = @import("yard_resistance");
 const naval = @import("yard_naval_arch");
 const similarity = @import("yard_similarity");
 const fossen = @import("yard_fossen");
+const seakeeping = @import("yard_seakeeping");
+const rao = @import("yard_rao_spectrum");
+const strip = @import("yard_strip_theory");
 const stages = @import("stages.zig");
 
 pub const Error = error{
@@ -36,6 +39,11 @@ pub const DesignParameters = struct {
     model_length: f64 = 0.0,
     /// Measured model C_T from tank (0 = use Holtrop at model scale).
     model_c_t: f64 = 0.0,
+    /// Significant heave in operability sea state [m].
+    significant_heave_m: f64 = 0.0,
+    /// Sea state for operability check.
+    sea_Hs_m: f64 = 2.0,
+    sea_Tz_s: f64 = 8.0,
 };
 
 pub const StageResult = struct {
@@ -302,15 +310,61 @@ pub const Orchestrator = struct {
         };
     }
 
-    fn stageCost(_: Orchestrator, params: *DesignParameters) Error!StageResult {
+    fn stageCost(self: Orchestrator, params: *DesignParameters) Error!StageResult {
+        var msg: []const u8 = "cost proxy from displacement and power";
+        if (self.fidelity == .mid or self.fidelity == .high or self.fidelity == .ultra) {
+            params.significant_heave_m = try self.estimateSignificantHeave(params);
+            msg = "operability: power + seakeeping significant heave";
+        }
         return .{
             .stage = .cost_operability,
-            .fidelity = .low,
+            .fidelity = self.fidelity,
             .gm_m = params.gm_m,
             .power_kw = params.estimated_power_kw,
             .displacement_t = params.displacement / 1000.0,
-            .message = "cost proxy from displacement and power",
+            .message = msg,
         };
+    }
+
+    fn estimateSignificantHeave(self: Orchestrator, params: *DesignParameters) Error!f64 {
+        const rho = self.constants.rho_seawater;
+        const g = self.constants.g;
+        const vol = params.displacement / rho;
+        const Aw = params.beam * params.length;
+        const M = params.displacement;
+        const C_33 = rho * g * Aw;
+        const A_33 = 0.2 * M;
+        const B_33 = 5.0e5;
+        const F: strip.heave.Complex = .{ .re = C_33, .im = 0.0 };
+
+        const omega_min: f64 = 0.3;
+        const omega_max: f64 = 1.5;
+        const omega_step: f64 = 0.1;
+        const n = @as(usize, @intFromFloat(@floor((omega_max - omega_min) / omega_step))) + 1;
+
+        var omega = try self.allocator.alloc(f64, n);
+        defer self.allocator.free(omega);
+        var s_wave = try self.allocator.alloc(f64, n);
+        defer self.allocator.free(s_wave);
+        var h_mag_sq = try self.allocator.alloc(f64, n);
+        defer self.allocator.free(h_mag_sq);
+        const s_response = try self.allocator.alloc(f64, n);
+        defer self.allocator.free(s_response);
+
+        var i: usize = 0;
+        var w: f64 = omega_min;
+        while (i < n) : (i += 1) {
+            omega[i] = w;
+            s_wave[i] = seakeeping.spectra.ittcModifiedPM(w, params.sea_Hs_m, params.sea_Tz_s);
+            const rao_m = strip.heave.raoModulus(M, A_33, B_33, C_33, F, w) catch return Error.StageFailed;
+            h_mag_sq[i] = rao_m * rao_m;
+            w += omega_step;
+        }
+
+        rao.spectrum.responseSpectrum(h_mag_sq, s_wave, s_response) catch return Error.StageFailed;
+        const m0 = rao.spectrum.spectralMoment(0, omega, s_response) catch return Error.StageFailed;
+        _ = vol;
+        return rao.spectrum.significantResponseAmplitude(m0);
     }
 
     fn stageFeedback(self: Orchestrator, params: *DesignParameters) Error!StageResult {

@@ -8,6 +8,7 @@ pub const vessel_assessment = @import("vessel_assessment.zig");
 pub const seakeeping_assessment = @import("seakeeping_assessment.zig");
 pub const damage_stability = @import("damage_stability.zig");
 pub const time_domain_sim = @import("time_domain_sim.zig");
+pub const irregular_wave_sim = @import("irregular_wave_sim.zig");
 pub const design_spiral = @import("design_spiral.zig");
 
 test {
@@ -17,5 +18,6 @@ test {
     _ = seakeeping_assessment;
     _ = damage_stability;
     _ = time_domain_sim;
+    _ = irregular_wave_sim;
     _ = design_spiral;
 }

@@ -66,6 +66,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_similarity", .module = similarity_mod },
             .{ .name = "yard_ittc78", .module = ittc78_mod },
             .{ .name = "yard_fossen", .module = fossen_mod },
+            .{ .name = "yard_seakeeping", .module = seakeeping_mod },
+            .{ .name = "yard_rao_spectrum", .module = rao_mod },
+            .{ .name = "yard_strip_theory", .module = strip_mod },
         },
     });
     const compose_mod = b.addModule("yard_compose", .{

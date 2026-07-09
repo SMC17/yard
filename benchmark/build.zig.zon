@@ -1,0 +1,14 @@
+.{
+    .name = .yard_benchmark,
+    .version = "0.1.0",
+    .fingerprint = 0xa7c3e91f4b208d56,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "STATUS.md",
+        "src",
+    },
+}

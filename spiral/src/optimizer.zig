@@ -4,6 +4,88 @@ const std = @import("std");
 const orchestrator = @import("orchestrator.zig");
 pub const Error = orchestrator.Error;
 
+/// Multi-objective design point for Pareto analysis.
+pub const ParetoPoint = struct {
+    params: orchestrator.DesignParameters,
+    power_kw: f64,
+    gm_m: f64,
+    heave_m: f64,
+};
+
+pub fn dominates(a: ParetoPoint, b: ParetoPoint) bool {
+    const le_pwr = a.power_kw <= b.power_kw;
+    const le_heave = a.heave_m <= b.heave_m;
+    const ge_gm = a.gm_m >= b.gm_m;
+    const strict = a.power_kw < b.power_kw or a.heave_m < b.heave_m or a.gm_m > b.gm_m;
+    return le_pwr and le_heave and ge_gm and strict;
+}
+
+/// Extract non-dominated points (minimize power + heave, maximize GM).
+pub fn paretoFront(allocator: std.mem.Allocator, points: []const ParetoPoint) Error![]ParetoPoint {
+    var front: std.ArrayList(ParetoPoint) = .empty;
+    errdefer front.deinit(allocator);
+
+    for (points) |p| {
+        var dominated = false;
+        for (points) |q| {
+            if (dominates(q, p)) {
+                dominated = true;
+                break;
+            }
+        }
+        if (!dominated) try front.append(allocator, p);
+    }
+    return front.toOwnedSlice(allocator);
+}
+
+/// GA exploration returning Pareto front across population history.
+pub fn gaParetoExplore(
+    orch: orchestrator.Orchestrator,
+    population_size: u32,
+    generations: u32,
+    gm_min: f64,
+) Error![]ParetoPoint {
+    _ = gm_min;
+    var rng = std.Random.DefaultPrng.init(0xFEED_FACE);
+    const random = rng.random();
+
+    var history: std.ArrayList(ParetoPoint) = .empty;
+    errdefer history.deinit(orch.allocator);
+
+    const seed = orchestrator.DesignParameters{
+        .length = 100.0,
+        .beam = 16.0,
+        .draft = 6.0,
+        .displacement = 0.0,
+        .service_speed = 8.0,
+        .c_b = 0.65,
+    };
+
+    var gen: u32 = 0;
+    while (gen < generations) : (gen += 1) {
+        var i: u32 = 0;
+        while (i < population_size) : (i += 1) {
+            var candidate = seed;
+            candidate.length *= random.float(f64) * 0.12 + 0.94;
+            candidate.beam *= random.float(f64) * 0.10 + 0.95;
+            candidate.draft *= random.float(f64) * 0.10 + 0.95;
+
+            var sr = try orch.runSpiral(candidate);
+            defer orch.freeSpiralResult(&sr);
+
+            try history.append(orch.allocator, .{
+                .params = sr.final,
+                .power_kw = sr.final.estimated_power_kw,
+                .gm_m = sr.final.gm_m,
+                .heave_m = sr.final.significant_heave_m,
+            });
+        }
+    }
+    const all = try history.toOwnedSlice(orch.allocator);
+    defer orch.allocator.free(all);
+    return paretoFront(orch.allocator, all);
+}
+
 /// Finite-difference gradient step on length (other dims fixed).
 pub fn gradientOptimize(
     orch: orchestrator.Orchestrator,
@@ -105,6 +187,16 @@ pub fn optimizeDesign(
         }
     }
     return current;
+}
+
+test "pareto front is non-empty from GA explore" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const orch = orchestrator.Orchestrator.init(arena.allocator(), 1, .mid);
+    const front = try gaParetoExplore(orch, 6, 2, 0.5);
+    defer arena.allocator().free(front);
+    try std.testing.expect(front.len >= 1);
 }
 
 test "GA improves or matches objective" {
