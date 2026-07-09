@@ -54,6 +54,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const dynpos_mod = b.addModule("yard_dynpos", .{
+        .root_source_file = b.path("../dynpos/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
     const mod = b.addModule("yard_spiral", .{
         .root_source_file = b.path("src/root.zig"),
@@ -70,6 +75,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_seakeeping", .module = seakeeping_mod },
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
+            .{ .name = "yard_dynpos", .module = dynpos_mod },
         },
     });
 

@@ -10,6 +10,7 @@ pub const damage_stability = @import("damage_stability.zig");
 pub const time_domain_sim = @import("time_domain_sim.zig");
 pub const irregular_wave_sim = @import("irregular_wave_sim.zig");
 pub const dp_station_keeping = @import("dp_station_keeping.zig");
+pub const coupled_dp_waves = @import("coupled_dp_waves.zig");
 pub const pareto_report = @import("pareto_report.zig");
 pub const design_spiral = @import("design_spiral.zig");
 
@@ -22,6 +23,7 @@ test {
     _ = time_domain_sim;
     _ = irregular_wave_sim;
     _ = dp_station_keeping;
+    _ = coupled_dp_waves;
     _ = pareto_report;
     _ = design_spiral;
 }
