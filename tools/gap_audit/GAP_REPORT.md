@@ -173,4 +173,17 @@ Raw: `tools/gap_audit/out/json_ft_preds_200.jsonl`
 Production path: LLM extracts spec → oracle computes → 100% numerics with audit hash.
 
 Demo: `bash tools/agent/run_compliance_demo.sh`  
+Ollama pipeline: `bash tools/agent/run_ollama_agent.sh`  
 Eval: `python tools/agent/eval_oracle_agent.py --dataset tools/dataset/out/eval.jsonl`
+
+### Ollama NL→spec extraction (n=30 smoke, 2026-07-09)
+
+| Mode | Overall | All 6 criteria | GM_corr ≤2cm* | Latency |
+|------|---------|----------------|---------------|---------|
+| **ollama** (qwen2.5-coder:1.5b) | **100%** | **100%** | 66.7% | 3.2s/case |
+| **hybrid** (ollama→regex fallback) | **100%** | **100%** | 66.7% | 3.3s/case |
+| regex | 100% | 100% | 66.7% | instant |
+| record_input (upper bound) | 100% | 100% | 100% | instant |
+
+\* Eval compares oracle ground truth from exact hidden floats; NL extraction uses rounded
+dimensions from instruction text. Oracle math is exact for extracted spec.
