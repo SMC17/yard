@@ -41,8 +41,10 @@ def eval_mode(
     if limit:
         lines = lines[:limit]
 
-    for line in lines:
+    for idx, line in enumerate(lines, 1):
         rec = json.loads(line)
+        if mode in ("ollama", "hybrid"):
+            print(f"  [{mode}] {idx}/{len(lines)} {rec['id'][:8]}…", flush=True)
         oracle = oracle_from_record(rec)
 
         if mode == "record_input":
