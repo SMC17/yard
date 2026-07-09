@@ -9,7 +9,8 @@ mkdir -p "$OUT"
 python tools/agent/oracle_agent.py \
   --record tools/dataset/out/eval.jsonl \
   --id "$(head -1 tools/dataset/out/eval.jsonl | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')" \
-  --use-record-input \
+  --extract hybrid \
+  --ollama-model "${OLLAMA_MODEL:-qwen2.5-coder:1.5b}" \
   --assets-dir "$OUT" \
   --output "$OUT/artifact.json"
 

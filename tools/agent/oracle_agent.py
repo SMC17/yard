@@ -16,14 +16,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "oracle"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "viz"))
+
+from extract_spec import extract_spec  # noqa: E402
 
 from render_gz_svg import render_gz_svg  # noqa: E402
 from yard_stability_oracle import (  # noqa: E402
@@ -78,78 +80,6 @@ class ComplianceArtifact:
 def _stable_hash(obj: dict) -> str:
     payload = json.dumps(obj, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
-
-
-def extract_spec_from_instruction(text: str) -> tuple[dict[str, Any], list[str]]:
-    """Regex extraction from natural-language stability prompts."""
-    notes: list[str] = []
-    # Order matters: prefer unit-suffixed conversational forms before loose key=value.
-    l_m = _first_float(text, [
-        r"LPP\s*=\s*([\d.]+)",
-        r"(?:^|\s)L\s*=\s*([\d.]+)\s*m",
-        r"(?:^|[\s□])L\s*=\s*([\d.]+)\s*m",
-        r"(\d+(?:\.\d+)?)\s*m\s+long",
-        r"L\s*=\s*([\d.]+)",
-    ])
-    b_m = _first_float(text, [
-        r"(\d+(?:\.\d+)?)\s*m\s+beam",
-        r"(?:^|[\s□])B\s*=\s*([\d.]+)\s*m",
-        r"B\s*=\s*([\d.]+)",
-    ])
-    t_m = _first_float(text, [
-        r"(\d+(?:\.\d+)?)\s*m\s+draft",
-        r"draft\s+T\s*=\s*([\d.]+)",
-        r"(?:^|[\s□])T\s*=\s*([\d.]+)\s*m",
-        r"T\s*=\s*([\d.]+)\s*m",
-        r"T\s*=\s*([\d.]+)",
-    ])
-    kg_m = _first_float(text, [
-        r"(?:^|[\s□])KG\s*=\s*([\d.]+)\s*m",
-        r"KG\s*=\s*([\d.]+)\s*m",
-        r"KG\s*=\s*([\d.]+)",
-        r"[Cc]enter of gravity is\s+([\d.]+)\s*m",
-        r"gravity\s+is\s+([\d.]+)\s*m",
-    ])
-
-    if None in (l_m, b_m, t_m, kg_m):
-        raise ValueError(
-            f"could not extract L/B/T/KG from instruction: "
-            f"L={l_m} B={b_m} T={t_m} KG={kg_m}"
-        )
-
-    tanks: list[dict[str, float]] = []
-    for m in re.finditer(
-        r"Tank\s*\d*\s*:\s*([\d.]+)\s*[×x]\s*([\d.]+)\s*m(?:\s*\(([^)]+)\))?",
-        text,
-        re.IGNORECASE,
-    ):
-        rho = 1000.0
-        fluid = (m.group(3) or "").lower()
-        if "sea" in fluid:
-            rho = 1025.0
-        elif re.search(r"ρ\s*=\s*(\d+)", fluid):
-            rho = float(re.search(r"ρ\s*=\s*(\d+)", fluid).group(1))
-        tanks.append({"l_m": float(m.group(1)), "b_m": float(m.group(2)), "rho_fluid": rho})
-
-    if not tanks and re.search(r"no\s+slack\s+tank", text, re.IGNORECASE):
-        notes.append("explicit_no_tanks")
-
-    spec: dict[str, Any] = {
-        "L": l_m,
-        "B": b_m,
-        "T": t_m,
-        "kg_m": kg_m,
-        "tanks": tanks,
-    }
-    return spec, notes
-
-
-def _first_float(text: str, patterns: list[str]) -> float | None:
-    for pat in patterns:
-        m = re.search(pat, text, re.IGNORECASE)
-        if m:
-            return float(m.group(1))
-    return None
 
 
 def run_oracle_agent(
@@ -223,6 +153,10 @@ def main() -> int:
     ap.add_argument("--id", help="Case id inside --record")
     ap.add_argument("--use-record-input", action="store_true",
                     help="Use record input field (skip NL extraction)")
+    ap.add_argument("--extract", choices=("regex", "ollama", "hybrid"),
+                    default="hybrid", help="NL→spec extraction mode (default: hybrid)")
+    ap.add_argument("--ollama-model", default="qwen2.5-coder:1.5b")
+    ap.add_argument("--ollama-host", default="http://127.0.0.1:11434")
     ap.add_argument("--assets-dir", type=Path, default=None)
     ap.add_argument("--output", default="-")
     args = ap.parse_args()
@@ -239,12 +173,20 @@ def main() -> int:
             spec = rec["input"]
             extraction_mode = "record_input"
         else:
-            spec, extraction_notes = extract_spec_from_instruction(query)
-            extraction_mode = "instruction_regex"
+            spec, extraction_notes, extraction_mode = extract_spec(
+                query,
+                mode=args.extract,  # type: ignore[arg-type]
+                model=args.ollama_model,
+                host=args.ollama_host,
+            )
     elif args.instruction:
         query = args.instruction
-        spec, extraction_notes = extract_spec_from_instruction(query)
-        extraction_mode = "instruction_regex"
+        spec, extraction_notes, extraction_mode = extract_spec(
+            query,
+            mode=args.extract,  # type: ignore[arg-type]
+            model=args.ollama_model,
+            host=args.ollama_host,
+        )
     elif args.spec:
         spec = json.loads(args.spec.read_text())
         query = spec.get("query", "stability assessment")
