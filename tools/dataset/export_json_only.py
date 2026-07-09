@@ -24,8 +24,22 @@ SYSTEM = (
 )
 
 
-def to_json_only_chat(record: dict) -> dict:
-    answer_json = json.dumps(record["answer"], separators=(",", ":"))
+def round_answer(answer: dict, decimals: int) -> dict:
+    """Stable numeric precision for SFT (reduces token noise on GM fields)."""
+    out: dict = {}
+    for key, val in answer.items():
+        if isinstance(val, float):
+            out[key] = round(val, decimals)
+        else:
+            out[key] = val
+    return out
+
+
+def to_json_only_chat(record: dict, *, numeric_decimals: int | None = None) -> dict:
+    answer = record["answer"]
+    if numeric_decimals is not None:
+        answer = round_answer(answer, numeric_decimals)
+    answer_json = json.dumps(answer, separators=(",", ":"))
     return {
         "id": record["id"],
         "messages": [
@@ -44,6 +58,10 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--tank-weight", type=int, default=1,
                     help="Repeat records with tanks N times (free-surface emphasis)")
+    ap.add_argument("--tank-only", action="store_true",
+                    help="Export only records with slack tanks (numerics curriculum)")
+    ap.add_argument("--numeric-decimals", type=int, default=4,
+                    help="Round float fields in answer JSON (default 4)")
     args = ap.parse_args()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -55,9 +73,13 @@ def main() -> None:
                 break
             rec = json.loads(line)
             has_tanks = bool(rec.get("input", {}).get("tanks"))
+            if args.tank_only and not has_tanks:
+                continue
             reps = args.tank_weight if has_tanks else 1
             for _ in range(reps):
-                fout.write(json.dumps(to_json_only_chat(rec)) + "\n")
+                fout.write(json.dumps(to_json_only_chat(
+                    rec, numeric_decimals=args.numeric_decimals,
+                )) + "\n")
                 count += 1
                 if has_tanks and reps > 1:
                     tank_dupes += 1
