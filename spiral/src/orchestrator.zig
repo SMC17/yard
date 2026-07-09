@@ -10,6 +10,7 @@ const seakeeping = @import("yard_seakeeping");
 const rao = @import("yard_rao_spectrum");
 const strip = @import("yard_strip_theory");
 const stages = @import("stages.zig");
+const dp_feedback = @import("dp_feedback.zig");
 
 pub const Error = error{
     OutOfMemory,
@@ -374,10 +375,12 @@ pub const Orchestrator = struct {
         var msg: []const u8 = "feedback to mission requirements";
         if (self.fidelity == .high or self.fidelity == .ultra) {
             _ = try self.runHighFidelitySim(params);
-            params.dp_max_excursion_m = try self.estimateDpExcursion(params);
-            params.dp_capable = params.dp_max_excursion_m < 5.0 and params.gm_m >= 0.5;
+            const dp = try self.runCoupledDpFeedback(params);
+            params.dp_max_excursion_m = dp.max_excursion_m;
+            params.significant_heave_m = dp.significant_heave_m;
+            params.dp_capable = dp.capable and params.gm_m >= 0.5;
             msg = if (params.dp_capable)
-                "feedback: DP capable under proxy wave load"
+                "feedback: DP capable under coupled irregular-wave sim"
             else
                 "feedback: DP excursion or stability marginal";
         }
@@ -391,10 +394,18 @@ pub const Orchestrator = struct {
         };
     }
 
-    /// Crude DP excursion proxy: scaled significant heave as horizontal drift indicator.
-    fn estimateDpExcursion(self: Orchestrator, params: *DesignParameters) Error!f64 {
-        const heave = try self.estimateSignificantHeave(params);
-        return heave * 0.5 + params.sea_Hs_m * 0.2;
+    fn runCoupledDpFeedback(self: Orchestrator, params: *DesignParameters) Error!dp_feedback.Result {
+        const duration: f64 = if (self.fidelity == .ultra) 120.0 else 60.0;
+        return dp_feedback.estimate(self.allocator, .{
+            .length = params.length,
+            .beam = params.beam,
+            .draft = params.draft,
+            .displacement_kg = params.displacement,
+            .sea_Hs_m = params.sea_Hs_m,
+            .sea_Tz_s = params.sea_Tz_s,
+            .max_excursion_m = 5.0,
+            .duration_s = duration,
+        }) catch return Error.SimulationFailed;
     }
 
     fn runHighFidelitySim(_: Orchestrator, params: *DesignParameters) Error!void {
@@ -502,6 +513,27 @@ test "single spiral loop on cargo-scale hull" {
     try std.testing.expect(result.final.gm_m > 0.0);
     try std.testing.expect(result.final.estimated_power_kw > 0.0);
     try std.testing.expect(result.stage_trace.len >= 10);
+}
+
+test "high-fidelity coupled DP feedback" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    var orch = Orchestrator.init(arena.allocator(), 1, .high);
+    var params = DesignParameters{
+        .length = 100.0,
+        .beam = 16.0,
+        .draft = 6.0,
+        .displacement = 8.7e6,
+        .service_speed = 8.0,
+        .c_b = 0.65,
+        .gm_m = 1.2,
+        .sea_Hs_m = 2.0,
+        .sea_Tz_s = 8.0,
+    };
+    const sr = try orch.runStage(.feedback_requirements, &params);
+    try std.testing.expect(params.dp_max_excursion_m > 0.0);
+    try std.testing.expect(std.mem.indexOf(u8, sr.message, "coupled") != null);
 }
 
 test "high-fidelity model test extrapolation path" {

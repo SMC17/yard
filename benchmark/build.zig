@@ -29,6 +29,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const towing_tank_mod = b.addModule("yard_towing_tank", .{
+        .root_source_file = b.path("../towing-tank/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
     const mod = b.addModule("yard_benchmark", .{
         .root_source_file = b.path("src/root.zig"),
@@ -40,6 +45,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_naval_arch", .module = naval_mod },
             .{ .name = "yard_similarity", .module = similarity_mod },
             .{ .name = "yard_ittc78", .module = ittc78_mod },
+            .{ .name = "yard_towing_tank", .module = towing_tank_mod },
         },
     });
 

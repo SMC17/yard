@@ -48,6 +48,23 @@ pub fn main(init: std.process.Init) !u8 {
         waves.max_heave_m, waves.significant_heave_m,
     });
 
+    // Coupled DP under irregular waves
+    const coupled = try compose.coupled_dp_waves.simulate(arena.allocator(), .{
+        .length = 100.0,
+        .beam = 16.0,
+        .draft = 6.0,
+        .displacement_vol = 8500.0,
+        .wetted_surface = 2500.0,
+        .sea = .{ .Hs_m = 2.0, .Tz_s = 8.0 },
+        .layout = layout,
+        .duration_s = 90.0,
+        .max_excursion_m = 8.0,
+    });
+    try w.print("--- Coupled DP + Irregular Waves ---\n", .{});
+    try w.print("max excursion = {d:.3} m  sig heave = {d:.3} m  pass = {}\n\n", .{
+        coupled.max_excursion_m, coupled.significant_heave_m, coupled.capability_pass,
+    });
+
     // Pareto campaign + SVG
     var campaign = try compose.pareto_report.runCampaign(arena.allocator(), 6, 2, 0.5);
     defer campaign.deinit(arena.allocator());
@@ -61,5 +78,6 @@ pub fn main(init: std.process.Init) !u8 {
 test "demo modules link" {
     _ = compose.dp_station_keeping;
     _ = compose.irregular_wave_sim;
+    _ = compose.coupled_dp_waves;
     _ = compose.pareto_report;
 }

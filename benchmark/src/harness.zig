@@ -7,6 +7,8 @@ const naval = @import("yard_naval_arch");
 const similarity = @import("yard_similarity");
 const ittc78 = @import("yard_ittc78");
 const hulls = @import("hulls.zig");
+const tank_data = @import("tank_data.zig");
+const tank_extrapolate = @import("tank_extrapolate.zig");
 
 pub const Verdict = enum { pass, fail };
 
@@ -191,6 +193,28 @@ pub fn runAll(allocator: std.mem.Allocator) !Report {
 
         const rel_err = @abs(sim_extrap.P_E_ship - ittc.P_E_ship) / ittc.P_E_ship;
         try check(&results, allocator, "ittc78_cross_check", .kcs, "P_E rel err", 0.0, rel_err, 0.02, .cross_validated);
+    }
+
+    // --- Tank-test ingest + extrapolation (KCS, KVLCC2) ---
+    for ([_]hulls.Id{ .kcs, .kvlcc2 }) |id| {
+        const series = tank_data.getSeries(id) orelse continue;
+        const f = hulls.get(id);
+        const design_fn = f.service_speed / @sqrt(9.80665 * f.L);
+        const extrap = tank_extrapolate.extrapolateAtDesignFn(series, design_fn) catch {
+            try results.append(allocator, .{
+                .case_name = "tank_extrapolation",
+                .hull = id,
+                .verdict = .fail,
+                .metric = "extrapolation",
+                .expected = 0.0,
+                .actual = -1.0,
+                .tolerance = 0.0,
+                .proof_level = .benchmark_hull,
+            });
+            continue;
+        };
+        try check(&results, allocator, "tank_extrapolation", id, "P_E rel err", 0.0, extrap.relative_error, 0.05, .benchmark_hull);
+        try checkPositive(&results, allocator, "prohaska_form_factor", id, "(1+k)", extrap.one_plus_k, .benchmark_hull);
     }
 
     var passed: u32 = 0;

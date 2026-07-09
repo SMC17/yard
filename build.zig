@@ -117,6 +117,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const towing_tank_mod = b.addModule("yard_towing_tank_core", .{
+        .root_source_file = b.path("towing-tank/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const benchmark_mod = b.addModule("yard_benchmark_core", .{
         .root_source_file = b.path("benchmark/src/root.zig"),
         .target = target,
@@ -127,11 +132,17 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_naval_arch", .module = naval_mod },
             .{ .name = "yard_similarity", .module = similarity_mod },
             .{ .name = "yard_ittc78", .module = ittc78_mod },
+            .{ .name = "yard_towing_tank", .module = towing_tank_mod },
         },
     });
     const benchmark_tests = b.addTest(.{ .root_module = benchmark_mod });
     test_core.dependOn(&b.addRunArtifact(benchmark_tests).step);
 
+    const dynpos_mod = b.addModule("yard_dynpos_core", .{
+        .root_source_file = b.path("dynpos/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const spiral_mod = b.addModule("yard_spiral_core", .{
         .root_source_file = b.path("spiral/src/root.zig"),
         .target = target,
@@ -147,16 +158,12 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_seakeeping", .module = seakeeping_mod },
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
+            .{ .name = "yard_dynpos", .module = dynpos_mod },
         },
     });
     const spiral_tests = b.addTest(.{ .root_module = spiral_mod });
     test_core.dependOn(&b.addRunArtifact(spiral_tests).step);
 
-    const dynpos_mod = b.addModule("yard_dynpos_core", .{
-        .root_source_file = b.path("dynpos/src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
     const compose_mod = b.addModule("yard_compose_core", .{
         .root_source_file = b.path("compose/src/root.zig"),
         .target = target,

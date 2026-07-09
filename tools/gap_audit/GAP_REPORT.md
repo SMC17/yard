@@ -188,3 +188,25 @@ Eval: `python tools/agent/yard_agent.py eval --dataset tools/dataset/out/eval.js
 
 \* Eval compares oracle ground truth from exact hidden floats; NL extraction uses rounded
 dimensions from instruction text. Oracle math is exact for extracted spec.
+
+## FS3x Fine-Tune — checkpoint-80 FULL EVAL (2026-07-09) 🟡 n=200
+
+**Train:** Resumed 60 steps from checkpoint-20 → checkpoint-80 (FS3x numerics emphasis)  
+**Eval:** `infer_local.py --batch-size 4 --score` on full `eval.jsonl`
+
+| Metric | JSON ckpt-80 (n=200) | **FS3x ckpt-80 (n=200)** | Target |
+|--------|------------------------|---------------------------|--------|
+| Overall PASS/FAIL | 97.0% | **93.0%** | ≥ 90% ✅ |
+| All 6 criteria exact | 97.0% | **60.0%** | ≥ 90% ❌ |
+| GM_corr within 2 cm | 2.0% | **2.0%** | ≥ 95% ❌ |
+| GM₀ within 2 cm | 2.0% | **2.0%** | ≥ 95% ❌ |
+| Flags superset | 16.0% | **18.0%** | ≥ 95% ❌ |
+
+**Failure modes (n=200):** `numerical_drift` 185/200 (92.5%), `wrong_is_code_threshold` 78/200 (39%),
+`no_assumption_flags` 25/200, `overall_criteria_mismatch` 12/200, `json_parse_failure` 2/200.
+
+**Interpretation:** FS3x did **not** improve numerics over JSON-only at n=200; criteria lane regressed
+(60% vs 97%). Confirms product split: **oracle owns numerics**, fine-tune owns criteria/flags with
+JSON-only checkpoint-80. FS3x warm-start useful for multimodal lane only if criteria recovers.
+
+Raw: `tools/gap_audit/out/fs3x_preds_200.jsonl`

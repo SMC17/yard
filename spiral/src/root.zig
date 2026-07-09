@@ -7,10 +7,12 @@ pub const stages = @import("stages.zig");
 pub const orchestrator = @import("orchestrator.zig");
 pub const optimizer = @import("optimizer.zig");
 pub const codegen = @import("codegen.zig");
+pub const dp_feedback = @import("dp_feedback.zig");
 
 test {
     _ = stages;
     _ = orchestrator;
     _ = optimizer;
     _ = codegen;
+    _ = dp_feedback;
 }
