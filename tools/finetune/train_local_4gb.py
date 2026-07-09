@@ -59,7 +59,10 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--max-seq-len", type=int, default=384,
                         help="384 fits JSON-only; 512 for full CoT")
-    parser.add_argument("--resume", type=Path, default=None, help="Resume from checkpoint dir")
+    parser.add_argument("--resume", type=Path, default=None,
+                        help="Resume trainer state (needs torch>=2.6 for optimizer.pt)")
+    parser.add_argument("--warm-adapter", type=Path, default=None,
+                        help="Load LoRA safetensors only (no optimizer resume)")
     parser.add_argument("--max-steps", type=int, default=None, help="Cap total steps (smoke/4GB)")
     parser.add_argument("--save-steps", type=int, default=10, help="Checkpoint every N steps")
     parser.add_argument("--batch-size", type=int, default=1)
@@ -79,7 +82,7 @@ def main() -> None:
 
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+    from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
     from trl import SFTConfig, SFTTrainer
 
     bnb_config = BitsAndBytesConfig(
@@ -112,7 +115,11 @@ def main() -> None:
         bias="none",
         task_type="CAUSAL_LM",
     )
-    model = get_peft_model(model, lora)
+    if args.warm_adapter:
+        print(f"Warm-start LoRA from {args.warm_adapter} (weights only)")
+        model = PeftModel.from_pretrained(model, str(args.warm_adapter), is_trainable=True)
+    else:
+        model = get_peft_model(model, lora)
     # GTX 1650 (Turing): no bf16; keep trainable LoRA weights in fp32 for grad scaler.
     for name, param in model.named_parameters():
         if param.requires_grad:

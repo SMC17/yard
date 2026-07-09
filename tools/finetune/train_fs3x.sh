@@ -29,7 +29,7 @@ mkdir -p "$OUT"
 python tools/finetune/train_local_4gb.py \
   --data "$DATA" \
   --output "$OUT" \
-  --resume "$WARM" \
+  --warm-adapter "$WARM" \
   --max-samples "$SAMPLES" \
   --max-steps "$STEPS" \
   --max-seq-len 384 \
