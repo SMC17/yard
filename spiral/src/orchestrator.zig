@@ -377,7 +377,6 @@ pub const Orchestrator = struct {
             _ = try self.runHighFidelitySim(params);
             const dp = try self.runCoupledDpFeedback(params);
             params.dp_max_excursion_m = dp.max_excursion_m;
-            params.significant_heave_m = dp.significant_heave_m;
             params.dp_capable = dp.capable and params.gm_m >= 0.5;
             msg = if (params.dp_capable)
                 "feedback: DP capable under coupled irregular-wave sim"
