@@ -54,6 +54,10 @@ pub const Gates = struct {
     gate_wind_mps: f64 = 10.0,
     /// Maximum steady heel at the reference wind [deg].
     max_heel_deg: f64 = 15.0,
+    /// Enforce the IMO weather criterion (IS Code 2.3) as a hard gate.
+    /// Always computed and reported; missions opt in once their windage
+    /// parameterization is validated.
+    require_weather_criterion: bool = false,
 };
 
 pub const MissionSpec = struct {

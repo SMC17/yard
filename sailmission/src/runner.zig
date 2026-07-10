@@ -185,6 +185,9 @@ pub fn renderReportJson(
     try appendCheck(list, gpa, "is_code_overall", report.gate.is_code_overall);
     list.append(gpa, ',') catch return Error.OutOfMemory;
     try appendCheck(list, gpa, "sail_carrying", report.gate.sail_carrying);
+    list.append(gpa, ',') catch return Error.OutOfMemory;
+    try appendCheck(list, gpa, "weather_criterion", report.gate.weather_criterion);
+    try appendFmt(list, gpa, ",\"weather_criterion_raw\":{}", .{report.gate.weather_criterion_pass});
     try appendFmt(list, gpa, ",\"all_pass\":{}}}", .{report.gate.all_pass});
 
     if (report.voyage) |v| {
