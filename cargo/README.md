@@ -43,6 +43,14 @@ sling + cribbing + deck-pressure check.
   with allowable 49 kPa / 294 kPa / 1 MPa.
 - `project.deckPressureVerdict(p, deck)` pass / fail.
 
+## What it is not
+
+Not a cargo securing / lashing analysis suite (see IMO CSS Code workflows
+elsewhere). Not a terminal stowage planner, not a load-computer for intact
+stability, and not a regulatory compliance harness for dangerous-goods
+documentation. Container stacking checks are simplified ISO 1496-1 post ratings
+— not a full CSC inspection or terminal TOS integration.
+
 ## Build and test
 
 ```

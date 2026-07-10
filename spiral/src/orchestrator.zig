@@ -9,6 +9,7 @@ const fossen = @import("yard_fossen");
 const seakeeping = @import("yard_seakeeping");
 const rao = @import("yard_rao_spectrum");
 const strip = @import("yard_strip_theory");
+const benchmark = @import("yard_benchmark");
 const stages = @import("stages.zig");
 const dp_feedback = @import("dp_feedback.zig");
 
@@ -48,6 +49,22 @@ pub const DesignParameters = struct {
     /// DP station-keeping max horizontal excursion [m] (high-fidelity feedback).
     dp_max_excursion_m: f64 = 0.0,
     dp_capable: bool = false,
+    /// Benchmark hull for published tank C_T ingest (optional).
+    tank_hull: TankHull = .none,
+};
+
+pub const TankHull = enum {
+    none,
+    kcs,
+    kvlcc2,
+
+    pub fn toBenchmarkId(self: TankHull) ?benchmark.hulls.Id {
+        return switch (self) {
+            .none => null,
+            .kcs => .kcs,
+            .kvlcc2 => .kvlcc2,
+        };
+    }
 };
 
 pub const StageResult = struct {
@@ -154,8 +171,13 @@ pub const Orchestrator = struct {
         const rho = self.constants.rho_seawater;
         const nu = self.constants.nu;
 
-        if (self.fidelity == .high and params.model_length > 0.0) {
-            return self.stageResistanceModelTest(params, rho, nu);
+        if (self.fidelity == .high or self.fidelity == .ultra) {
+            if (params.tank_hull.toBenchmarkId()) |id| {
+                return self.stageResistanceTankSeries(params, id, rho);
+            }
+            if (params.model_length > 0.0) {
+                return self.stageResistanceModelTest(params, rho, nu);
+            }
         }
 
         const hp = resistance.holtrop.HullParticulars{
@@ -183,6 +205,41 @@ pub const Orchestrator = struct {
             .displacement_t = params.displacement / 1000.0,
             .r_total_n = breakdown.r_total,
             .message = "Holtrop-Mennen 1984 total resistance",
+        };
+    }
+
+    fn stageResistanceTankSeries(
+        self: Orchestrator,
+        params: *DesignParameters,
+        id: benchmark.hulls.Id,
+        rho: f64,
+    ) Error!StageResult {
+        const series = benchmark.tank_data.getSeries(id) orelse return Error.StageFailed;
+        const f = benchmark.hulls.get(id);
+        const design_fn = params.service_speed / @sqrt(self.constants.g * params.length);
+        const extrap = benchmark.tank_extrapolate.extrapolateAtDesignFn(series, design_fn) catch
+            return Error.StageFailed;
+
+        params.estimated_power_kw = extrap.p_e_ship / 1000.0;
+        params.model_length = series.model_length;
+        params.model_c_t = extrap.c_t_model;
+        params.length = f.L;
+        params.beam = f.B;
+        params.draft = f.T;
+        params.c_b = f.C_B;
+        params.displacement = f.displacement_vol * rho;
+
+        const r_total = extrap.p_e_ship / params.service_speed;
+
+        return .{
+            .stage = .resistance_powering,
+            .fidelity = self.fidelity,
+            .gm_m = params.gm_m,
+            .power_kw = params.estimated_power_kw,
+            .displacement_t = params.displacement / 1000.0,
+            .r_total_n = r_total,
+            .message = "Tank C_T ingest + Prohaska + ITTC-78 extrapolation",
+            .proof_level = .benchmark_hull,
         };
     }
 
@@ -512,6 +569,27 @@ test "single spiral loop on cargo-scale hull" {
     try std.testing.expect(result.final.gm_m > 0.0);
     try std.testing.expect(result.final.estimated_power_kw > 0.0);
     try std.testing.expect(result.stage_trace.len >= 10);
+}
+
+test "KCS tank series resistance ingest" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const f = benchmark.hulls.get(.kcs);
+    const rho = naval.PhysicalConstants.default.rho_seawater;
+    var orch = Orchestrator.init(arena.allocator(), 1, .high);
+    var params = DesignParameters{
+        .length = f.L,
+        .beam = f.B,
+        .draft = f.T,
+        .displacement = f.displacement_vol * rho,
+        .service_speed = f.service_speed,
+        .c_b = f.C_B,
+        .tank_hull = .kcs,
+    };
+    const sr = try orch.runStage(.resistance_powering, &params);
+    try std.testing.expect(sr.power_kw > 0.0);
+    try std.testing.expect(std.mem.indexOf(u8, sr.message, "Tank C_T") != null);
 }
 
 test "high-fidelity coupled DP feedback" {

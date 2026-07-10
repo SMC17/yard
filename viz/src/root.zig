@@ -5,8 +5,10 @@
 
 pub const gz_svg = @import("gz_svg.zig");
 pub const pareto_svg = @import("pareto_svg.zig");
+pub const hull_profile_svg = @import("hull_profile_svg.zig");
 
 test {
     _ = gz_svg;
     _ = pareto_svg;
+    _ = hull_profile_svg;
 }
