@@ -39,6 +39,21 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const econ_mod = b.addModule("yard_econ", .{
+        .root_source_file = b.path("../econ/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const arena_mod = b.addModule("yard_arena", .{
+        .root_source_file = b.path("../arena/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const weathercrit_mod = b.addModule("yard_weathercrit", .{
+        .root_source_file = b.path("../weathercrit/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const box_barge_mod = b.addModule("yard_box_barge", .{
         .root_source_file = b.path("../compose/src/box_barge.zig"),
         .target = target,
@@ -61,6 +76,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_era", .module = era_mod },
             .{ .name = "yard_sailaero", .module = sailaero_mod },
             .{ .name = "yard_box_barge", .module = box_barge_mod },
+            .{ .name = "yard_econ", .module = econ_mod },
+            .{ .name = "yard_arena", .module = arena_mod },
+            .{ .name = "yard_weathercrit", .module = weathercrit_mod },
         },
     });
 
@@ -76,6 +94,24 @@ pub fn build(b: *std.Build) void {
         }),
     });
     b.installArtifact(exe);
+
+    const mercury_exe = b.addExecutable(.{
+        .name = "yard-mercury",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/mercury_cli.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "yard_sailmission", .module = mod },
+            },
+        }),
+    });
+    b.installArtifact(mercury_exe);
+
+    const mercury_cmd = b.addRunArtifact(mercury_exe);
+    if (b.args) |args| mercury_cmd.addArgs(args);
+    const mercury_step = b.step("mercury", "Run the Mercury official fleet evaluator");
+    mercury_step.dependOn(&mercury_cmd.step);
 
     const run_cmd = b.addRunArtifact(exe);
     if (b.args) |args| run_cmd.addArgs(args);

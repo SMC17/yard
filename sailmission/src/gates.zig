@@ -6,6 +6,7 @@ const std = @import("std");
 const naval = @import("yard_naval_arch");
 const era = @import("yard_era");
 const box_barge = @import("yard_box_barge");
+const weathercrit = @import("yard_weathercrit");
 const spec = @import("spec.zig");
 
 pub const Error = error{ OutOfMemory, UnknownEra, UnknownMaterial };
@@ -27,6 +28,12 @@ pub const Report = struct {
     /// how much canvas a hull can carry. Without it, unbounded sail area
     /// dominates every sail mission.
     sail_carrying: Check,
+    /// IMO weather criterion (IS Code 2.3), sails struck; value is the
+    /// energy margin area_b - area_a [m rad]. Hard-gated only when the
+    /// mission sets require_weather_criterion.
+    weather_criterion: Check,
+    /// Raw criterion outcome regardless of the mission's gate opt-in.
+    weather_criterion_pass: bool,
     all_pass: bool,
     gm_corrected_m: f64,
 };
@@ -70,6 +77,8 @@ pub fn evaluate(allocator: std.mem.Allocator, mission: spec.MissionSpec, sub: sp
     var gm_check: Check = .{ .pass = false, .value = 0, .limit = mission.gates.min_gm_m };
     var is_check: Check = .{ .pass = false, .value = 0, .limit = 1 };
     var gm: f64 = 0;
+    var curve: [16]weathercrit.GzSample = undefined;
+    var n_curve: usize = 0;
     const stab: ?box_barge.Output = box_barge.evaluate(allocator, .{
         .particulars = .{ .L = sub.hull.loa_m, .B = sub.hull.beam_m, .T = sub.hull.draft_m },
         .loading = .{ .kg_m = sub.hull.kg_m, .tanks = &.{} },
@@ -79,6 +88,10 @@ pub fn evaluate(allocator: std.mem.Allocator, mission: spec.MissionSpec, sub: sp
     };
     if (stab) |s| {
         defer allocator.free(s.gz_curve);
+        n_curve = @min(s.gz_curve.len, curve.len);
+        for (s.gz_curve[0..n_curve], 0..) |p, i| {
+            curve[i] = .{ .angle_deg = p.angle_deg, .gz_m = p.gz_m };
+        }
         gm = s.stability.gm_corrected_m;
         gm_check = .{ .pass = gm >= mission.gates.min_gm_m, .value = gm, .limit = mission.gates.min_gm_m };
         const is_pass = s.is_code.overall == .pass;
@@ -96,6 +109,41 @@ pub fn evaluate(allocator: std.mem.Allocator, mission: spec.MissionSpec, sub: sp
         .limit = mission.gates.max_heel_deg,
     };
 
+    // IMO weather criterion (IS Code 2.3), sails struck: hull windage plus
+    // 10% of the sail plan as bare spars and standing rigging (documented
+    // proxy). Always computed; hard gate only when the mission opts in.
+    var weather_pass = false;
+    var weather_margin: f64 = 0;
+    if (n_curve >= 2) {
+        const freeboard = sub.hull.depth_m - sub.hull.draft_m;
+        const a_hull = sub.hull.loa_m * @max(freeboard, 0.0);
+        const a_rig = 0.10 * sub.rig.area_m2;
+        const area = a_hull + a_rig;
+        const z_centroid = if (area > 0)
+            (a_hull * 0.5 * freeboard + a_rig * 0.4 * @sqrt(a_rig)) / area
+        else
+            0;
+        const wc = weathercrit.evaluate(.{
+            .lwl_m = sub.hull.loa_m,
+            .beam_m = sub.hull.beam_m,
+            .draft_m = sub.hull.draft_m,
+            .cb = sub.hull.cb,
+            .displacement_t = sub.hull.displacement_m3 * 1.025,
+            .gm_m = gm,
+            .og_m = sub.hull.kg_m - sub.hull.draft_m,
+            .windage_area_m2 = area,
+            .windage_lever_z_m = z_centroid + sub.hull.draft_m / 2.0,
+            .gz_curve = curve[0..n_curve],
+        });
+        weather_pass = wc.pass;
+        weather_margin = wc.area_b_m_rad - wc.area_a_m_rad;
+    }
+    const weather_check: Check = .{
+        .pass = if (mission.gates.require_weather_criterion) weather_pass else true,
+        .value = weather_margin,
+        .limit = 0,
+    };
+
     return .{
         .era_envelope = era_check,
         .era_violations = violations,
@@ -103,7 +151,10 @@ pub fn evaluate(allocator: std.mem.Allocator, mission: spec.MissionSpec, sub: sp
         .intact_stability = gm_check,
         .is_code_overall = is_check,
         .sail_carrying = sail_check,
-        .all_pass = era_check.pass and gm_check.pass and is_check.pass and sail_check.pass,
+        .weather_criterion = weather_check,
+        .weather_criterion_pass = weather_pass,
+        .all_pass = era_check.pass and gm_check.pass and is_check.pass and
+            sail_check.pass and weather_check.pass,
         .gm_corrected_m = gm,
     };
 }
@@ -156,4 +207,23 @@ test "unknown era or material is an error, not a pass" {
     var bad_sub = cutty.value;
     bad_sub.material = "unobtainium";
     try std.testing.expectError(Error.UnknownMaterial, evaluate(a, m.value, bad_sub));
+}
+
+test "weather criterion is computed and reported for the baseline" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const m = try spec.parseMission(a, fixtures.tea_race_mission_json);
+    const cutty = try spec.parseSubmission(a, fixtures.cutty_sark_json);
+    const r = try evaluate(a, m.value, cutty.value);
+    // Advisory in m1 (opt-in flag unset): never blocks all_pass...
+    try std.testing.expect(r.weather_criterion.pass);
+    try std.testing.expect(r.all_pass);
+    // ...but the raw outcome and energy margin are computed and finite.
+    try std.testing.expect(std.math.isFinite(r.weather_criterion.value));
+    // A gate-hardened mission flips the flag and the check binds.
+    var hard = m.value;
+    hard.gates.require_weather_criterion = true;
+    const rh = try evaluate(a, hard, cutty.value);
+    try std.testing.expectEqual(r.weather_criterion_pass, rh.weather_criterion.pass);
 }
