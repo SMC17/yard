@@ -7,6 +7,14 @@
 //! westerlies). They are modeling inputs, not measured reanalysis data —
 //! the validation target is aggregate passage time against the historical
 //! record (85-140 days Shanghai->London), pre-registered before first run.
+//!
+//! Weibull structure cross-checked against published marine wind
+//! climatology: shape k ~ 2 in the extratropics, rising to 3-5 in the
+//! trade-wind belts (equatorward flanks of the subtropical highs), lower
+//! in monsoon/variable zones — this file's 2.8 (trades) / 1.8-2.0
+//! (extratropics) / 1.6 (variables) follows that pattern, and the trades'
+//! lambda 7.5-8.0 with k 2.8 gives a ~7 m/s mean (Beaufort 4). Upgrade
+//! path: fit per-leg parameters from ICOADS/pilot-chart reanalysis.
 
 pub const tea_race_mission_json =
     \\{
