@@ -1,0 +1,36 @@
+name: Yard Trials holdout
+
+# Overfitting guard: re-score the whole leaderboard under a private seed.
+# The public leaderboard uses each mission's committed base_seed; this job
+# re-runs everything with TRIALS_HOLDOUT_SEED (repo secret) and publishes
+# the per-entry objective drift as a build artifact. Large public-vs-holdout
+# drift on one entry = a design tuned to the public weather draws.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1" # weekly, Monday 05:17 UTC
+
+jobs:
+  holdout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Holdout re-score
+        env:
+          HOLDOUT_SEED: ${{ secrets.TRIALS_HOLDOUT_SEED }}
+        run: |
+          if [ -z "$HOLDOUT_SEED" ]; then
+            echo "TRIALS_HOLDOUT_SEED secret not set; skipping" && exit 0
+          fi
+          python3 trials/score.py --holdout-seed "$HOLDOUT_SEED" | tee holdout-report.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: holdout-report
+          path: |
+            holdout-report.txt
+            trials/results-holdout/
+          if-no-files-found: ignore

@@ -13,3 +13,4 @@ tools/dataset/out/eval_multimodal.jsonl
 models/
 out/
 zig-out/
+trials/results-holdout/
