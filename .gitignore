@@ -12,3 +12,4 @@ tools/dataset/out/train_multimodal.jsonl
 tools/dataset/out/eval_multimodal.jsonl
 models/
 out/
+zig-out/

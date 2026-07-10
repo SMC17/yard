@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yard Trials — Coastal trader - Rotterdam / Immingham round trip</title>
+<style>
+:root {
+  --surface: #fcfcfb; --page: #f9f9f7; --ink: #0b0b0b; --ink-2: #52514e;
+  --front: #2a78d6; --grid: #e4e3df;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --surface: #1a1a19; --page: #0d0d0d; --ink: #ffffff; --ink-2: #c3c2b7;
+           --front: #3987e5; --grid: #33332f; }
+}
+body { background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, sans-serif;
+       max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+h1 { font-size: 1.3rem; } .sub { color: var(--ink-2); }
+svg { background: var(--surface); border-radius: 8px; width: 100%; height: auto; }
+.grid { stroke: var(--grid); stroke-width: 1; }
+.tick, .axis { fill: var(--ink-2); font-size: 11px; }
+.front circle { fill: var(--front); }
+.dominated circle { fill: none; stroke: var(--ink-2); stroke-width: 1.5; }
+g text { fill: var(--ink); font-size: 11px; }
+.legend { color: var(--ink-2); margin: .4rem 0 1.2rem; }
+.legend .dot { color: var(--front); }
+table { border-collapse: collapse; width: 100%; overflow-x: auto; display: block; }
+th, td { text-align: left; padding: .35rem .6rem; border-bottom: 1px solid var(--grid);
+          font-variant-numeric: tabular-nums; white-space: nowrap; }
+.front-cell { color: var(--front); } .dom-cell { color: var(--ink-2); }
+</style></head><body>
+<h1>Yard Trials — Coastal trader - Rotterdam / Immingham round trip</h1>
+<p class="sub">2 scored entries, 2 on the Pareto front.
+Every point re-verified by deterministic physics; gate-failed designs never appear.</p>
+<svg viewBox="0 0 640 420" role="img" aria-label="Pareto scatter of voyage_days vs loss_rate">
+<line class="grid" x1="64.0" y1="20" x2="64.0" y2="372"/><text class="tick" x="64.0" y="390" text-anchor="middle">0.923</text><line class="grid" x1="64" y1="20.0" x2="620" y2="20.0"/><text class="tick" x="56" y="24.0" text-anchor="end">0.12</text><line class="grid" x1="203.0" y1="20" x2="203.0" y2="372"/><text class="tick" x="203.0" y="390" text-anchor="middle">0.964</text><line class="grid" x1="64" y1="108.0" x2="620" y2="108.0"/><text class="tick" x="56" y="112.0" text-anchor="end">0.06</text><line class="grid" x1="342.0" y1="20" x2="342.0" y2="372"/><text class="tick" x="342.0" y="390" text-anchor="middle">1</text><line class="grid" x1="64" y1="196.0" x2="620" y2="196.0"/><text class="tick" x="56" y="200.0" text-anchor="end">0</text><line class="grid" x1="481.0" y1="20" x2="481.0" y2="372"/><text class="tick" x="481.0" y="390" text-anchor="middle">1.04</text><line class="grid" x1="64" y1="284.0" x2="620" y2="284.0"/><text class="tick" x="56" y="288.0" text-anchor="end">-0.06</text><line class="grid" x1="620.0" y1="20" x2="620.0" y2="372"/><text class="tick" x="620.0" y="390" text-anchor="middle">1.08</text><line class="grid" x1="64" y1="372.0" x2="620" y2="372.0"/><text class="tick" x="56" y="376.0" text-anchor="end">-0.12</text>
+<text class="axis" x="342.0" y="412" text-anchor="middle">voyage_days (min)</text>
+<text class="axis" x="14" y="196.0" text-anchor="middle" transform="rotate(-90 14 196.0)">loss_rate (min)</text>
+<g class="front"><circle cx="566.2" cy="196.0" r="5"><title>baseline-coaster: voyage_days 1.069, loss_rate 0, transport_cost_index 17.45, cargo_delivered_t 5000</title></circle><text x="575.2" y="200.0">baseline-coaster</text></g><g class="front"><circle cx="117.8" cy="196.0" r="5"><title>sprinter: voyage_days 0.9389, loss_rate 0, transport_cost_index 30.65, cargo_delivered_t 5000</title></circle><text x="126.8" y="200.0">sprinter</text></g>
+</svg>
+<p class="legend"><span class="dot">&#9679;</span> Pareto front &nbsp;&nbsp; &#9675; dominated
+&nbsp;&nbsp;&middot;&nbsp; scatter shows the first two objectives; the table (and front/dominated
+status) uses all 4.</p>
+<table><thead><tr><th>submission</th><th>author</th><th>status</th><th>voyage_days (min)</th><th>loss_rate (min)</th><th>transport_cost_index (min)</th><th>cargo_delivered_t (max)</th></tr></thead>
+<tbody><tr><td>sprinter</td><td>yard</td><td class="front-cell">&#9679; front</td><td>0.938933</td><td>0</td><td>30.6468</td><td>5000</td></tr><tr><td>baseline-coaster</td><td>yard</td><td class="front-cell">&#9679; front</td><td>1.06913</td><td>0</td><td>17.4482</td><td>5000</td></tr></tbody></table>
+</body></html>
