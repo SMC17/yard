@@ -165,6 +165,21 @@ pub fn build(b: *std.Build) void {
     const spiral_tests = b.addTest(.{ .root_module = spiral_mod });
     test_core.dependOn(&b.addRunArtifact(spiral_tests).step);
 
+    const csr_mod = b.addModule("yard_csr_core", .{
+        .root_source_file = b.path("csr/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const stir_mod = b.addModule("yard_stir_core", .{
+        .root_source_file = b.path("stir/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const cii_mod = b.addModule("yard_cii_core", .{
+        .root_source_file = b.path("cii/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const compose_mod = b.addModule("yard_compose_core", .{
         .root_source_file = b.path("compose/src/root.zig"),
         .target = target,
@@ -181,6 +196,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_dynpos", .module = dynpos_mod },
             .{ .name = "yard_viz", .module = viz_mod },
             .{ .name = "yard_spiral", .module = spiral_mod },
+            .{ .name = "yard_csr", .module = csr_mod },
+            .{ .name = "yard_stir", .module = stir_mod },
+            .{ .name = "yard_cii", .module = cii_mod },
         },
     });
     const compose_tests = b.addTest(.{ .root_module = compose_mod });
@@ -327,4 +345,19 @@ pub fn build(b: *std.Build) void {
         .root_module = sim_demo_mod,
     });
     run_sim_suite.dependOn(&b.addRunArtifact(sim_exe).step);
+
+    const vvk_options = b.addOptions();
+    vvk_options.addOption(bool, "vulkan_enabled", false);
+    const vvk_options_mod = vvk_options.createModule();
+    const vvk_mod = b.createModule(.{
+        .root_source_file = b.path("viz-vulkan/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_viz", .module = viz_mod },
+            .{ .name = "build_options", .module = vvk_options_mod },
+        },
+    });
+    const vvk_test = b.addTest(.{ .root_module = vvk_mod });
+    test_core.dependOn(&b.addRunArtifact(vvk_test).step);
 }

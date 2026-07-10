@@ -31,9 +31,10 @@ Extended coefficients live in `holtrop_extended.zig`:
 - Transom immersion `c_5`, roughness allowance `C_A` (short and bulb-corrected).
 - Appendage resistance with HM 1984 Table 5 form factors.
 
-Still out of scope:
+`totalResistance` now accepts optional `bulb` and `transom` geometry on
+`HullParticulars` — computes c_2, c_5, and R_B when supplied.
 
-- Full bulb resistance branch (P_B, Fn_i, R_B) in totalResistance.
+Still out of scope:
 - Propulsion-factor chain (wake w, thrust deduction t, eta_R) — see `yard-ittc78`.
 - CFD or model-test correlation beyond Holtrop envelope.
 

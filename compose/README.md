@@ -27,6 +27,9 @@ Multi-module workflows that wire yard primitives into end-to-end pipelines.
 - **`pareto_report`** — spiral optimizer Pareto front → SVG via `yard-viz`.
 - **`design_spiral`** — thin wrapper over `yard-spiral` with naval-arch
   validity flags and objective scoring.
+- **`regulatory_assessment`** — CSR section check + STIR dead-ship VL1 +
+  CII rating bundle with explicit `RegulatoryBoundary` (kernel only, not
+  class approval).
 
 ## What it is not
 
