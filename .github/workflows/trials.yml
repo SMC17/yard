@@ -1,0 +1,33 @@
+name: Yard Trials
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mission/**"
+      - "trials/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mission/**"
+      - "trials/**"
+
+jobs:
+  rescore:
+    name: Server-side re-execution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Mission runner tests
+        run: cd mission && zig build test --summary all
+      - name: Re-score all submissions (determinism check, run 1)
+        run: python3 trials/score.py
+      - name: Re-score again and require byte-identical results
+        run: python3 trials/score.py --check
+      - name: Leaderboard matches committed results
+        run: git diff --exit-code trials/results/
+      - name: Render frontier pages
+        run: python3 trials/render_frontier.py
