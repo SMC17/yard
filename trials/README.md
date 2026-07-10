@@ -47,8 +47,35 @@ render_frontier.py  emits static Pareto pages under trials/site/
 
 ## Roadmap
 
-m0 (modern coastal trader) is the plumbing rung. Next: Age-of-Sail missions
+m0 (modern coastal trader) proved the plumbing; **m1-tea-race-1866 is live**:
 on the `era` + `sailaero` modules — tea-clipper route records with the
 historical ships as baseline entries, then East Indiaman fleet economics on
 `econ`, then two-sided convoy wargames. Era envelopes, tonnage laws, and
 treaty caps are already in the `era` module.
+
+## m1 — the tea race
+
+`sailmission/missions/m1-tea-race-1866/`: Shanghai to London under 1866
+constraints (era module: clipper envelope, period materials, sail only).
+Physics: ORC-derived square-rig polars + leeway drag + ITTC-57 friction,
+segmented Monte Carlo over six documented wind-climate legs, sail-carrying
+gate (wind heeling vs righting) so canvas is bounded by physics, not rules.
+**Cutty Sark sails the board as a baseline entry** — beat the historical
+record holder or explain why you can't.
+
+## Agent track
+
+`trials/agent_loop.py` runs the LLM-benchmark contract: mission spec +
+seed design + a hard oracle-call budget; score is best gate-passing
+objective vector within budget, and the trace is the sample-efficiency
+curve. `--mode mock` is the CI-safe reference agent; `--mode openrouter`
+lets a hosted model (:free only) design against the same budget. Geometry
+consistency is enforced server-side: agents steer dimensions, never
+self-declared hydrodynamics.
+
+## Holdout seeds
+
+`trials-holdout.yml` re-scores the board weekly under a private seed
+(`TRIALS_HOLDOUT_SEED` secret) and publishes per-entry objective drift.
+A design that shines on the public seed and collapses on holdout was tuned
+to the weather draws, not the physics.

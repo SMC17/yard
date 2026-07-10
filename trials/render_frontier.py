@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MISSIONS_DIR = ROOT / "mission" / "missions"
+MISSION_DIRS = [ROOT / "mission" / "missions", ROOT / "sailmission" / "missions"]
 RESULTS_DIR = ROOT / "trials" / "results"
 SITE_DIR = ROOT / "trials" / "site"
 
@@ -153,7 +153,11 @@ status) uses all {len(objectives)}.</p>
 
 def main() -> None:
     SITE_DIR.mkdir(parents=True, exist_ok=True)
-    for mission_dir in sorted(MISSIONS_DIR.iterdir()):
+    mission_dirs = []
+    for base in MISSION_DIRS:
+        if base.is_dir():
+            mission_dirs.extend(sorted(base.iterdir()))
+    for mission_dir in mission_dirs:
         mf = mission_dir / "mission.json"
         if not mf.exists():
             continue

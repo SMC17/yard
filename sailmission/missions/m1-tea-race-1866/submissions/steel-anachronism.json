@@ -1,0 +1,12 @@
+{
+  "schema": "yard-sail-submission/v0",
+  "id": "steel-anachronism",
+  "author": "yard",
+  "material": "mild_steel",
+  "hull": {
+    "loa_m": 64.7, "beam_m": 11.0, "draft_m": 6.1, "depth_m": 7.5,
+    "cb": 0.55, "displacement_m3": 2080.0, "wetted_surface_m2": 1010.0,
+    "kg_m": 3.7, "cr": 0.0012, "form_factor": 1.2
+  },
+  "rig": { "kind": "square", "area_m2": 2970.0, "min_brace_deg": 30.0 }
+}
