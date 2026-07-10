@@ -23,7 +23,7 @@
 //   formFactor1984        (1+k1) via the 1984 reanalysis
 //   waveResistanceCoeff   non-dimensional R_W / (rho g V_disp) for any
 //                          Fn; handles the three-branch logic.
-//   totalResistance       R_F (1+k) + R_W. No bulb, no transom, no C_A.
+//   totalResistance       R_F (1+k) + R_W + R_B (optional bulb/transom).
 //
 // Validity envelope (PIAS aggregate; the per-ship-type Table I from
 // Holtrop 1984 ISP 31 is still blocked):
@@ -48,6 +48,21 @@ pub const Error = error{
 /// L_WL measured from amidships, FORWARD positive (Holtrop convention).
 /// `c_stern` is the stern-shape parameter: -10 for pram with gondola,
 /// -25 for V-shaped, 0 for normal, +10 for U-shaped (Holtrop 1982 Table 1).
+/// Optional bulbous-bow geometry for c_2 / R_B terms (Holtrop 1984).
+pub const BulbGeometry = struct {
+    /// Transverse projected bulb area at FP [m²].
+    A_BT: f64,
+    /// Forward draft [m].
+    T_F: f64,
+    /// Bulb-tip CG height above keel [m].
+    h_B: f64,
+};
+
+/// Optional immersed-transom area for c_5 correction.
+pub const TransomGeometry = struct {
+    A_T: f64,
+};
+
 pub const HullParticulars = struct {
     L: f64,
     B: f64,
@@ -60,6 +75,8 @@ pub const HullParticulars = struct {
     C_WP: f64,
     lcb_pct: f64,
     c_stern: f64 = 0.0,
+    bulb: ?BulbGeometry = null,
+    transom: ?TransomGeometry = null,
 };
 
 pub const Environment = struct {
@@ -142,15 +159,36 @@ fn c1(hp: HullParticulars) f64 {
         powF(90.0 - iE, -1.37565);
 }
 
-fn c2(_: HullParticulars) f64 {
-    // No bulbous bow: c_3 = 0; c_2 = exp(-1.89 sqrt(0)) = 1.0.
-    return 1.0;
+fn c3(hp: HullParticulars, bulb: BulbGeometry) f64 {
+    const denom = hp.B * hp.T * (0.31 * @sqrt(bulb.A_BT) + bulb.T_F - bulb.h_B);
+    if (denom <= 0.0) return 0.0;
+    return 0.56 * powF(bulb.A_BT, 1.5) / denom;
+}
+
+fn c2(hp: HullParticulars) f64 {
+    const bulb = hp.bulb orelse return 1.0;
+    const c_3 = c3(hp, bulb);
+    if (c_3 <= 0.0) return 1.0;
+    return @exp(-1.89 * @sqrt(c_3));
 }
 
 fn c5(hp: HullParticulars) f64 {
-    // No immersed transom: A_T = 0; c_5 = 1 - 0 = 1.
-    _ = hp;
-    return 1.0;
+    const transom = hp.transom orelse return 1.0;
+    return 1.0 - 0.8 * transom.A_T / (hp.B * hp.T * hp.C_M);
+}
+
+fn bulbResistance(hp: HullParticulars, v: f64, env: Environment) f64 {
+    const bulb = hp.bulb orelse return 0.0;
+    const denom_pb = bulb.T_F - 1.5 * bulb.h_B;
+    if (denom_pb <= 0.0) return 0.0;
+    const p_b = 0.56 * @sqrt(bulb.A_BT) / denom_pb;
+    if (p_b <= 0.0) return 0.0;
+    const numer_fn = bulb.T_F - bulb.h_B - 0.25 * @sqrt(bulb.A_BT);
+    if (numer_fn <= 0.0) return 0.0;
+    const fn_i = v / @sqrt(env.g * numer_fn + 0.15 * v * v);
+    const decay = @exp(-3.0 / (p_b * p_b));
+    const denom = 1.0 + fn_i * fn_i;
+    return 0.11 * decay * powF(fn_i, 3) * powF(bulb.A_BT, 1.5) * env.rho * env.g / denom;
 }
 
 fn m1(hp: HullParticulars) f64 {
@@ -207,16 +245,18 @@ fn waveResistanceHighFn(hp: HullParticulars, fn_val: f64, env: Environment) f64 
 
 /// Total resistance R_F (1+k) + R_W.
 ///
-/// Returns a breakdown plus the sum. Does NOT include bulb resistance,
-/// immersed-transom resistance, model-ship correlation allowance, or
-/// appendages.
+/// Returns a breakdown plus the sum. Optional bulb R_B and transom c_5
+/// when geometry is supplied. Does NOT include C_A or appendages.
 pub const ResistanceBreakdown = struct {
     rn: f64,
     fn_val: f64,
     c_f: f64,
     r_f: f64,
     one_plus_k: f64,
+    c_2: f64,
+    c_5: f64,
     r_w: f64,
+    r_b: f64,
     r_total: f64,
 };
 
@@ -225,15 +265,21 @@ pub fn totalResistance(hp: HullParticulars, v: f64, env: Environment) ittc.Error
     const c_f = try ittc.cF(rn);
     const r_f = 0.5 * env.rho * v * v * hp.S * c_f;
     const k = formFactor1984(hp);
+    const c_2_val = c2(hp);
+    const c_5_val = c5(hp);
     const r_w = waveResistance(hp, v, env);
+    const r_b = bulbResistance(hp, v, env);
     return .{
         .rn = rn,
         .fn_val = v / @sqrt(env.g * hp.L),
         .c_f = c_f,
         .r_f = r_f,
         .one_plus_k = k,
+        .c_2 = c_2_val,
+        .c_5 = c_5_val,
         .r_w = r_w,
-        .r_total = r_f * k + r_w,
+        .r_b = r_b,
+        .r_total = r_f * k + r_w + r_b,
     };
 }
 
@@ -345,6 +391,28 @@ test "c_stern shift changes form factor in expected direction" {
     const k_u = formFactor1984(hp);
     try std.testing.expect(k_v < k_normal);
     try std.testing.expect(k_u > k_normal);
+}
+
+test "c_2 below 1 when bulb geometry supplied" {
+    var hp = fixtureCargo();
+    hp.bulb = .{ .A_BT = 2.56, .T_F = 8.0, .h_B = 4.0 };
+    try std.testing.expect(c2(hp) < 1.0);
+    try std.testing.expect(c2(hp) > 0.0);
+}
+
+test "c_5 below 1 when transom area supplied" {
+    var hp = fixtureCargo();
+    hp.transom = .{ .A_T = 12.0 };
+    try std.testing.expect(c5(hp) < 1.0);
+}
+
+test "totalResistance includes R_B with bulb" {
+    var hp = fixtureCargo();
+    hp.bulb = .{ .A_BT = 10.0, .T_F = 15.0, .h_B = 5.0 };
+    const env: Environment = .{};
+    const br = try totalResistance(hp, 8.0, env);
+    try std.testing.expect(br.r_b >= 0.0);
+    try std.testing.expect(br.r_total >= br.r_f * br.one_plus_k + br.r_w);
 }
 
 test "totalResistance regression lock at V=6 m/s on cargo fixture" {

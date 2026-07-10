@@ -13,6 +13,7 @@ pub const dp_station_keeping = @import("dp_station_keeping.zig");
 pub const coupled_dp_waves = @import("coupled_dp_waves.zig");
 pub const pareto_report = @import("pareto_report.zig");
 pub const design_spiral = @import("design_spiral.zig");
+pub const regulatory_assessment = @import("regulatory_assessment.zig");
 
 test {
     _ = box_barge;
@@ -26,4 +27,5 @@ test {
     _ = coupled_dp_waves;
     _ = pareto_report;
     _ = design_spiral;
+    _ = regulatory_assessment;
 }

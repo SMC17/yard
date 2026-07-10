@@ -110,6 +110,39 @@ pub const ProofLevel = enum {
     class_society,
 };
 
+/// Explicit non-goals for regulatory / class-society workflows.
+pub const RegulatoryExclusion = enum {
+    not_class_approval,
+    not_statutory_certificate,
+    not_full_rulebook,
+    not_operational_waiver,
+    kernel_only,
+};
+
+pub const RegulatoryExclusions = std.EnumSet(RegulatoryExclusion);
+
+/// Bundle attached to regulatory compose outputs — what this result is NOT.
+pub const RegulatoryBoundary = struct {
+    exclusions: RegulatoryExclusions,
+    proof_level: ProofLevel = .unit_tested,
+    disclaimer: []const u8 = "Computational kernel output; not a class-society submission.",
+
+    pub fn defaultKernel() RegulatoryBoundary {
+        var ex: RegulatoryExclusions = .{};
+        ex.insert(.not_class_approval);
+        ex.insert(.not_statutory_certificate);
+        ex.insert(.not_full_rulebook);
+        ex.insert(.kernel_only);
+        return .{ .exclusions = ex };
+    }
+};
+
+test "RegulatoryBoundary defaults exclude class approval" {
+    const b = RegulatoryBoundary.defaultKernel();
+    try std.testing.expect(b.exclusions.contains(.not_class_approval));
+    try std.testing.expect(b.exclusions.contains(.kernel_only));
+}
+
 test "PrincipalParticulars ratios" {
     const p: PrincipalParticulars = .{ .L = 10.0, .B = 4.0, .T = 1.5 };
     try std.testing.expectApproxEqAbs(@as(f64, 2.5), p.lOverB(), 1e-12);

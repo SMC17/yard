@@ -86,6 +86,22 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const csr_mod = b.addModule("yard_csr", .{
+        .root_source_file = b.path("../csr/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const stir_mod = b.addModule("yard_stir", .{
+        .root_source_file = b.path("../stir/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const cii_mod = b.addModule("yard_cii", .{
+        .root_source_file = b.path("../cii/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const mod = b.addModule("yard_compose", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
@@ -102,6 +118,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_dynpos", .module = dynpos_mod },
             .{ .name = "yard_viz", .module = viz_mod },
             .{ .name = "yard_spiral", .module = spiral_mod },
+            .{ .name = "yard_csr", .module = csr_mod },
+            .{ .name = "yard_stir", .module = stir_mod },
+            .{ .name = "yard_cii", .module = cii_mod },
         },
     });
 

@@ -1,0 +1,9 @@
+{
+  "title": "KCS Hull Preview",
+  "hull": {
+    "kind": "wigley",
+    "length_m": 230.7,
+    "beam_m": 32.2,
+    "draft_m": 10.8
+  }
+}

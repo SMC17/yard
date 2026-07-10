@@ -17,6 +17,7 @@ yard-compose-zig v0.1.0. Pre-1.0; bound by Zig 0.16 per `~/CONVENTIONS.md` C2.
 | `coupled_dp_waves` | `unit-tested` | irregular sway + DP under Hs=2 |
 | `design_spiral` | `unit-tested` | mid-fidelity cargo hull via yard-spiral |
 | `pareto_report` | `unit-tested` | spiral optimizer front → pareto_svg |
+| `regulatory_assessment` | `unit-tested` | CSR + STIR + CII bundle with RegulatoryBoundary |
 
 ## Composition
 

@@ -45,6 +45,9 @@ python eval/seakeeping_harness.py --dataset dataset/out/seakeeping_eval.jsonl
 echo "=== 10. Portfolio documentation gate ==="
 python portfolio_audit/audit.py --strict
 
+echo "=== 11. Feature matrix (README bullets vs tests) ==="
+python portfolio_audit/feature_matrix.py --min-coverage 40
+
 echo "=== Done ==="
 echo "Train: $(wc -l < dataset/out/train.jsonl) records"
 echo "Eval:  $(wc -l < dataset/out/eval.jsonl) records"

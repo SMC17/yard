@@ -81,6 +81,7 @@ and test suite.
 | [tug](tug/) | escort-tug performance |
 | [vimstab](vimstab/) | container-stack lateral load and stability |
 | [viz](viz/) | deterministic SVG visualization (GZ, Pareto, hull profiles) |
+| [viz-vulkan](viz-vulkan/) | scene-graph renderer (headless SVG; Vulkan stub) |
 | [windaero](windaero/) | ship wind-coefficient estimation |
 
 ## Platform

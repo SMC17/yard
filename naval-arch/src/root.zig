@@ -18,6 +18,9 @@ pub const IsCodeResult = types.IsCodeResult;
 pub const ValidityFlag = types.ValidityFlag;
 pub const ValidityFlags = types.ValidityFlags;
 pub const ProofLevel = types.ProofLevel;
+pub const RegulatoryExclusion = types.RegulatoryExclusion;
+pub const RegulatoryExclusions = types.RegulatoryExclusions;
+pub const RegulatoryBoundary = types.RegulatoryBoundary;
 
 test {
     _ = types;
