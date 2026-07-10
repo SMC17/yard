@@ -1,0 +1,36 @@
+{
+  "schema": "yard-mission/v0",
+  "id": "m0-coastal-trader",
+  "title": "Coastal trader - Rotterdam / Immingham round trip",
+  "era": {
+    "id": "modern",
+    "max_loa_m": 140.0,
+    "max_beam_m": 22.0,
+    "max_draft_m": 7.5,
+    "min_freeboard_frac": 0.05,
+    "max_l_over_d": 15.0
+  },
+  "waypoints": [
+    { "name": "Rotterdam", "lat_deg": 51.95, "lon_deg": 4.14 },
+    { "name": "Immingham", "lat_deg": 53.63, "lon_deg": -0.19 },
+    { "name": "Rotterdam", "lat_deg": 51.95, "lon_deg": 4.14 }
+  ],
+  "environment": {
+    "hs_weibull_k": 1.6,
+    "hs_weibull_lambda_m": 1.8,
+    "storm_hs_m": 6.5,
+    "storm_loss_prob": 0.02
+  },
+  "monte_carlo": { "runs": 200, "base_seed": 20260710 },
+  "gates": {
+    "min_gm_m": 0.15,
+    "require_is_code": true,
+    "min_calm_speed_mps": 3.0
+  },
+  "objectives": [
+    { "id": "voyage_days", "direction": "min" },
+    { "id": "loss_rate", "direction": "min" },
+    { "id": "transport_cost_index", "direction": "min" },
+    { "id": "cargo_delivered_t", "direction": "max" }
+  ]
+}

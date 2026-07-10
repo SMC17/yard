@@ -1,0 +1,30 @@
+{
+  "schema": "yard-submission/v0",
+  "id": "baseline-coaster",
+  "author": "yard",
+  "hull": {
+    "loa_m": 100.0,
+    "beam_m": 16.0,
+    "draft_m": 6.0,
+    "depth_m": 9.0,
+    "cb": 0.65,
+    "cm": 0.98,
+    "cp": 0.66,
+    "cwp": 0.78,
+    "lcb_pct": -1.0,
+    "wetted_surface_m2": 2500.0,
+    "displacement_m3": 8500.0
+  },
+  "loading": {
+    "kg_m": 5.5,
+    "cargo_t": 5000.0,
+    "tanks": [
+      { "l_m": 20.0, "b_m": 8.0, "rho_fluid": 900.0 }
+    ]
+  },
+  "propulsion": {
+    "installed_kw": 4000.0,
+    "propulsive_efficiency": 0.65,
+    "service_fraction": 0.85
+  }
+}
