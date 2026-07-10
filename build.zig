@@ -159,6 +159,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
             .{ .name = "yard_dynpos", .module = dynpos_mod },
+            .{ .name = "yard_benchmark", .module = benchmark_mod },
         },
     });
     const spiral_tests = b.addTest(.{ .root_module = spiral_mod });
@@ -270,6 +271,26 @@ pub fn build(b: *std.Build) void {
         .root_module = spiral_demo_mod,
     });
     run_spiral.dependOn(&b.addRunArtifact(spiral_exe).step);
+
+    const spiral_kcs_mod = b.createModule(.{
+        .root_source_file = b.path("examples/design-spiral-kcs/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_benchmark", .module = benchmark_mod },
+            .{ .name = "yard_spiral", .module = spiral_mod },
+            .{ .name = "yard_naval_arch", .module = naval_mod },
+        },
+    });
+    const spiral_kcs_tests = b.addTest(.{ .root_module = spiral_kcs_mod });
+    test_core.dependOn(&b.addRunArtifact(spiral_kcs_tests).step);
+
+    const run_spiral_kcs = b.step("run-spiral-kcs", "Run Evans spiral KCS tank-ingest demo");
+    const spiral_kcs_exe = b.addExecutable(.{
+        .name = "design-spiral-kcs",
+        .root_module = spiral_kcs_mod,
+    });
+    run_spiral_kcs.dependOn(&b.addRunArtifact(spiral_kcs_exe).step);
 
     const bench_mod = b.createModule(.{
         .root_source_file = b.path("examples/benchmark-validation/main.zig"),

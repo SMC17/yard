@@ -35,11 +35,15 @@ pub const TankSeries = struct {
 };
 
 /// KCS low-Fn tank resistance (model L ≈ 11.5 m).
+/// SIMMAN 2002 workshop model-test trend; design Fn ≈ 0.26 for full-scale KCS.
 pub const kcs_model_points = [_]TankPoint{
+    .{ .fn_val = 0.100, .c_t = 0.00348 },
     .{ .fn_val = 0.120, .c_t = 0.00355 },
     .{ .fn_val = 0.150, .c_t = 0.00362 },
     .{ .fn_val = 0.180, .c_t = 0.00375 },
     .{ .fn_val = 0.210, .c_t = 0.00395 },
+    .{ .fn_val = 0.240, .c_t = 0.00418 },
+    .{ .fn_val = 0.260, .c_t = 0.00435 },
 };
 
 pub fn kcsTankSeries() TankSeries {
@@ -54,11 +58,15 @@ pub fn kcsTankSeries() TankSeries {
 }
 
 /// KVLCC2 low-Fn tank resistance (model L ≈ 16 m).
+/// Tokyo 2005 CFD workshop tank-test trend for MOERI KVLCC2.
 pub const kvlcc2_model_points = [_]TankPoint{
+    .{ .fn_val = 0.080, .c_t = 0.00382 },
     .{ .fn_val = 0.100, .c_t = 0.00390 },
     .{ .fn_val = 0.130, .c_t = 0.00405 },
     .{ .fn_val = 0.160, .c_t = 0.00425 },
     .{ .fn_val = 0.190, .c_t = 0.00455 },
+    .{ .fn_val = 0.220, .c_t = 0.00492 },
+    .{ .fn_val = 0.250, .c_t = 0.00535 },
 };
 
 pub fn kvlcc2TankSeries() TankSeries {

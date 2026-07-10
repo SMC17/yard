@@ -2,16 +2,26 @@
 
 Deterministic visualization primitives for yard workflows.
 
-## Phase 1 (now)
+Proof level: `unit-tested` (oracle-verified SVG export; no GPU deps)
 
-- `gz_svg.zig` — GZ stability curve → SVG (oracle-verified, no GPU deps)
-- `render_cli.zig` — CLI export from JSON
+## What it does
 
-## Phase 2 (viz-vulkan/)
+- **`gz_svg`** — GZ stability curve → SVG with optional IS Code threshold
+  overlays.
+- **`pareto_svg`** — multi-objective Pareto front scatter (power vs heave, GM
+  labels) for spiral optimization campaigns.
+- **`hull_profile_svg`** — 2D hull profile (waterline + midship section) for
+  box-barge and Wigley parametric forms.
+- **`render_cli`** — CLI export from JSON oracle output.
 
-Vulkan 3D hull + pressure/wave overlays. See `../viz-vulkan/ROADMAP.md`.
+## What it is not
 
-## Usage
+Not interactive 3D rendering. Vulkan hull and pressure/wave overlays live in
+`../viz-vulkan/` (Phase 2). Not a charting library, GIS viewer, or
+classification-society drawing package. SVG output is deterministic and
+file-based — not a live dashboard.
+
+## Build and test
 
 ```sh
 cd viz && zig build test
@@ -19,3 +29,7 @@ zig build render-gz -- oracle_output.json -o curve.svg
 ```
 
 Python mirror (dataset pipeline): `tools/viz/render_gz_svg.py`
+
+## License
+
+Apache-2.0. See `LICENSE`.

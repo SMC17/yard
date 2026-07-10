@@ -33,6 +33,18 @@ python dataset/render_multimodal.py --input dataset/out/eval.jsonl \
   --output dataset/out/eval_multimodal.jsonl \
   --images-dir dataset/out/images --max 50
 
+echo "=== 8. Benchmark harness flywheel ==="
+(cd .. && zig build run-benchmark)
+python dataset/export_benchmark_cases.py --output dataset/out/benchmark_eval.jsonl
+python eval/benchmark_harness.py --dataset dataset/out/benchmark_eval.jsonl
+
+echo "=== 9. Seakeeping eval flywheel ==="
+python dataset/generate_seakeeping.py --samples 50 --output dataset/out/seakeeping_eval.jsonl --split eval --seed 9999
+python eval/seakeeping_harness.py --dataset dataset/out/seakeeping_eval.jsonl
+
+echo "=== 10. Portfolio documentation gate ==="
+python portfolio_audit/audit.py --strict
+
 echo "=== Done ==="
 echo "Train: $(wc -l < dataset/out/train.jsonl) records"
 echo "Eval:  $(wc -l < dataset/out/eval.jsonl) records"

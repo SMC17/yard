@@ -21,21 +21,21 @@ and the 0.4 to 0.55 transition blend.
   (c2, c5, c7, c15, c16, c17, m1, m3, m4, lambda) per Holtrop 1984.
 - Total resistance `R_F (1+k) + R_W` with a typed breakdown struct.
 
-## What it is not (v0.0.0)
+## What it is not
 
-This release covers friction, form factor, and wave resistance only.
-The following components are deferred to v0.1.0:
+`holtrop.zig` covers friction, form factor, and wave resistance only — no
+bulb, transom, correlation allowance, or appendages in the main breakdown.
 
-- Bulb resistance (P_B, Fn_i, R_B).
-- Immersed-transom resistance (Fn_T, c6, R_TR).
-- Model-ship correlation allowance (c4, C_A, R_A).
-- Appendage resistance (S_app, 1 + k2).
-- Propulsion-factor chain (wake fraction w, thrust deduction t,
-  relative rotative efficiency eta_R).
+Extended coefficients live in `holtrop_extended.zig`:
 
-The c2 and c5 functions return 1.0 in this release (the case
-A_BT = 0 and A_T = 0), so a hull with a bulb or immersed transom
-needs the v0.1.0 release to be accurate.
+- Transom immersion `c_5`, roughness allowance `C_A` (short and bulb-corrected).
+- Appendage resistance with HM 1984 Table 5 form factors.
+
+Still out of scope:
+
+- Full bulb resistance branch (P_B, Fn_i, R_B) in totalResistance.
+- Propulsion-factor chain (wake w, thrust deduction t, eta_R) — see `yard-ittc78`.
+- CFD or model-test correlation beyond Holtrop envelope.
 
 ## Build and test
 

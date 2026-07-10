@@ -10,7 +10,7 @@
 
 Microsoft made Excel. Goldman Sachs made more money *on* Excel than Microsoft made *from* Excel — because the value is in the integrations, workflows, and domain layers bolted on top of a reliable substrate.
 
-**Yard is the substrate.** Sixty-nine Zig primitives, each narrow, tested, and oracle-backed. The platform layer is what turns primitives into a system that operators, researchers, and power users can extend orders of magnitude beyond what any single author could build.
+**Yard is the substrate.** Seventy-five Zig modules (72 primitives + compose + naval-arch + viz), each narrow, tested, and oracle-backed. The platform layer is what turns primitives into a system that operators, researchers, and power users can extend orders of magnitude beyond what any single author could build.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -23,7 +23,7 @@ Microsoft made Excel. Goldman Sachs made more money *on* Excel than Microsoft ma
 │  LAYER 2: Composition (compose/ + examples/ + CLI bindings)           │
 │  box_barge · cargo_resistance · vessel_assessment · seakeeping_assessment │
 ├─────────────────────────────────────────────────────────────────────────┤
-│  LAYER 1: Primitives (69 modules — hydro, stability, resistance, …)   │
+│  LAYER 1: Primitives (72 modules — hydro, stability, resistance, …)     │
 │  Unit-tested · analytically validated · explicit validity envelopes     │
 └─────────────────────────────────────────────────────────────────────────┘
 ```

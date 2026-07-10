@@ -11,6 +11,8 @@ yard-spiral-zig v0.1.0. Pre-1.0; bound by Zig 0.16 per `~/CONVENTIONS.md` C2.
 | `orchestrator.runStage` | `unit-tested` | wires hydro/stability/resistance/ittc78/fossen |
 | `optimizer` GA + gradient | `unit-tested` | population evolution + finite differences |
 | `codegen.generateNavalCode` | `unit-tested` | emits compilable Zig skeleton |
+| `dp_feedback.estimate` | `unit-tested` | coupled DP under Hs=2 excursion cap |
+| `orchestrator.tank_hull` ingest | `benchmark_hull` | KCS/KVLCC2 tank C_T + Prohaska + ITTC-78 |
 
 ## Architecture
 

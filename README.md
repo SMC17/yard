@@ -2,7 +2,7 @@
 
 Naval architecture and marine engineering in Zig.
 
-69 modules, one repository. Consolidated 2026-07-07 from the individual
+75 modules, one repository. Consolidated 2026-07-07 from the individual
 yard-*-zig repositories; each module keeps its own `build.zig`, source,
 and test suite.
 
@@ -12,6 +12,7 @@ and test suite.
 | [anchor](anchor/) | anchor holding power and ground-tackle sizing |
 | [auv](auv/) | autonomous underwater vehicle dynamics |
 | [azipod](azipod/) | azimuth-thruster (azipod) propulsion |
+| [benchmark](benchmark/) | standard-hull validation harness + tank extrapolation |
 | [bem](bem/) | boundary-element-method ship hydrodynamics |
 | [bow](bow/) | bow form and added resistance in waves |
 | [cargo](cargo/) | cargo stowage and loading computations |
@@ -20,6 +21,7 @@ and test suite.
 | [cii](cii/) | IMO Carbon Intensity Indicator (CII) |
 | [collision](collision/) | collision damage and risk analysis |
 | [combat](combat/) | naval combat-system modeling |
+| [compose](compose/) | multi-module naval workflows (spiral, DP, seakeeping) |
 | [coupled-motions](coupled-motions/) | coupled 6-DOF ship motions |
 | [csr-buckling](csr-buckling/) | CSR buckling assessment |
 | [csr-fatigue](csr-fatigue/) | CSR fatigue assessment |
@@ -63,6 +65,8 @@ and test suite.
 | [saildrone](saildrone/) | unmanned wind-powered surface vehicle dynamics |
 | [savitsky](savitsky/) | Savitsky planing-hull lift |
 | [seakeeping](seakeeping/) | wave spectra and seakeeping response |
+| [similarity](similarity/) | geometric/kinematic/dynamic scaling + ITTC-78 extrapolation |
+| [spiral](spiral/) | Evans 1959 design spiral orchestrator |
 | [shaft](shaft/) | marine shafting torsional vibration |
 | [shipyard-mgmt](shipyard-mgmt/) | shipyard production scheduling |
 | [sloshing](sloshing/) | linear-potential-flow tank sloshing |
@@ -76,6 +80,7 @@ and test suite.
 | [towing-tank](towing-tank/) | towing-tank model-test data reduction |
 | [tug](tug/) | escort-tug performance |
 | [vimstab](vimstab/) | container-stack lateral load and stability |
+| [viz](viz/) | deterministic SVG visualization (GZ, Pareto, hull profiles) |
 | [windaero](windaero/) | ship wind-coefficient estimation |
 
 ## Platform
@@ -84,14 +89,19 @@ See [PLATFORM.md](PLATFORM.md) for the composition layer, dataset pipeline, eval
 and extension architecture ("naval Excel").
 
 ```sh
-zig build test-core      # hydro + stability + compose + example
+zig build test-core      # hydro + stability + compose + spiral + benchmark
 zig build run-example    # canonical box-barge intact stability
+zig build run-spiral     # Evans design spiral (Wigley)
+zig build run-spiral-kcs # Evans spiral with KCS tank C_T ingest
+zig build run-benchmark  # 18-case hull validation harness
+zig build run-sim-suite  # DP + irregular waves + Pareto
+python tools/portfolio_audit/audit.py --strict
 python tools/dataset/generate.py --samples 100 --output tools/dataset/out/seed.jsonl
 ```
 
 | Layer | Path | Purpose |
 |-------|------|---------|
-| Primitives | 69 modules below | Narrow, tested kernels |
+| Primitives | 72 modules below | Narrow, tested kernels |
 | Composition | `compose/`, `examples/` | Multi-module workflows |
 | Intelligence | `tools/oracle/`, `tools/dataset/`, `tools/eval/` | SFT data + eval |
 | Docs | `docs/` | Architecture + deep dives |

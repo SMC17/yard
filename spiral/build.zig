@@ -59,6 +59,24 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const towing_tank_mod = b.addModule("yard_towing_tank", .{
+        .root_source_file = b.path("../towing-tank/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const benchmark_mod = b.addModule("yard_benchmark", .{
+        .root_source_file = b.path("../benchmark/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_hydro", .module = hydro_mod },
+            .{ .name = "yard_resistance", .module = resistance_mod },
+            .{ .name = "yard_naval_arch", .module = naval_mod },
+            .{ .name = "yard_similarity", .module = similarity_mod },
+            .{ .name = "yard_ittc78", .module = ittc78_mod },
+            .{ .name = "yard_towing_tank", .module = towing_tank_mod },
+        },
+    });
 
     const mod = b.addModule("yard_spiral", .{
         .root_source_file = b.path("src/root.zig"),
@@ -76,6 +94,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_rao_spectrum", .module = rao_mod },
             .{ .name = "yard_strip_theory", .module = strip_mod },
             .{ .name = "yard_dynpos", .module = dynpos_mod },
+            .{ .name = "yard_benchmark", .module = benchmark_mod },
         },
     });
 
