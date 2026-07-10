@@ -12,9 +12,11 @@
 pub const criteria = @import("criteria.zig");
 pub const events = @import("events.zig");
 pub const msi = @import("msi.zig");
+pub const spectral = @import("spectral.zig");
 
 test {
     _ = criteria;
     _ = events;
     _ = msi;
+    _ = spectral;
 }
