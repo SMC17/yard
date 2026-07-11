@@ -14,5 +14,10 @@ budget against the deterministic physics evaluator. Geometry consistency enforce
 proposer and are counted (fb column) — no free lunches.</p>
 <table><thead><tr><th>agent</th><th>calls</th><th>best days</th><th>vs Cutty</th><th>first improvement</th><th>gate rejections</th><th>fallbacks</th></tr></thead>
 <tbody><tr><td>llm-gemma4-31b</td><td>8</td><td><b>127.69</b></td><td>6.2</td><td>2</td><td>0</td><td>6</td></tr><tr><td>mock-reference</td><td>12</td><td><b>127.70</b></td><td>6.2</td><td>4</td><td>1</td><td>0</td></tr><tr><td>llm-qwen3next80b</td><td>8</td><td><b>128.21</b></td><td>5.7</td><td>4</td><td>0</td><td>7</td></tr><tr><td>llm-nemotron3super-free</td><td>8</td><td><b>128.99</b></td><td>4.9</td><td>4</td><td>1</td><td>0</td></tr><tr><td>llm-nemotron-nano30b</td><td>8</td><td><b>129.32</b></td><td>4.6</td><td>2</td><td>1</td><td>0</td></tr></tbody></table>
+<p class="sub"><b>Integrity note:</b> the gemma-4-31b and qwen3-next-80b rows carry 6-7
+mock-fallback calls (free-tier rate limiting) — those results are mostly the reference
+hill-climber's, not the model's; only 1-2 proposals were LLM-authored. The two nemotron
+rows are clean LLM runs (0 fallbacks). Rate-limited models get re-run before any claim
+is made about them.</p>
 <p class="sub">Traces: <a href="https://github.com/SMC17/yard/tree/main/trials/traces">trials/traces/</a> (JSONL, replayable).</p>
 </body></html>
