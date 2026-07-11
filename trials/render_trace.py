@@ -4,7 +4,7 @@ objective vs oracle calls — the sample-efficiency curve that IS the agent
 benchmark result. Usage: render_trace.py trace.jsonl out.svg"""
 import json, sys
 
-trace = [json.loads(l) for l in open(sys.argv[1]) if l.strip()]
+trace = [e for l in open(sys.argv[1]) if l.strip() for e in [json.loads(l)] if "call" in e]
 best, xs, ys = None, [], []
 for t in trace:
     if t["scored"] and t["objectives"]:

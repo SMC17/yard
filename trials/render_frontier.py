@@ -165,7 +165,7 @@ def main() -> None:
         results = RESULTS_DIR / f"{mission['id']}.jsonl"
         entries = []
         if results.exists():
-            entries = [json.loads(l) for l in results.read_text().splitlines() if l.strip()]
+            entries = [e for l in results.read_text().splitlines() if l.strip() for e in [json.loads(l)] if "objectives" in e and "id" in e]
         out = SITE_DIR / f"{mission['id']}.html"
         out.write_text(render(mission, entries))
         print(f"{out.relative_to(ROOT)}: {len(entries)} entries")
