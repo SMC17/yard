@@ -1,0 +1,21 @@
+name: Yard Trials signatures
+
+# Public verification: anyone's checkout can prove the committed leaderboard
+# was signed by the trials evaluator key (allowed_signers is in-repo). The
+# private key never enters CI; signing happens at scoring time.
+
+on:
+  push:
+    branches: [main]
+    paths: ["trials/results/**", "trials/allowed_signers"]
+  pull_request:
+    branches: [main]
+    paths: ["trials/results/**", "trials/allowed_signers"]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify result signatures
+        run: bash trials/sign_results.sh --verify
