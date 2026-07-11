@@ -174,12 +174,18 @@ def main() -> int:
     rejected = 0
 
     for call in range(1, args.budget + 1):
+        proposer = "baseline" if call == 1 else args.mode
         if call == 1:
             candidate = copy.deepcopy(best_design)  # baseline burn: know your start
         elif args.mode == "mock":
             candidate = mock_propose(rng, best_design)
         else:
-            candidate = openrouter_propose(args.model, mission_text, history, best_design)
+            try:
+                candidate = openrouter_propose(args.model, mission_text, history, best_design)
+            except Exception as e:  # API hiccup: burn the call honestly via mock
+                print(f"  [call {call}] API error ({type(e).__name__}); mock fallback")
+                proposer = "mock-fallback"
+                candidate = mock_propose(rng, best_design)
 
         report = evaluate(binary, args.mission, candidate, workdir)
         history.append(report)
@@ -195,6 +201,7 @@ def main() -> int:
             json.dumps(
                 {
                     "call": call,
+                    "proposer": proposer,
                     "scored": report["scored"],
                     "objectives": [o["value"] for o in report["objectives"]] if report["scored"] else None,
                     "improved": improved,
