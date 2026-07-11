@@ -44,11 +44,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    const arena_mod = b.addModule("yard_arena", .{
-        .root_source_file = b.path("../arena/src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
+    // Fleet targets (arena protocol + mercury evaluator) exist only in the
+    // in-flight fleet worktree until arena lands; clean checkouts skip them
+    // so CI always builds. Override with -Dfleet if needed.
+    const fleet_default = if (b.build_root.handle.access(b.graph.io, "../arena/src/root.zig", .{})) true else |_| false;
+    const fleet = b.option(bool, "fleet", "Build fleet (arena/mercury) targets") orelse fleet_default;
     const seastate_mod = b.addModule("yard_seastate", .{
         .root_source_file = b.path("../seastate/src/root.zig"),
         .target = target,
@@ -82,7 +82,6 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_sailaero", .module = sailaero_mod },
             .{ .name = "yard_box_barge", .module = box_barge_mod },
             .{ .name = "yard_econ", .module = econ_mod },
-            .{ .name = "yard_arena", .module = arena_mod },
             .{ .name = "yard_weathercrit", .module = weathercrit_mod },
             .{ .name = "yard_seastate", .module = seastate_mod },
         },
@@ -101,23 +100,32 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe);
 
-    const mercury_exe = b.addExecutable(.{
-        .name = "yard-mercury",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/mercury_cli.zig"),
+    if (fleet) {
+        const arena_mod = b.addModule("yard_arena", .{
+            .root_source_file = b.path("../arena/src/root.zig"),
             .target = target,
             .optimize = optimize,
-            .imports = &.{
-                .{ .name = "yard_sailmission", .module = mod },
-            },
-        }),
-    });
-    b.installArtifact(mercury_exe);
+        });
+        mod.addImport("yard_arena", arena_mod);
 
-    const mercury_cmd = b.addRunArtifact(mercury_exe);
-    if (b.args) |args| mercury_cmd.addArgs(args);
-    const mercury_step = b.step("mercury", "Run the Mercury official fleet evaluator");
-    mercury_step.dependOn(&mercury_cmd.step);
+        const mercury_exe = b.addExecutable(.{
+            .name = "yard-mercury",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/mercury_cli.zig"),
+                .target = target,
+                .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "yard_sailmission", .module = mod },
+                },
+            }),
+        });
+        b.installArtifact(mercury_exe);
+
+        const mercury_cmd = b.addRunArtifact(mercury_exe);
+        if (b.args) |args| mercury_cmd.addArgs(args);
+        const mercury_step = b.step("mercury", "Run the Mercury official fleet evaluator");
+        mercury_step.dependOn(&mercury_cmd.step);
+    }
 
     const run_cmd = b.addRunArtifact(exe);
     if (b.args) |args| run_cmd.addArgs(args);
