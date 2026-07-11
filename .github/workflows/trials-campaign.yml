@@ -1,0 +1,29 @@
+name: Yard Trials nightly campaign
+
+# Seed-sweep the sail leaderboard nightly: 200 seeds x every submission
+# (~60k Monte Carlo voyages of 300 runs each) with bootstrap 95% CIs.
+# Point leaderboards hide seed luck; the campaign page shows whether
+# separations are physics or noise. Artifacts only — the committed
+# leaderboard stays pinned to each mission's base seed.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "43 3 * * *"
+
+jobs:
+  campaign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Seed campaign
+        run: python3 trials/campaign.py --seeds 200
+      - uses: actions/upload-artifact@v4
+        with:
+          name: campaign
+          path: |
+            trials/results/campaign-*.json
+            trials/site/campaign-*.html
