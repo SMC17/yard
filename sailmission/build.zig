@@ -49,6 +49,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const seastate_mod = b.addModule("yard_seastate", .{
+        .root_source_file = b.path("../seastate/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const weathercrit_mod = b.addModule("yard_weathercrit", .{
         .root_source_file = b.path("../weathercrit/src/root.zig"),
         .target = target,
@@ -79,6 +84,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_econ", .module = econ_mod },
             .{ .name = "yard_arena", .module = arena_mod },
             .{ .name = "yard_weathercrit", .module = weathercrit_mod },
+            .{ .name = "yard_seastate", .module = seastate_mod },
         },
     });
 

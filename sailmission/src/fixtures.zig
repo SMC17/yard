@@ -11,7 +11,7 @@
 //! Weibull structure cross-checked against published marine wind
 //! climatology: shape k ~ 2 in the extratropics, rising to 3-5 in the
 //! trade-wind belts (equatorward flanks of the subtropical highs), lower
-//! in monsoon/variable zones — this file's 2.8 (trades) / 1.8-2.0
+//! in monsoon/variable zones — this file's 3.2 (trades) / 1.8-2.0
 //! (extratropics) / 1.6 (variables) follows that pattern, and the trades'
 //! lambda 7.5-8.0 with k 2.8 gives a ~7 m/s mean (Beaufort 4). Upgrade
 //! path: fit per-leg parameters from ICOADS/pilot-chart reanalysis.
@@ -35,13 +35,13 @@ pub const tea_race_mission_json =
     \\    { "tws_weibull_k": 1.8, "tws_weibull_lambda_mps": 6.5,
     \\      "twa_min_deg": 20, "twa_max_deg": 140,
     \\      "storm_tws_mps": 13, "storm_loss_prob": 0.008 },
-    \\    { "tws_weibull_k": 2.8, "tws_weibull_lambda_mps": 8.0,
+    \\    { "tws_weibull_k": 3.2, "tws_weibull_lambda_mps": 8.0,
     \\      "twa_min_deg": 90, "twa_max_deg": 170,
     \\      "storm_tws_mps": 15, "storm_loss_prob": 0.003 },
     \\    { "tws_weibull_k": 2.0, "tws_weibull_lambda_mps": 10.0,
     \\      "twa_min_deg": 60, "twa_max_deg": 180,
     \\      "storm_tws_mps": 14, "storm_loss_prob": 0.010 },
-    \\    { "tws_weibull_k": 2.8, "tws_weibull_lambda_mps": 7.5,
+    \\    { "tws_weibull_k": 3.2, "tws_weibull_lambda_mps": 7.5,
     \\      "twa_min_deg": 110, "twa_max_deg": 180,
     \\      "storm_tws_mps": 15, "storm_loss_prob": 0.002 },
     \\    { "tws_weibull_k": 1.6, "tws_weibull_lambda_mps": 6.0,
