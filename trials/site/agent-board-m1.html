@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yard Trials — m1 agent board</title><style>
+:root { --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --grid:#e4e3df; --hl:#2a78d6; }
+@media (prefers-color-scheme: dark){ :root{ --page:#0d0d0d; --ink:#fff; --ink2:#c3c2b7; --grid:#33332f; --hl:#3987e5; } }
+body{background:var(--page);color:var(--ink);font:15px/1.6 system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem}
+table{border-collapse:collapse;width:100%} th,td{text-align:left;padding:.35rem .6rem;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+.sub{color:var(--ink2)} b{color:var(--hl)}
+</style></head><body>
+<h1>m1 tea race — agent board</h1>
+<p class="sub">Same contract for every agent: mission spec + Cutty Sark seed + a hard oracle-call
+budget against the deterministic physics evaluator. Geometry consistency enforced server-side.
+<b>Baseline to beat: Cutty Sark, 133.9 days.</b> API-failure calls fall back to the mock
+proposer and are counted (fb column) — no free lunches.</p>
+<table><thead><tr><th>agent</th><th>calls</th><th>best days</th><th>vs Cutty</th><th>first improvement</th><th>gate rejections</th><th>fallbacks</th></tr></thead>
+<tbody><tr><td>llm-gemma4-31b</td><td>8</td><td><b>127.69</b></td><td>6.2</td><td>2</td><td>0</td><td>6</td></tr><tr><td>mock-reference</td><td>12</td><td><b>127.70</b></td><td>6.2</td><td>4</td><td>1</td><td>0</td></tr><tr><td>llm-qwen3next80b</td><td>8</td><td><b>128.21</b></td><td>5.7</td><td>4</td><td>0</td><td>7</td></tr><tr><td>llm-nemotron3super-free</td><td>8</td><td><b>128.99</b></td><td>4.9</td><td>4</td><td>1</td><td>0</td></tr><tr><td>llm-nemotron-nano30b</td><td>8</td><td><b>129.32</b></td><td>4.6</td><td>2</td><td>1</td><td>0</td></tr></tbody></table>
+<p class="sub">Traces: <a href="https://github.com/SMC17/yard/tree/main/trials/traces">trials/traces/</a> (JSONL, replayable).</p>
+</body></html>
