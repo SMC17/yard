@@ -13,6 +13,7 @@
 const std = @import("std");
 const routing = @import("yard_routing");
 const sailaero = @import("yard_sailaero");
+const seastate = @import("yard_seastate");
 const spec = @import("spec.zig");
 const physics = @import("physics.zig");
 
@@ -140,7 +141,14 @@ pub fn simulate(
                     lost = true;
                     break :legs;
                 }
-                const v = @max(grid.madeGood(tws, twa), mission.becalmed_floor_mps);
+                // Wind-driven sea: PM fully developed Hs (upper envelope,
+                // documented), direction-weighted drag — head seas take the
+                // full 0.02 Hs^2 proxy, beam 0.6x, following seas 0.25x
+                // (long-crested swell astern barely slows a driven ship).
+                const hs = seastate.pmSignificantHeight(tws);
+                const dir_w: f64 = if (twa < 60.0) 1.0 else if (twa < 120.0) 0.6 else 0.25;
+                const wave_loss = @min(0.5, 0.02 * hs * hs * dir_w);
+                const v = @max(grid.madeGood(tws, twa) * (1.0 - wave_loss), mission.becalmed_floor_mps);
                 hours += seg_nm * routing.nautical_mile_m / v / 3600.0;
             }
         }
