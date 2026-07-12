@@ -21,7 +21,7 @@
     "storm_hs_m": 6.5,
     "storm_loss_prob": 0.02
   },
-  "monte_carlo": { "runs": 200, "base_seed": 20260710 },
+  "monte_carlo": { "runs": 200, "base_seed": 20260710, "rng_algorithm": "blake3-counter-v1" },
   "gates": {
     "min_gm_m": 0.15,
     "require_is_code": true,

@@ -11,6 +11,7 @@ const similarity = @import("yard_similarity");
 const compose = @import("yard_compose");
 const spiral = @import("yard_spiral");
 const naval = @import("yard_naval_arch");
+const viz = @import("yard_viz");
 
 pub fn main(init: std.process.Init) !u8 {
     const allocator = init.gpa;
@@ -79,16 +80,67 @@ pub fn main(init: std.process.Init) !u8 {
         spiral.orchestrator.evaluateObjective(spiral_out.final, 0.5),
     });
 
-    // GA + code generation pass.
-    const optimized = try spiral.optimizer.gaHullOptimize(orch, 10, 3, 0.5);
-    const code = try spiral.codegen.generateNavalCode(allocator, optimized, "WigleyOptimized");
+    // 1. Pareto exploration campaign
+    const pareto_pts = try spiral.optimizer.gaParetoExplore(orch, 8, 3, 0.5);
+    defer allocator.free(pareto_pts);
+
+    // 2. Generate Pareto Front SVG
+    const viz_points = try allocator.alloc(viz.pareto_svg.Point, pareto_pts.len);
+    defer allocator.free(viz_points);
+    for (pareto_pts, 0..) |p, idx| {
+        viz_points[idx] = .{
+            .power_kw = p.power_kw,
+            .heave_m = p.heave_m,
+            .gm_m = p.gm_m,
+        };
+    }
+    const front_indices = try allocator.alloc(usize, pareto_pts.len);
+    defer allocator.free(front_indices);
+    for (front_indices, 0..) |*i, idx| i.* = idx;
+
+    var svg_buf: std.ArrayList(u8) = .empty;
+    defer svg_buf.deinit(allocator);
+    try viz.pareto_svg.render(&svg_buf, allocator, .{
+        .points = viz_points,
+        .front_indices = front_indices,
+    });
+
+    // Write SVG to file
+    var svg_file = try std.Io.Dir.cwd().createFile(init.io, "examples/design-spiral-wigley/pareto_front.svg", .{});
+    defer svg_file.close(init.io);
+    var svg_write_buf: [4096]u8 = undefined;
+    var svg_writer = svg_file.writer(init.io, &svg_write_buf);
+    try svg_writer.interface.writeAll(svg_buf.items);
+    try svg_writer.interface.flush();
+
+    // 3. Multi-objective GA optimization
+    const optimized = try spiral.optimizer.gaHullOptimize(orch, 12, 4, 0.5);
+
+    // 4. Multi-variable Gradient Descent Fine-tuning (Length, Beam, Draft)
+    const fine_tuned = try spiral.optimizer.gradientOptimizeMulti(orch, optimized, 1.0, 0.2, 0.1, 0.05, 5, 0.5);
+
+    // 5. Code compilation generation (naval compiler output)
+    const code = try spiral.codegen.generateNavalCode(allocator, fine_tuned, "WigleyOptimized");
     defer allocator.free(code);
 
-    try stdout.print("--- GA optimize + naval compile ---\n", .{});
-    try stdout.print("Optimized L={d:.1} B={d:.1} T={d:.1} P_E≈{d:.0} kW\n", .{
+    // Write generated Zig simulation code to file
+    var code_file = try std.Io.Dir.cwd().createFile(init.io, "examples/design-spiral-wigley/vessel_sim.zig", .{});
+    defer code_file.close(init.io);
+    var code_write_buf: [4096]u8 = undefined;
+    var code_writer = code_file.writer(init.io, &code_write_buf);
+    try code_writer.interface.writeAll(code);
+    try code_writer.interface.flush();
+
+    try stdout.print("--- GA + Gradient Optimize & Naval Compiler Output ---\n", .{});
+    try stdout.print("Initial seed:  L=100.0, B=10.0, T=6.25\n", .{});
+    try stdout.print("GA Optimized:  L={d:.1} B={d:.1} T={d:.1} P_E≈{d:.0} kW\n", .{
         optimized.length, optimized.beam, optimized.draft, optimized.estimated_power_kw,
     });
-    try stdout.print("Generated {d} bytes of Zig simulator skeleton\n\n", .{code.len});
+    try stdout.print("Fine-tuned:    L={d:.1} B={d:.1} T={d:.1} P_E≈{d:.0} kW\n", .{
+        fine_tuned.length, fine_tuned.beam, fine_tuned.draft, fine_tuned.estimated_power_kw,
+    });
+    try stdout.print("Wrote Pareto Front SVG to examples/design-spiral-wigley/pareto_front.svg ({d} bytes)\n", .{svg_buf.items.len});
+    try stdout.print("Wrote generated simulator to examples/design-spiral-wigley/vessel_sim.zig ({d} bytes)\n\n", .{code.len});
 
     // Time-domain sim snippet.
     var arena = std.heap.ArenaAllocator.init(allocator);

@@ -8,12 +8,14 @@
 //!     v0 proxy; replaced by rao-spectrum added-resistance coupling later.
 //!   - Storm loss: Hs above the mission storm threshold triggers a Bernoulli
 //!     loss draw. Lost runs deliver no cargo.
-//! Deterministic: one DefaultPrng seeded from the mission base_seed drives
-//! all draws in run-major order.
+//! Deterministic competition missions use Yard Arena's `blake3-counter-v1`:
+//! weather and damage are independent random-access streams. Early v0 mission
+//! files without `rng_algorithm` retain `zig-default-prng-v0` compatibility.
 
 const std = @import("std");
 const routing = @import("yard_routing");
 const cargo_resistance = @import("yard_cargo_resistance");
+const arena_rng = @import("yard_arena_rng");
 const spec = @import("spec.zig");
 const gates = @import("gates.zig");
 
@@ -22,6 +24,7 @@ pub const Error = error{
     RouteInvalid,
     ResistanceFailed,
     InsufficientPower,
+    InvalidRngAlgorithm,
 };
 
 pub const Aggregate = struct {
@@ -126,6 +129,9 @@ pub fn simulate(allocator: std.mem.Allocator, mission: spec.MissionSpec, sub: sp
     var days = try allocator.alloc(f64, runs);
     defer allocator.free(days);
 
+    const stable_rng = std.mem.eql(u8, mission.monte_carlo.rng_algorithm, arena_rng.algorithm_id);
+    const legacy_rng = std.mem.eql(u8, mission.monte_carlo.rng_algorithm, "zig-default-prng-v0");
+    if (!stable_rng and !legacy_rng) return Error.InvalidRngAlgorithm;
     var prng = std.Random.DefaultPrng.init(mission.monte_carlo.base_seed);
     const random = prng.random();
 
@@ -141,11 +147,22 @@ pub fn simulate(allocator: std.mem.Allocator, mission: spec.MissionSpec, sub: sp
     while (r < runs) : (r += 1) {
         var lost = false;
         var hours: f64 = 0;
-        for (leg_dists) |dist_m| {
-            const hs = weibullDraw(random.float(f64), env.hs_weibull_k, env.hs_weibull_lambda_m);
-            if (hs > env.storm_hs_m and random.float(f64) < env.storm_loss_prob) {
-                lost = true;
-                break;
+        for (leg_dists, 0..) |dist_m, leg_index| {
+            const draw_index = (@as(u64, r) << 32) | @as(u64, @intCast(leg_index));
+            const weather_u = if (stable_rng)
+                arena_rng.drawUnitF64(mission.monte_carlo.base_seed, 0, draw_index)
+            else
+                random.float(f64);
+            const hs = weibullDraw(weather_u, env.hs_weibull_k, env.hs_weibull_lambda_m);
+            if (hs > env.storm_hs_m) {
+                const damage_u = if (stable_rng)
+                    arena_rng.drawUnitF64(mission.monte_carlo.base_seed, 2, draw_index)
+                else
+                    random.float(f64);
+                if (damage_u < env.storm_loss_prob) {
+                    lost = true;
+                    break;
+                }
             }
             const loss_frac = @min(0.5, 0.02 * hs * hs);
             const v_eff = calm_v * (1.0 - loss_frac);
@@ -225,6 +242,25 @@ test "simulate is deterministic for identical inputs" {
     try std.testing.expectEqual(first.p95_days, second.p95_days);
     try std.testing.expectEqual(first.losses, second.losses);
     try std.testing.expectEqual(first.transport_cost_index, second.transport_cost_index);
+}
+
+test "stable voyage RNG keeps weather and damage streams independent" {
+    const coordinate: u64 = (@as(u64, 17) << 32) | 4;
+    const weather = arena_rng.drawUnitF64(20260710, 0, coordinate);
+    const damage = arena_rng.drawUnitF64(20260710, 2, coordinate);
+    _ = arena_rng.drawUnitF64(20260710, 0, coordinate + 1);
+    try std.testing.expectEqual(damage, arena_rng.drawUnitF64(20260710, 2, coordinate));
+    try std.testing.expect(weather != damage);
+}
+
+test "unknown RNG algorithm fails closed" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const f = try testFixtures(a);
+    var mission = f.m.value;
+    mission.monte_carlo.rng_algorithm = "unknown";
+    try std.testing.expectError(Error.InvalidRngAlgorithm, simulate(a, mission, f.s.value));
 }
 
 test "voyage aggregate is physically sane" {

@@ -1,7 +1,7 @@
 .{
     .name = .yard_spiral,
     .version = "0.1.0",
-    .fingerprint = 0x8d4f2a1c9e6b3074,
+    .fingerprint = 0xd279821acc6432dd,
     .minimum_zig_version = "0.16.0",
     .dependencies = .{},
     .paths = .{

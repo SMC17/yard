@@ -51,6 +51,8 @@ pub const Environment = struct {
 pub const MonteCarlo = struct {
     runs: u32,
     base_seed: u64,
+    /// Missing in early v0 fixtures; those retain the old std.Random sequence.
+    rng_algorithm: []const u8 = "zig-default-prng-v0",
 };
 
 pub const Gates = struct {
@@ -120,9 +122,7 @@ pub const mission_schema_id = "yard-mission/v0";
 pub const submission_schema_id = "yard-submission/v0";
 
 pub fn parseMission(allocator: std.mem.Allocator, json: []const u8) Error!std.json.Parsed(MissionSpec) {
-    const parsed = std.json.parseFromSlice(MissionSpec, allocator, json, .{
-        .ignore_unknown_fields = true,
-    }) catch |err| switch (err) {
+    const parsed = std.json.parseFromSlice(MissionSpec, allocator, json, .{}) catch |err| switch (err) {
         error.OutOfMemory => return Error.OutOfMemory,
         else => return Error.ParseFailed,
     };
@@ -134,9 +134,7 @@ pub fn parseMission(allocator: std.mem.Allocator, json: []const u8) Error!std.js
 }
 
 pub fn parseSubmission(allocator: std.mem.Allocator, json: []const u8) Error!std.json.Parsed(Submission) {
-    const parsed = std.json.parseFromSlice(Submission, allocator, json, .{
-        .ignore_unknown_fields = true,
-    }) catch |err| switch (err) {
+    const parsed = std.json.parseFromSlice(Submission, allocator, json, .{}) catch |err| switch (err) {
         error.OutOfMemory => return Error.OutOfMemory,
         else => return Error.ParseFailed,
     };
@@ -171,7 +169,7 @@ pub const test_mission_json =
     \\    "storm_hs_m": 6.5,
     \\    "storm_loss_prob": 0.02
     \\  },
-    \\  "monte_carlo": { "runs": 200, "base_seed": 20260710 },
+    \\  "monte_carlo": { "runs": 200, "base_seed": 20260710, "rng_algorithm": "blake3-counter-v1" },
     \\  "gates": {
     \\    "min_gm_m": 0.15,
     \\    "require_is_code": true,
@@ -246,4 +244,24 @@ test "wrong schema rejected" {
         \\  "monte_carlo": {"runs":1,"base_seed":1}, "gates": {"min_gm_m":0,"require_is_code":false,"min_calm_speed_mps":0}, "objectives": [] }
     ;
     try std.testing.expectError(Error.BadSchema, parseMission(std.testing.allocator, bad));
+}
+
+test "unknown mission fields fail closed" {
+    const bad =
+        \\{ "schema": "yard-mission/v0", "id": "x", "typo_constraint": 1,
+        \\  "era": {"id":"e","max_loa_m":1,"max_beam_m":1,"max_draft_m":1,"min_freeboard_frac":0,"max_l_over_d":1},
+        \\  "waypoints": [], "environment": {"hs_weibull_k":1,"hs_weibull_lambda_m":1,"storm_hs_m":1,"storm_loss_prob":0},
+        \\  "monte_carlo": {"runs":1,"base_seed":1}, "gates": {"min_gm_m":0,"require_is_code":false,"min_calm_speed_mps":0}, "objectives": [] }
+    ;
+    try std.testing.expectError(Error.ParseFailed, parseMission(std.testing.allocator, bad));
+}
+
+test "unknown submission fields fail closed" {
+    const bad =
+        \\{ "schema": "yard-submission/v0", "id": "x", "untrusted_score": 999,
+        \\  "hull": {"loa_m":1,"beam_m":1,"draft_m":1,"depth_m":1,"cb":0.5,"cm":0.9,"cp":0.5,"cwp":0.7,"lcb_pct":0,"wetted_surface_m2":1,"displacement_m3":1},
+        \\  "loading": {"kg_m":0.5,"cargo_t":1},
+        \\  "propulsion": {"installed_kw":1,"propulsive_efficiency":0.5,"service_fraction":0.5} }
+    ;
+    try std.testing.expectError(Error.ParseFailed, parseSubmission(std.testing.allocator, bad));
 }

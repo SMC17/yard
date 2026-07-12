@@ -30,8 +30,10 @@ the existing Pareto frontier.
    validity envelope (Holtrop 1984 — designs outside the model's calibrated
    range are unscoreable by construction).
 2. **Seeded Monte Carlo voyage** — great-circle legs, Weibull wave-height
-   draws, weather speed loss, storm-loss Bernoulli events. One PRNG seeded
-   from the mission `base_seed`; fully deterministic.
+   draws, weather speed loss, storm-loss Bernoulli events. Competition
+   missions declare `blake3-counter-v1`, with independent random-access
+   weather and damage streams. Early v0 files without `rng_algorithm` retain
+   the legacy Zig PRNG sequence for compatibility.
 3. **Objectives + Pareto placement** — the leaderboard is a frontier, not a
    scalar ranking. `dominated_by == 0` puts you on the front.
 
@@ -45,11 +47,12 @@ the existing Pareto frontier.
 - Attainable speed solves Holtrop required power vs installed × service
   fraction × propulsive efficiency by bisection.
 
-## Roadmap (Trials rungs)
+## Next Trials rung
 
-Era materials/constraint DB (tonnage laws, treaty caps) → square-rig sail
-aero for Age-of-Sail missions → voyage economics → GitHub-native leaderboard
-(submissions as PRs, CI re-runs the deterministic eval).
+The adjacent `era/`, `sailaero/`, `econ/`, and `trials/` packages now exist.
+The next gate is integration: a sourced Age-of-Sail mission that composes
+their constraints, square-rig polar, passage economics, and CI-reexecuted
+frontier, then validates the voyage distribution against historical records.
 
 Proof level: unit-tested. Depends on: naval-arch, hydro, stability,
 resistance, routing, compose (box_barge, cargo_resistance).

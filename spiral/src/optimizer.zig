@@ -87,43 +87,94 @@ pub fn gaParetoExplore(
 }
 
 /// Finite-difference gradient step on length (other dims fixed).
+/// Multi-variable finite-difference gradient step on L, B, and T.
 pub fn gradientOptimize(
     orch: orchestrator.Orchestrator,
     base: orchestrator.DesignParameters,
     step: f64,
     gm_min: f64,
 ) Error!orchestrator.DesignParameters {
-    const score_base = orchestrator.evaluateObjective(base, gm_min);
-
-    var plus = base;
-    plus.length += step;
-    var minus = base;
-    if (base.length > step * 2.0) minus.length -= step;
-
-    var sr_plus = try orch.runSpiral(plus);
-    defer orch.freeSpiralResult(&sr_plus);
-    var sr_minus = try orch.runSpiral(minus);
-    defer orch.freeSpiralResult(&sr_minus);
-
-    const score_plus = orchestrator.evaluateObjective(sr_plus.final, gm_min);
-    const score_minus = orchestrator.evaluateObjective(sr_minus.final, gm_min);
-    const grad = (score_plus - score_minus) / (plus.length - minus.length);
-
-    var out = base;
-    if (grad > 0.0) {
-        out.length -= step;
-    } else {
-        out.length += step;
-    }
-
-    var sr_out = try orch.runSpiral(out);
-    defer orch.freeSpiralResult(&sr_out);
-    const score_out = orchestrator.evaluateObjective(sr_out.final, gm_min);
-    if (score_out <= score_base) return sr_out.final;
-    return base;
+    return gradientOptimizeMulti(orch, base, step, step * 0.5, step * 0.25, 0.05, 5, gm_min);
 }
 
-/// Population-based hull evolution (length, beam, draft mutations).
+/// Multi-variable finite-difference gradient optimization on L, B, and T.
+pub fn gradientOptimizeMulti(
+    orch: orchestrator.Orchestrator,
+    base: orchestrator.DesignParameters,
+    step_l: f64,
+    step_b: f64,
+    step_t: f64,
+    learning_rate: f64,
+    iterations: u32,
+    gm_min: f64,
+) Error!orchestrator.DesignParameters {
+    var current = base;
+    var i: u32 = 0;
+    while (i < iterations) : (i += 1) {
+        const score_base = orchestrator.evaluateObjective(current, gm_min);
+
+        // Derivative w.r.t length
+        var plus_l = current; plus_l.length += step_l;
+        var minus_l = current; if (current.length > step_l * 2.0) minus_l.length -= step_l;
+        var sr_plus_l = try orch.runSpiral(plus_l); defer orch.freeSpiralResult(&sr_plus_l);
+        var sr_minus_l = try orch.runSpiral(minus_l); defer orch.freeSpiralResult(&sr_minus_l);
+        const score_plus_l = orchestrator.evaluateObjective(sr_plus_l.final, gm_min);
+        const score_minus_l = orchestrator.evaluateObjective(sr_minus_l.final, gm_min);
+        const grad_l = (score_plus_l - score_minus_l) / (plus_l.length - minus_l.length);
+
+        // Derivative w.r.t beam
+        var plus_b = current; plus_b.beam += step_b;
+        var minus_b = current; if (current.beam > step_b * 2.0) minus_b.beam -= step_b;
+        var sr_plus_b = try orch.runSpiral(plus_b); defer orch.freeSpiralResult(&sr_plus_b);
+        var sr_minus_b = try orch.runSpiral(minus_b); defer orch.freeSpiralResult(&sr_minus_b);
+        const score_plus_b = orchestrator.evaluateObjective(sr_plus_b.final, gm_min);
+        const score_minus_b = orchestrator.evaluateObjective(sr_minus_b.final, gm_min);
+        const grad_b = (score_plus_b - score_minus_b) / (plus_b.beam - minus_b.beam);
+
+        // Derivative w.r.t draft
+        var plus_t = current; plus_t.draft += step_t;
+        var minus_t = current; if (current.draft > step_t * 2.0) minus_t.draft -= step_t;
+        var sr_plus_t = try orch.runSpiral(plus_t); defer orch.freeSpiralResult(&sr_plus_t);
+        var sr_minus_t = try orch.runSpiral(minus_t); defer orch.freeSpiralResult(&sr_minus_t);
+        const score_plus_t = orchestrator.evaluateObjective(sr_plus_t.final, gm_min);
+        const score_minus_t = orchestrator.evaluateObjective(sr_minus_t.final, gm_min);
+        const grad_t = (score_plus_t - score_minus_t) / (plus_t.draft - minus_t.draft);
+
+        var next = current;
+        next.length -= learning_rate * grad_l;
+        next.beam -= learning_rate * grad_b;
+        next.draft -= learning_rate * grad_t;
+
+        // Validity boundaries check
+        if (next.length < 10.0) next.length = 10.0;
+        if (next.beam < 2.0) next.beam = 2.0;
+        if (next.draft < 0.5) next.draft = 0.5;
+
+        var sr_next = try orch.runSpiral(next);
+        defer orch.freeSpiralResult(&sr_next);
+        const score_next = orchestrator.evaluateObjective(sr_next.final, gm_min);
+        if (score_next < score_base) {
+            current = sr_next.final;
+        } else {
+            break;
+        }
+    }
+    return current;
+}
+
+fn tournamentSelect(scores: []const f64, random: std.Random, k: usize) usize {
+    var best_idx = random.uintLessThan(usize, scores.len);
+    var i: usize = 0;
+    while (i < k) : (i += 1) {
+        const idx = random.uintLessThan(usize, scores.len);
+        if (scores[idx] < scores[best_idx]) {
+            best_idx = idx;
+        }
+    }
+    return best_idx;
+}
+
+/// Population-based hull evolution using tournament selection, crossover, and mutation.
 pub fn gaHullOptimize(
     orch: orchestrator.Orchestrator,
     population_size: u32,
@@ -133,7 +184,14 @@ pub fn gaHullOptimize(
     var rng = std.Random.DefaultPrng.init(0xDEAD_BEEF);
     const random = rng.random();
 
-    var best = orchestrator.DesignParameters{
+    const pop = try orch.allocator.alloc(orchestrator.DesignParameters, population_size);
+    defer orch.allocator.free(pop);
+    const next_pop = try orch.allocator.alloc(orchestrator.DesignParameters, population_size);
+    defer orch.allocator.free(next_pop);
+    const scores = try orch.allocator.alloc(f64, population_size);
+    defer orch.allocator.free(scores);
+
+    const best_seed = orchestrator.DesignParameters{
         .length = 100.0,
         .beam = 16.0,
         .draft = 6.0,
@@ -141,25 +199,74 @@ pub fn gaHullOptimize(
         .service_speed = 8.0,
         .c_b = 0.65,
     };
+    var sr_best = try orch.runSpiral(best_seed);
+    defer orch.freeSpiralResult(&sr_best);
+    var best = sr_best.final;
     var best_score = orchestrator.evaluateObjective(best, gm_min);
+
+    // Initialize population
+    for (pop) |*p| {
+        p.* = best;
+        p.length *= random.float(f64) * 0.2 + 0.9;
+        p.beam *= random.float(f64) * 0.16 + 0.92;
+        p.draft *= random.float(f64) * 0.16 + 0.92;
+    }
 
     var gen: u32 = 0;
     while (gen < generations) : (gen += 1) {
-        var i: u32 = 0;
-        while (i < population_size) : (i += 1) {
-            var candidate = best;
-            candidate.length *= random.float(f64) * 0.1 + 0.95;
-            candidate.beam *= random.float(f64) * 0.08 + 0.96;
-            candidate.draft *= random.float(f64) * 0.08 + 0.96;
+        // Evaluate population fitness
+        var best_gen_idx: usize = 0;
+        var best_gen_score: f64 = std.math.inf(f64);
 
-            var sr = try orch.runSpiral(candidate);
+        for (pop, 0..) |*p, i| {
+            var sr = try orch.runSpiral(p.*);
             defer orch.freeSpiralResult(&sr);
+            p.* = sr.final;
             const score = orchestrator.evaluateObjective(sr.final, gm_min);
-            if (score < best_score) {
-                best = sr.final;
-                best_score = score;
+            scores[i] = score;
+
+            if (score < best_gen_score) {
+                best_gen_score = score;
+                best_gen_idx = i;
             }
         }
+
+        // Update global best
+        if (best_gen_score < best_score) {
+            best = pop[best_gen_idx];
+            best_score = best_gen_score;
+        }
+
+        // Elitism: carry best over
+        next_pop[0] = pop[best_gen_idx];
+
+        // Fill remaining slots
+        var idx: usize = 1;
+        while (idx < population_size) : (idx += 1) {
+            const p1 = pop[tournamentSelect(scores, random, 3)];
+            const p2 = pop[tournamentSelect(scores, random, 3)];
+
+            var child = p1;
+            // Crossover
+            if (random.float(f64) < 0.8) {
+                const alpha = random.float(f64);
+                child.length = p1.length * alpha + p2.length * (1.0 - alpha);
+                child.beam = p1.beam * alpha + p2.beam * (1.0 - alpha);
+                child.draft = p1.draft * alpha + p2.draft * (1.0 - alpha);
+            }
+
+            // Mutation
+            if (random.float(f64) < 0.2) {
+                child.length *= random.float(f64) * 0.1 + 0.95;
+                child.beam *= random.float(f64) * 0.08 + 0.96;
+                child.draft *= random.float(f64) * 0.08 + 0.96;
+            }
+
+            next_pop[idx] = child;
+        }
+
+        // Copy next population to current
+        @memcpy(pop, next_pop);
     }
     return best;
 }
@@ -212,8 +319,10 @@ test "GA improves or matches objective" {
         .service_speed = 8.0,
         .c_b = 0.65,
     };
+    var sr_base = try orch.runSpiral(base);
+    defer orch.freeSpiralResult(&sr_base);
     const optimized = try gaHullOptimize(orch, 8, 2, 0.5);
-    const base_score = orchestrator.evaluateObjective(base, 0.5);
+    const base_score = orchestrator.evaluateObjective(sr_base.final, 0.5);
     const opt_score = orchestrator.evaluateObjective(optimized, 0.5);
     try std.testing.expect(opt_score <= base_score * 1.5);
 }
