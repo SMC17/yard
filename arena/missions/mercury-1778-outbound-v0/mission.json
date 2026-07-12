@@ -1,0 +1,109 @@
+{
+  "schema_version": "yard.arena.mission.v0",
+  "mission_id": "mercury-1778-outbound",
+  "mission_version": "v0",
+  "ruleset_id": "mercury-empirical-sail-v0",
+  "title": "Mercury Outbound: Downs to Bombay, 1778",
+  "summary": "Civilian era-constrained fleet co-design based on a documented East India Company route. Optimize cargo, time, cost, vessel survival, and crew survival without modeling weapons or conquest.",
+  "currency_unit": "mission_resource_credit",
+  "era": {
+    "label": "English East India trade route, 1778-1779",
+    "start_year": 1778,
+    "end_year": 1779,
+    "mode": "era_constrained_counterfactual"
+  },
+  "route": {
+    "origin": "The Downs, England",
+    "destination": "Bombay/Mumbai",
+    "waypoints": ["St Helena", "Table Bay/Cape Town"],
+    "nominal_distance_nm": 11800.0
+  },
+  "rng": {
+    "algorithm": "blake3-counter-v1",
+    "streams": ["weather", "demand", "damage", "traffic", "sensor_noise"],
+    "public_seeds": [17781001, 17781002, 17781003],
+    "hidden_seed_commitment_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "fleet_requirements": {
+    "min_vessels": 3,
+    "max_vessels": 8,
+    "min_nominal_cargo_t": 450.0,
+    "min_delivered_cargo_t": 400.0,
+    "max_budget_units": 1200.0,
+    "max_mean_transit_days": 220.0,
+    "max_loss_fraction": 0.25,
+    "max_crew_casualty_fraction": 0.05
+  },
+  "design_bounds": {
+    "min_length_m": 20.0,
+    "max_length_m": 55.0,
+    "min_beam_m": 5.0,
+    "max_beam_m": 15.0,
+    "min_draft_m": 2.0,
+    "max_draft_m": 7.0,
+    "min_displacement_t": 150.0,
+    "max_displacement_t": 1500.0,
+    "min_block_coefficient": 0.45,
+    "max_block_coefficient": 0.75,
+    "min_length_beam_ratio": 2.5,
+    "max_length_beam_ratio": 5.5,
+    "min_beam_draft_ratio": 1.5,
+    "max_beam_draft_ratio": 3.5,
+    "min_crew_per_vessel": 20,
+    "max_crew_per_vessel": 180,
+    "max_displacement_error_fraction": 0.02
+  },
+  "allowed_materials": ["oak", "teak", "softwood"],
+  "allowed_propulsion": ["sail"],
+  "allowed_hull_forms": ["monohull"],
+  "objectives": [
+    { "name": "delivered_cargo_t", "direction": "maximize", "aggregate": "mean", "epsilon": 0.5 },
+    { "name": "mean_transit_days", "direction": "minimize", "aggregate": "mean", "epsilon": 0.25 },
+    { "name": "total_cost_units", "direction": "minimize", "aggregate": "fixed", "epsilon": 1.0 },
+    { "name": "loss_fraction", "direction": "minimize", "aggregate": "mean", "epsilon": 0.001 },
+    { "name": "crew_casualty_fraction", "direction": "minimize", "aggregate": "mean", "epsilon": 0.001 },
+    { "name": "required_freight_rate_units_per_t", "direction": "minimize", "aggregate": "mean", "epsilon": 0.001 }
+  ],
+  "evaluation": {
+    "min_scenarios": 128,
+    "max_delivered_to_nominal_ratio": 1.0,
+    "ranking": "epsilon_pareto_v1"
+  },
+  "sources": [
+    {
+      "source_id": "qdl-mercury-1777-1784",
+      "title": "Journal of the ship Mercury, 1777-1784",
+      "url": "https://www.qdl.qa/en/archive/81055/vdc_100113993973.0x00005b",
+      "license": "Open Government Licence",
+      "note": "Primary voyage log; route, daily course, weather, soundings, remarks, cargo, and port dates. Extraction not yet bundled."
+    },
+    {
+      "source_id": "cliwoc-2.1",
+      "title": "CLIWOC 2.1 historical ship-log weather observations, 1750-1854",
+      "url": "https://doi.org/10.1594/PANGAEA.743343",
+      "license": "CC BY 3.0",
+      "note": "Weather ensemble source with observation and sampling uncertainty; not exact gridded truth."
+    },
+    {
+      "source_id": "chapman-1775-translation-1820",
+      "title": "A treatise on ship-building, founded on its best principles",
+      "url": "https://www.loc.gov/item/14021345/",
+      "license": "Public domain scan",
+      "note": "1820 English translation of Chapman's 1775 work; used for transparent period design constraints, not Mercury reconstruction."
+    },
+    {
+      "source_id": "smithsonian-brilliant-1775",
+      "title": "Ship model, tobacco ship Brilliant",
+      "url": "https://www.si.edu/object/ship-model-tobacco-ship-brilliant%3Anmah_844307",
+      "license": "CC0 metadata; images restricted",
+      "note": "Documented 1775 merchant archetype for dimensional sanity checks only; images are not redistributed."
+    },
+    {
+      "source_id": "usda-wood-handbook",
+      "title": "Wood Handbook: Wood as an Engineering Material",
+      "url": "https://research.fs.usda.gov/fpl/wood-handbook",
+      "license": "US government publication; retain per-file notice",
+      "note": "Material properties must be encoded as distributions with moisture, defects, and processing effects."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yard.dev/schema/arena/season-signature.v0.json",
+  "title": "Yard Arena Hidden Season Detached Signature v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["algorithm", "key_id", "payload_sha256", "public_key_hex", "signature_hex"],
+  "properties": {
+    "algorithm": { "const": "ed25519-domain-sha256-v2" },
+    "key_id": { "type": "string", "minLength": 1 },
+    "payload_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "public_key_hex": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "signature_hex": { "type": "string", "pattern": "^[a-f0-9]{128}$" }
+  }
+}

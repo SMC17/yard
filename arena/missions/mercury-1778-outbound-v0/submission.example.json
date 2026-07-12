@@ -1,0 +1,41 @@
+{
+  "schema_version": "yard.arena.submission.v0",
+  "submission_id": "example-three-merchantmen",
+  "mission_id": "mercury-1778-outbound",
+  "mission_version": "v0",
+  "ruleset_id": "mercury-empirical-sail-v0",
+  "track": "human_ai",
+  "entrant": "Yard reference fleet",
+  "provenance": {
+    "yard_revision": "01001b5",
+    "zig_version": "0.16.0",
+    "authoring_system": "yard-mercury public reference",
+    "ai_system": "mixed-agent implementation session",
+    "method_uri": "README.md"
+  },
+  "fleet": [
+    {
+      "design_id": "merchantman-38m",
+      "class_name": "Counterfactual 38 m merchantman",
+      "count": 3,
+      "hull_form": "monohull",
+      "material": "oak",
+      "propulsion": "sail",
+      "length_m": 38.0,
+      "beam_m": 10.5,
+      "draft_m": 4.5,
+      "block_coefficient": 0.62,
+      "displacement_t": 1141.04,
+      "cargo_capacity_t": 180.0,
+      "sail_area_m2": 850.0,
+      "crew": 70,
+      "unit_cost_units": 300.0,
+      "depth_m": 7.425,
+      "kg_m": 3.564,
+      "wetted_surface_m2": 525.1175851178477,
+      "residuary_coefficient": 0.001895,
+      "form_factor": 1.22,
+      "min_brace_deg": 32.0
+    }
+  ]
+}

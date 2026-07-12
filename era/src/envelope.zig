@@ -44,7 +44,7 @@ pub const envelopes = [_]Envelope{
         .id = .age_of_sail,
         .year_from = 1650,
         .year_to = 1815,
-        .allowed_materials = &.{ .oak, .teak },
+        .allowed_materials = &.{ .oak, .teak, .softwood },
         .allowed_propulsion = &.{.sail},
         // HMS Victory: 69.3 m LOA, 15.8 m beam, 8.8 m draught. The biggest
         // wooden walls crowd these caps; they are era practice, not physics.

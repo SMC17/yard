@@ -1,0 +1,27 @@
+{
+  "schema_version": "yard.arena.simulation-result.v0",
+  "evaluator_id": "yard-mercury-official-v0",
+  "mission_id": "mercury-1778-outbound",
+  "mission_version": "v0",
+  "submission_id": "example-three-merchantmen",
+  "mission_sha256": "9d483ba8105b1864a6e1b8927268a1d8b7cbf96f10c14a584f439640035e0cd0",
+  "submission_sha256": "c661bd494d56993c0a13516fc3b07d9296cd0e6ab2d8f46ca12dc8bd2d6a91ff",
+  "backend_version": "yard-mercury-empirical-sail-v0.1.0",
+  "environment_sha256": "d022038f13bbe8e53f3c1c45cc0e7849b07718d5413c676e286b2cb17c748999",
+  "replay_algorithm": "sha256-chain-v1",
+  "replay_head_sha256": "8ce0a7e2887dfa8f28869d3de65f9716c31f662b0eeb67213656aed0e6a6c875",
+  "replay_event_count": 770,
+  "season_commitment_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "seed": 17781001,
+  "scenario_count": 256,
+  "metrics": {
+    "delivered_cargo_t": 540,
+    "mean_transit_days": 204.05220671742183,
+    "p95_transit_days": 251.26595723162913,
+    "loss_fraction": 0,
+    "crew_casualty_fraction": 0,
+    "crew_exposure_days": 42850.96341065858,
+    "emissions_t_co2e": 0,
+    "required_freight_rate_units_per_t": 0.3468293178550355
+  }
+}
