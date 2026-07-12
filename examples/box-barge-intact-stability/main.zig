@@ -1,5 +1,6 @@
 //! Canonical box-barge intact stability example.
 //! Demonstrates the full hydro → stability → IS Code 2.2 composition chain.
+//! Pass `--envelope` to emit Sovereign Experience ArtifactEnvelope JSON.
 
 const std = @import("std");
 const compose = @import("yard_compose");
@@ -9,6 +10,14 @@ pub fn main(init: std.process.Init) !u8 {
     var arena = std.heap.ArenaAllocator.init(init.gpa);
     defer arena.deinit();
     const allocator = arena.allocator();
+
+    var envelope_mode = false;
+    var it = try init.minimal.args.iterateAllocator(allocator);
+    defer it.deinit();
+    _ = it.next();
+    while (it.next()) |arg| {
+        if (std.mem.eql(u8, arg, "--envelope")) envelope_mode = true;
+    }
 
     const input: compose.box_barge.Input = .{
         .particulars = .{ .L = 10.0, .B = 4.0, .T = 1.5 },
@@ -22,10 +31,15 @@ pub fn main(init: std.process.Init) !u8 {
 
     const out = try compose.box_barge.evaluate(allocator, input);
 
-    var stdout_buf: [8192]u8 = undefined;
+    var stdout_buf: [16384]u8 = undefined;
     var stdout_w = std.Io.File.stdout().writer(init.io, &stdout_buf);
     const w = &stdout_w.interface;
     defer w.flush() catch {};
+
+    if (envelope_mode) {
+        try emitEnvelopes(w, &out);
+        return 0;
+    }
 
     try w.print("=== Yard: Box-Barge Intact Stability ===\n\n", .{});
     try w.print("Principal particulars: L={d:.1} m  B={d:.1} m  T={d:.1} m\n", .{
@@ -72,7 +86,35 @@ pub fn main(init: std.process.Init) !u8 {
 
     try w.print("\nProof level: unit-tested\n", .{});
     try w.print("Oracle: yard-stability + yard-hydro (Zig)\n", .{});
+    try w.print("Envelope JSON: zig build run -- --envelope\n", .{});
     return 0;
+}
+
+fn emitEnvelopes(w: anytype, out: anytype) !void {
+    const overall_auth: []const u8 = if (out.is_code.overall == .pass) "unit-tested" else "refuted";
+    try w.print("{{\"schema\":\"sovereign.yard.box-barge-envelopes.v0\",\"plane\":\"assurance\",\"operational_qualification_claimed\":false,\"source\":\"yard/examples/box-barge-intact-stability\",\"particulars\":{{\"L\":10.0,\"B\":4.0,\"T\":1.5,\"KG\":1.0}},\"envelopes\":[", .{});
+
+    try w.print("{{\"schema\":\"sovereign.artifact-envelope.v0\",\"id\":\"yard-box-barge-gm0\",\"kind\":\"scalar\",\"schema_version\":\"0\",\"value\":{d:.6},\"units\":{{\"symbol\":\"m\",\"system\":\"si\"}},\"generated_at\":\"2026-07-12T00:00:00Z\",\"source\":{{\"engine\":\"yard-compose/box_barge\",\"engine_version\":\"0.0.0\",\"model\":\"box-barge-intact\",\"model_version\":\"canonical-10x4x1.5\"}},\"context\":{{\"intended_use\":\"intact_stability_assessment\",\"scenario_id\":\"box-barge-canonical\",\"run_id\":\"box-barge-envelope-001\"}},\"validity\":{{\"status\":\"inside-envelope\",\"constraints\":[\"IS Code GM0 >= 0.15 m\"]}},\"authority\":{{\"level\":\"{s}\",\"evidence_ids\":[\"yard-stability-is-code\",\"yard-hydro-box-barge\"]}},\"operational_qualification_claimed\":false}},", .{ out.stability.gm0_m, overall_auth });
+
+    try w.print("{{\"schema\":\"sovereign.artifact-envelope.v0\",\"id\":\"yard-box-barge-gm-corrected\",\"kind\":\"scalar\",\"schema_version\":\"0\",\"value\":{d:.6},\"units\":{{\"symbol\":\"m\",\"system\":\"si\"}},\"generated_at\":\"2026-07-12T00:00:00Z\",\"source\":{{\"engine\":\"yard-compose/box_barge\",\"engine_version\":\"0.0.0\",\"model\":\"box-barge-intact\",\"model_version\":\"canonical-10x4x1.5\"}},\"context\":{{\"intended_use\":\"intact_stability_assessment\",\"scenario_id\":\"box-barge-canonical\",\"run_id\":\"box-barge-envelope-001\"}},\"validity\":{{\"status\":\"inside-envelope\",\"constraints\":[\"free_surface_applied\"]}},\"authority\":{{\"level\":\"unit-tested\",\"evidence_ids\":[\"yard-stability-fs\"]}},\"operational_qualification_claimed\":false}},", .{out.stability.gm_corrected_m});
+
+    try w.print("{{\"schema\":\"sovereign.artifact-envelope.v0\",\"id\":\"yard-box-barge-area-0-30\",\"kind\":\"scalar\",\"schema_version\":\"0\",\"value\":{d:.6},\"units\":{{\"symbol\":\"m·rad\",\"system\":\"si\"}},\"generated_at\":\"2026-07-12T00:00:00Z\",\"source\":{{\"engine\":\"yard-compose/box_barge\",\"engine_version\":\"0.0.0\",\"model\":\"imo-is-code-2008-a-2.2\",\"model_version\":\"MSC.267(85)\"}},\"context\":{{\"intended_use\":\"intact_stability_assessment\",\"scenario_id\":\"box-barge-canonical\",\"run_id\":\"box-barge-envelope-001\"}},\"validity\":{{\"status\":\"inside-envelope\",\"constraints\":[\"required >= 0.055 m·rad\",\"verdict={s}\"]}},\"authority\":{{\"level\":\"unit-tested\",\"evidence_ids\":[\"imo-is-code-2008\"]}},\"operational_qualification_claimed\":false}},", .{ out.is_code.values.area_0_30, @tagName(out.is_code.area_0_30) });
+
+    try w.print("{{\"schema\":\"sovereign.artifact-envelope.v0\",\"id\":\"yard-box-barge-gz-30\",\"kind\":\"scalar\",\"schema_version\":\"0\",\"value\":{d:.6},\"units\":{{\"symbol\":\"m\",\"system\":\"si\"}},\"generated_at\":\"2026-07-12T00:00:00Z\",\"source\":{{\"engine\":\"yard-compose/box_barge\",\"engine_version\":\"0.0.0\",\"model\":\"wall-sided-gz\",\"model_version\":\"atwood\"}},\"context\":{{\"intended_use\":\"intact_stability_assessment\",\"scenario_id\":\"box-barge-canonical\",\"run_id\":\"box-barge-envelope-001\"}},\"validity\":{{\"status\":\"inside-envelope\",\"constraints\":[\"required >= 0.200 m\",\"verdict={s}\"]}},\"authority\":{{\"level\":\"unit-tested\",\"evidence_ids\":[\"imo-is-code-2008\"]}},\"operational_qualification_claimed\":false}},", .{ out.is_code.values.gz_at_30, @tagName(out.is_code.gz_at_30) });
+
+    try w.print("{{\"schema\":\"sovereign.artifact-envelope.v0\",\"id\":\"yard-box-barge-gz-curve\",\"kind\":\"timeseries\",\"schema_version\":\"0\",\"value\":{{\"angles_deg\":[", .{});
+    for (out.gz_curve, 0..) |s, i| {
+        if (i != 0) try w.print(",", .{});
+        try w.print("{d:.0}", .{s.angle_deg});
+    }
+    try w.print("],\"gz_m\":[", .{});
+    for (out.gz_curve, 0..) |s, i| {
+        if (i != 0) try w.print(",", .{});
+        try w.print("{d:.6}", .{s.gz_m});
+    }
+    try w.print("]}},\"units\":{{\"symbol\":\"m\",\"system\":\"si\"}},\"generated_at\":\"2026-07-12T00:00:00Z\",\"source\":{{\"engine\":\"yard-compose/box_barge\",\"engine_version\":\"0.0.0\",\"model\":\"wall-sided-gz\",\"model_version\":\"atwood\"}},\"context\":{{\"intended_use\":\"intact_stability_assessment\",\"scenario_id\":\"box-barge-canonical\",\"run_id\":\"box-barge-envelope-001\"}},\"validity\":{{\"status\":\"inside-envelope\",\"constraints\":[\"wall_sided_assumption_valid\"]}},\"uncertainty\":{{\"type\":\"qualitative\",\"payload\":{{\"note\":\"wall-sided Atwood; not general hull offsets\"}}}},\"authority\":{{\"level\":\"unit-tested\",\"evidence_ids\":[\"yard-stability-gz\"]}},\"operational_qualification_claimed\":false}}", .{});
+
+    try w.print("],\"is_code_overall\":\"{s}\"}}\n", .{@tagName(out.is_code.overall)});
 }
 
 test "example main compiles and runs workflow" {

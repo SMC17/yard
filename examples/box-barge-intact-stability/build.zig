@@ -50,6 +50,9 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run canonical box-barge example");
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
     run_step.dependOn(&run_cmd.step);
 
     const mod_tests = b.addTest(.{
