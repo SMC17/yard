@@ -7,6 +7,10 @@ pub const HullMesh = struct {
     length_m: f64,
     beam_m: f64,
     draft_m: f64,
+    /// Optional explicit triangle mesh in ship frame (+X forward, +Y starboard, +Z up).
+    /// Flat xyz triples; owned by the scene allocator when non-null.
+    positions_m: ?[]f64 = null,
+    indices: ?[]u32 = null,
 };
 
 pub const Pose = struct {
@@ -78,8 +82,8 @@ pub fn parseSceneJson(allocator: std.mem.Allocator, json: []const u8) Error!Scen
     const hull_value = root.get("hull") orelse return error.MissingHull;
     const vessels = try allocator.alloc(Vessel, 1);
     errdefer allocator.free(vessels);
-    const hull = try parseHull(allocator, hull_value);
-    errdefer allocator.free(hull.kind);
+    const hull = try parseHull(allocator, hull_value, null);
+    errdefer freeHull(allocator, hull);
     const id = try allocator.dupe(u8, "primary");
     vessels[0] = .{ .id = id, .hull = hull };
     return .{
@@ -103,18 +107,21 @@ fn parseVessel(allocator: std.mem.Allocator, value: std.json.Value, index: usize
     const default_id = std.fmt.bufPrint(&default_id_buffer, "vessel-{d}", .{index}) catch unreachable;
     const id = try duplicateOptionalString(allocator, object.get("id"), default_id, error.InvalidVessel);
     errdefer allocator.free(id);
-    const hull = try parseHull(allocator, object.get("hull") orelse return error.InvalidVessel);
-    errdefer allocator.free(hull.kind);
+    // Prefer vessel.mesh when present; otherwise parse triangle arrays from hull.
+    const hull_value = object.get("hull") orelse return error.InvalidVessel;
+    const hull = try parseHull(allocator, hull_value, object.get("mesh"));
+    errdefer freeHull(allocator, hull);
     const pose = if (object.get("pose")) |pose_value| try parsePose(pose_value) else Pose{};
     return .{ .id = id, .hull = hull, .pose = pose };
 }
 
-fn parseHull(allocator: std.mem.Allocator, value: std.json.Value) Error!HullMesh {
+fn parseHull(allocator: std.mem.Allocator, value: std.json.Value, mesh_overlay: ?std.json.Value) Error!HullMesh {
     if (value != .object) return error.InvalidHull;
     const object = value.object;
     const kind = try duplicateOptionalString(allocator, object.get("kind"), "box_barge", error.InvalidHull);
     errdefer allocator.free(kind);
-    if (!std.mem.eql(u8, kind, "box_barge") and !std.mem.eql(u8, kind, "wigley"))
+    const is_mesh = std.mem.eql(u8, kind, "mesh_triangles");
+    if (!std.mem.eql(u8, kind, "box_barge") and !std.mem.eql(u8, kind, "wigley") and !is_mesh)
         return error.InvalidHull;
 
     const length_m = try optionalNumber(object.get("length_m"), 100, error.InvalidHull);
@@ -122,8 +129,88 @@ fn parseHull(allocator: std.mem.Allocator, value: std.json.Value) Error!HullMesh
     const draft_m = try optionalNumber(object.get("draft_m"), 6, error.InvalidHull);
     if (!positiveFinite(length_m) or !positiveFinite(beam_m) or !positiveFinite(draft_m))
         return error.InvalidHull;
-    if (beam_m > length_m or draft_m > beam_m) return error.InvalidHull;
-    return .{ .kind = kind, .length_m = length_m, .beam_m = beam_m, .draft_m = draft_m };
+    // Parametric hulls keep draft<=beam; explicit meshes may be taller than beam.
+    if (beam_m > length_m) return error.InvalidHull;
+    if (!is_mesh and draft_m > beam_m) return error.InvalidHull;
+
+    var positions_m: ?[]f64 = null;
+    var indices: ?[]u32 = null;
+    errdefer {
+        if (positions_m) |p| allocator.free(p);
+        if (indices) |i| allocator.free(i);
+    }
+    if (is_mesh) {
+        const source = mesh_overlay orelse value;
+        const mesh = try parseTriangleArrays(allocator, source);
+        positions_m = mesh.positions_m;
+        indices = mesh.indices;
+    } else if (mesh_overlay) |overlay| {
+        // vessel.mesh with a parametric kind still attaches explicit geometry.
+        const mesh = try parseTriangleArrays(allocator, overlay);
+        positions_m = mesh.positions_m;
+        indices = mesh.indices;
+    }
+    return .{
+        .kind = kind,
+        .length_m = length_m,
+        .beam_m = beam_m,
+        .draft_m = draft_m,
+        .positions_m = positions_m,
+        .indices = indices,
+    };
+}
+
+const TriangleArrays = struct {
+    positions_m: []f64,
+    indices: []u32,
+};
+
+fn parseTriangleArrays(allocator: std.mem.Allocator, value: std.json.Value) Error!TriangleArrays {
+    if (value != .object) return error.InvalidHull;
+    const object = value.object;
+    const positions_value = object.get("positions_m") orelse return error.InvalidHull;
+    const indices_value = object.get("indices") orelse return error.InvalidHull;
+    if (positions_value != .array or indices_value != .array) return error.InvalidHull;
+
+    const pos_items = positions_value.array.items;
+    if (pos_items.len < 9 or pos_items.len % 3 != 0) return error.InvalidHull;
+    const idx_items = indices_value.array.items;
+    if (idx_items.len < 3 or idx_items.len % 3 != 0) return error.InvalidHull;
+
+    const positions_m = allocator.alloc(f64, pos_items.len) catch return error.OutOfMemory;
+    errdefer allocator.free(positions_m);
+    for (pos_items, 0..) |item, i| {
+        const number = try requiredNumber(item, error.InvalidHull);
+        if (!std.math.isFinite(number)) return error.InvalidHull;
+        positions_m[i] = number;
+    }
+
+    const vertex_count = positions_m.len / 3;
+    const indices = allocator.alloc(u32, idx_items.len) catch return error.OutOfMemory;
+    errdefer allocator.free(indices);
+    for (idx_items, 0..) |item, i| {
+        const number = try requiredNumber(item, error.InvalidHull);
+        if (!std.math.isFinite(number) or number < 0 or number != @floor(number))
+            return error.InvalidHull;
+        const index: u32 = @intFromFloat(number);
+        if (index >= vertex_count) return error.InvalidHull;
+        indices[i] = index;
+    }
+    return .{ .positions_m = positions_m, .indices = indices };
+}
+
+fn requiredNumber(value: std.json.Value, invalid: Error) Error!f64 {
+    return switch (value) {
+        .float => |number| number,
+        .integer => |number| @floatFromInt(number),
+        else => invalid,
+    };
+}
+
+fn freeHull(allocator: std.mem.Allocator, hull: HullMesh) void {
+    allocator.free(hull.kind);
+    if (hull.positions_m) |positions| allocator.free(positions);
+    if (hull.indices) |indices| allocator.free(indices);
 }
 
 fn parsePose(value: std.json.Value) Error!Pose {
@@ -173,7 +260,7 @@ fn positiveFinite(value: f64) bool {
 fn freeVessels(allocator: std.mem.Allocator, vessels: []const Vessel) void {
     for (vessels) |vessel| {
         allocator.free(vessel.id);
-        allocator.free(vessel.hull.kind);
+        freeHull(allocator, vessel.hull);
     }
 }
 
@@ -206,4 +293,20 @@ test "invalid dimensions are rejected" {
         \\{"hull":{"kind":"wigley","length_m":20,"beam_m":30,"draft_m":4}}
     ;
     try std.testing.expectError(error.InvalidHull, parseSceneJson(std.testing.allocator, json));
+}
+
+test "mesh_triangles scene parses positions and indices" {
+    const json =
+        \\{"title":"Box Mesh","vessels":[{
+        \\ "id":"canonical",
+        \\ "hull":{"kind":"mesh_triangles","length_m":10,"beam_m":4,"draft_m":1.5,
+        \\  "positions_m":[-5,-2,0, 5,-2,0, 5,2,0, -5,2,0, -5,-2,1.5, 5,-2,1.5, 5,2,1.5, -5,2,1.5],
+        \\  "indices":[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,3,7,6,3,6,2,0,4,7,0,7,3,1,2,6,1,6,5]}
+        \\}]}
+    ;
+    const parsed = try parseSceneJson(std.testing.allocator, json);
+    defer freeScene(std.testing.allocator, parsed);
+    try std.testing.expectEqualStrings("mesh_triangles", parsed.vessels[0].hull.kind);
+    try std.testing.expectEqual(@as(usize, 24), parsed.vessels[0].hull.positions_m.?.len);
+    try std.testing.expectEqual(@as(usize, 36), parsed.vessels[0].hull.indices.?.len);
 }
