@@ -14,6 +14,24 @@ pub const Error = error{
 const Vec2 = struct { x: f64, y: f64 };
 const Vec3 = struct { x: f64, y: f64, z: f64 };
 
+/// Stable host-side vertex contract consumed by the native Vulkan pipeline.
+/// Coordinates are already projected into Vulkan NDC so CPU and GPU rendering
+/// share the same camera and fleet framing.
+pub const MeshVertex = extern struct {
+    position: [2]f32,
+    color: [4]f32,
+};
+
+pub const TriangleMesh = struct {
+    vertices: []MeshVertex,
+    indices: []u32,
+
+    pub fn deinit(self: TriangleMesh, allocator: std.mem.Allocator) void {
+        allocator.free(self.vertices);
+        allocator.free(self.indices);
+    }
+};
+
 const hull_edges = [_][2]u8{
     .{ 0, 1 }, .{ 1, 2 }, .{ 2, 3 }, .{ 3, 4 }, .{ 4, 0 },
     .{ 5, 6 }, .{ 6, 7 }, .{ 7, 8 }, .{ 8, 9 }, .{ 9, 5 },
@@ -21,13 +39,89 @@ const hull_edges = [_][2]u8{
     .{ 0, 2 }, .{ 0, 4 },
 };
 
-const palette = [_][4]u8{
+pub const palette = [_][4]u8{
     .{ 51, 181, 229, 255 },
     .{ 237, 187, 64, 255 },
     .{ 108, 210, 142, 255 },
     .{ 231, 105, 122, 255 },
     .{ 173, 133, 232, 255 },
 };
+
+const hull_triangle_indices = [_]u32{
+    // Deck and keel surfaces.
+    0, 1, 2, 0, 2, 3, 0, 3, 4,
+    5, 7, 6, 5, 8, 7, 5, 9, 8,
+    // Five side panels.
+    0, 5, 6, 0, 6, 1, 1, 6, 7,
+    1, 7, 2, 2, 7, 8, 2, 8, 3,
+    3, 8, 9, 3, 9, 4, 4, 9, 5,
+    4, 5, 0,
+};
+
+pub fn buildTriangleMesh(
+    allocator: std.mem.Allocator,
+    value: scene_mod.Scene,
+    width: u32,
+    height: u32,
+) Error!TriangleMesh {
+    _ = try byteCount(width, height);
+    var vertex_count: usize = 0;
+    var index_count: usize = 0;
+    for (value.vessels) |vessel| {
+        if (vessel.hull.positions_m) |positions| {
+            const mesh_indices = vessel.hull.indices orelse return error.InvalidFrameSize;
+            vertex_count = std.math.add(usize, vertex_count, positions.len / 3) catch return error.InvalidFrameSize;
+            index_count = std.math.add(usize, index_count, mesh_indices.len) catch return error.InvalidFrameSize;
+        } else {
+            vertex_count = std.math.add(usize, vertex_count, 10) catch return error.InvalidFrameSize;
+            index_count = std.math.add(usize, index_count, hull_triangle_indices.len) catch return error.InvalidFrameSize;
+        }
+    }
+    const vertices = allocator.alloc(MeshVertex, vertex_count) catch return error.OutOfMemory;
+    errdefer allocator.free(vertices);
+    const indices = allocator.alloc(u32, index_count) catch return error.OutOfMemory;
+    errdefer allocator.free(indices);
+
+    const viewport = try findViewport(allocator, value, width, height);
+    var vertex_base: usize = 0;
+    var index_base: usize = 0;
+    for (value.vessels, 0..) |vessel, vessel_index| {
+        const color_bytes = palette[vessel_index % palette.len];
+        const color = [4]f32{
+            @as(f32, @floatFromInt(color_bytes[0])) / 255.0,
+            @as(f32, @floatFromInt(color_bytes[1])) / 255.0,
+            @as(f32, @floatFromInt(color_bytes[2])) / 255.0,
+            @as(f32, @floatFromInt(color_bytes[3])) / 255.0,
+        };
+        const world = try vesselWorldVertices(allocator, vessel);
+        defer allocator.free(world);
+        for (world, 0..) |point, local_index| {
+            const projected = project(point);
+            const pixel_x = @as(f64, @floatFromInt(width)) * 0.5 +
+                (projected.x - viewport.center.x) * viewport.scale;
+            const pixel_y = @as(f64, @floatFromInt(height)) * 0.5 -
+                (projected.y - viewport.center.y) * viewport.scale;
+            // Vulkan's positive-height viewport maps NDC -1 to the top edge.
+            vertices[vertex_base + local_index] = .{
+                .position = .{
+                    @floatCast(pixel_x * 2.0 / @as(f64, @floatFromInt(width)) - 1.0),
+                    @floatCast(pixel_y * 2.0 / @as(f64, @floatFromInt(height)) - 1.0),
+                },
+                .color = color,
+            };
+        }
+        const local_indices: []const u32 = if (vessel.hull.indices) |mesh_indices|
+            mesh_indices
+        else
+            &hull_triangle_indices;
+        for (local_indices, 0..) |local_index, offset| {
+            indices[index_base + offset] = @intCast(vertex_base + local_index);
+        }
+        vertex_base += world.len;
+        index_base += local_indices.len;
+    }
+    return .{ .vertices = vertices, .indices = indices };
+}
 
 pub fn createReferenceRgba(
     allocator: std.mem.Allocator,
@@ -65,12 +159,15 @@ pub fn renderPpmOnRgba(
     const expected = try byteCount(width, height);
     if (rgba.len != expected) return error.InvalidRgbaBuffer;
 
-    const viewport = findViewport(value, width, height);
+    const viewport = try findViewport(allocator, value, width, height);
     drawWaterGrid(rgba, width, height, viewport);
     for (value.vessels, 0..) |vessel, vessel_index| {
-        const vertices = hullVertices(vessel);
+        const vertices = try vesselWorldVertices(allocator, vessel);
+        defer allocator.free(vertices);
         const color = palette[vessel_index % palette.len];
-        for (hull_edges) |edge| {
+        const edges = try vesselWireEdges(allocator, vessel);
+        defer allocator.free(edges);
+        for (edges) |edge| {
             const start = viewport.toPixel(project(vertices[edge[0]]));
             const end = viewport.toPixel(project(vertices[edge[1]]));
             drawLine(rgba, width, height, start[0], start[1], end[0], end[1], color);
@@ -113,11 +210,13 @@ const Viewport = struct {
     }
 };
 
-fn findViewport(value: scene_mod.Scene, width: u32, height: u32) Viewport {
+fn findViewport(allocator: std.mem.Allocator, value: scene_mod.Scene, width: u32, height: u32) Error!Viewport {
     var min = Vec2{ .x = std.math.inf(f64), .y = std.math.inf(f64) };
     var max = Vec2{ .x = -std.math.inf(f64), .y = -std.math.inf(f64) };
     for (value.vessels) |vessel| {
-        for (hullVertices(vessel)) |vertex| {
+        const vertices = try vesselWorldVertices(allocator, vessel);
+        defer allocator.free(vertices);
+        for (vertices) |vertex| {
             const point = project(vertex);
             min.x = @min(min.x, point.x);
             min.y = @min(min.y, point.y);
@@ -135,6 +234,65 @@ fn findViewport(value: scene_mod.Scene, width: u32, height: u32) Viewport {
         .width = width,
         .height = height,
     };
+}
+
+/// Ship-frame mesh (x,y,z) maps to viz body (north,east,heave), then pose.
+fn vesselWorldVertices(allocator: std.mem.Allocator, vessel: scene_mod.Vessel) Error![]Vec3 {
+    if (vessel.hull.positions_m) |positions| {
+        if (positions.len % 3 != 0) return error.InvalidFrameSize;
+        const count = positions.len / 3;
+        const result = allocator.alloc(Vec3, count) catch return error.OutOfMemory;
+        for (0..count) |index| {
+            const base = index * 3;
+            // ship +X forward / +Y starboard / +Z up → viz north/east/heave
+            result[index] = transform(.{
+                .x = positions[base],
+                .y = positions[base + 1],
+                .z = positions[base + 2],
+            }, vessel.pose);
+        }
+        return result;
+    }
+    const parametric = hullVertices(vessel);
+    const result = allocator.alloc(Vec3, parametric.len) catch return error.OutOfMemory;
+    @memcpy(result, &parametric);
+    return result;
+}
+
+fn vesselWireEdges(allocator: std.mem.Allocator, vessel: scene_mod.Vessel) Error![][2]u32 {
+    if (vessel.hull.indices) |mesh_indices| {
+        var edge_set = std.AutoHashMap(u64, void).init(allocator);
+        defer edge_set.deinit();
+        var i: usize = 0;
+        while (i + 2 < mesh_indices.len) : (i += 3) {
+            const a = mesh_indices[i];
+            const b = mesh_indices[i + 1];
+            const c = mesh_indices[i + 2];
+            try putUniqueEdge(&edge_set, a, b);
+            try putUniqueEdge(&edge_set, b, c);
+            try putUniqueEdge(&edge_set, c, a);
+        }
+        const edges = allocator.alloc([2]u32, edge_set.count()) catch return error.OutOfMemory;
+        var it = edge_set.keyIterator();
+        var out: usize = 0;
+        while (it.next()) |key| {
+            edges[out] = .{ @intCast(key.* >> 32), @intCast(key.* & 0xffff_ffff) };
+            out += 1;
+        }
+        return edges;
+    }
+    const edges = allocator.alloc([2]u32, hull_edges.len) catch return error.OutOfMemory;
+    for (hull_edges, 0..) |edge, index| {
+        edges[index] = .{ edge[0], edge[1] };
+    }
+    return edges;
+}
+
+fn putUniqueEdge(edge_set: *std.AutoHashMap(u64, void), a: u32, b: u32) Error!void {
+    const lo: u32 = @min(a, b);
+    const hi: u32 = @max(a, b);
+    const key = (@as(u64, lo) << 32) | @as(u64, hi);
+    edge_set.put(key, {}) catch return error.OutOfMemory;
 }
 
 fn hullVertices(vessel: scene_mod.Vessel) [10]Vec3 {
@@ -255,7 +413,7 @@ fn putPixel(rgba: []u8, width: u32, height: u32, x: i32, y: i32, color: [4]u8) v
     @memcpy(rgba[offset..][0..4], &color);
 }
 
-fn encodePpm(
+pub fn encodePpm(
     allocator: std.mem.Allocator,
     rgba: []const u8,
     width: u32,
@@ -308,4 +466,45 @@ test "fleet frame is deterministic and nonblank" {
         "96ef989f3e952a08e430a549ecf0aa05ed1396d2256f6a2bea53e387b31fc758",
         &digest_hex,
     );
+}
+
+test "triangle mesh preserves multi-vessel camera framing" {
+    const json =
+        \\{"title":"Mesh Formation","vessels":[
+        \\ {"id":"lead","hull":{"kind":"wigley","length_m":80,"beam_m":12,"draft_m":4},"pose":{"north_m":30,"yaw_rad":0.2,"roll_rad":0.08}},
+        \\ {"id":"wing","hull":{"kind":"box_barge","length_m":40,"beam_m":8,"draft_m":3},"pose":{"north_m":-30,"east_m":45,"yaw_rad":-0.25}}
+        \\]}
+    ;
+    const parsed = try scene_mod.parseSceneJson(std.testing.allocator, json);
+    defer scene_mod.freeScene(std.testing.allocator, parsed);
+    const mesh = try buildTriangleMesh(std.testing.allocator, parsed, 320, 180);
+    defer mesh.deinit(std.testing.allocator);
+    try std.testing.expectEqual(@as(usize, 20), mesh.vertices.len);
+    try std.testing.expectEqual(@as(usize, hull_triangle_indices.len * 2), mesh.indices.len);
+    for (mesh.vertices) |vertex| {
+        try std.testing.expect(std.math.isFinite(vertex.position[0]));
+        try std.testing.expect(std.math.isFinite(vertex.position[1]));
+        try std.testing.expect(vertex.position[0] >= -1.0 and vertex.position[0] <= 1.0);
+        try std.testing.expect(vertex.position[1] >= -1.0 and vertex.position[1] <= 1.0);
+    }
+    for (mesh.indices) |index| {
+        try std.testing.expect(index < mesh.vertices.len);
+    }
+}
+
+test "mesh_triangles buildTriangleMesh has eight vertices" {
+    const json =
+        \\{"title":"Box Envelope","vessels":[{
+        \\ "id":"canonical",
+        \\ "hull":{"kind":"mesh_triangles","length_m":10,"beam_m":4,"draft_m":1.5,
+        \\  "positions_m":[-5,-2,0, 5,-2,0, 5,2,0, -5,2,0, -5,-2,1.5, 5,-2,1.5, 5,2,1.5, -5,2,1.5],
+        \\  "indices":[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,3,7,6,3,6,2,0,4,7,0,7,3,1,2,6,1,6,5]}
+        \\}]}
+    ;
+    const parsed = try scene_mod.parseSceneJson(std.testing.allocator, json);
+    defer scene_mod.freeScene(std.testing.allocator, parsed);
+    const mesh = try buildTriangleMesh(std.testing.allocator, parsed, 320, 180);
+    defer mesh.deinit(std.testing.allocator);
+    try std.testing.expectEqual(@as(usize, 8), mesh.vertices.len);
+    try std.testing.expectEqual(@as(usize, 36), mesh.indices.len);
 }
