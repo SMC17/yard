@@ -40,7 +40,26 @@ configuration detection, and a closing-residual diagnostic.
 zig build test --summary all
 ```
 
-Expected: `Build Summary: 3/3 steps succeeded; 9/9 tests passed`.
+Expected: `Build Summary: 3/3 steps succeeded; 15/15 tests passed`.
+
+## ArmadaClaw telemetry bridge
+
+`telemetry_protocol` defines the strict `yard.telemetry.v1` state and thruster
+command envelopes shared with the Elixir/OTP coordinator. `nats_telemetry`
+publishes state frames to `yard.telemetry.v1.state`, performs the NATS CONNECT
+handshake, handles partial writes, and waits for a PONG flush before close.
+
+With a local NATS broker and ArmadaClaw process running:
+
+```sh
+zig build telemetry-publish -- 100
+zig build telemetry-roundtrip -- 100
+```
+
+The first command publishes ordered state frames. The second subscribes before
+publishing and requires one strict `thruster_command` response for each state
+sequence, providing a closed Zig -> NATS -> ArmadaClaw -> NATS -> Zig protocol
+check.
 
 ## Public API
 
@@ -74,6 +93,12 @@ const r = try yard.allocation.closingResidual(&thr, &u, /* tau */);
 - Degenerate configuration (all colinear longitudinal thrusters)
   returns `Error.SingularConfigurationMatrix`.
 - Typed-error rejection for empty thruster list.
+- Strict state-envelope encoding and thruster-command parsing for
+  `yard.telemetry.v1`.
+- Exact NATS PUB header length, subject validation, payload ceiling, and
+  broker-flush behavior.
+- NATS command subscription, payload framing, strict parse, and ordered
+  telemetry-sequence correlation.
 
 ## Constraint inheritance
 

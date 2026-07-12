@@ -11,6 +11,8 @@ yard-dynpos-zig v0.0.0. Pre-1.0; bound by Zig 0.16 per
 | `allocation.closingResidual` | `unit-tested` | tau_actual = B u recovers tau within 1 N on well-posed cases |
 | `allocation.max_thrusters` | `unit-tested` | stack-buffer ceiling 8 |
 | singular-matrix detection | `unit-tested` | colinear longitudinal thrusters trigger Error.SingularConfigurationMatrix |
+| `telemetry_protocol` | `unit-tested` | strict state encode and command parse/validation under `yard.telemetry.v1` |
+| `nats_telemetry` | `integration-tested` locally | Zig state publisher -> local NATS -> ArmadaClaw -> local NATS -> Zig command subscriber, 100/100 correlated messages |
 
 ## Constraint inheritance (C2)
 
@@ -18,7 +20,7 @@ Bound by Zig 0.16. Strongest available claim: `stable-on-zig-0.16-today`.
 
 ## Test discipline (C5)
 
-Claim: `9/9 tests pass`.
+Claim: `15/15 tests pass`.
 
 ## Banned-vocabulary discipline (C7)
 
@@ -47,6 +49,8 @@ narrative-historical context.
 - Power management / blackout reconfiguration.
 - DP-2 / DP-3 fault-tolerance reconfiguration.
 - Wave / wind feedforward control.
+- Authenticated/TLS NATS, broker failover, cross-host OTP partitions, and HIL
+  timing remain unmeasured.
 
 ## Composition
 

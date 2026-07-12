@@ -15,7 +15,11 @@
 //             plus a general N x 3 pseudo-inverse for N <= 8.
 
 pub const allocation = @import("allocation.zig");
+pub const nats_telemetry = @import("nats_telemetry.zig");
+pub const telemetry_protocol = @import("telemetry_protocol.zig");
 
 test {
     _ = allocation;
+    _ = nats_telemetry;
+    _ = telemetry_protocol;
 }
