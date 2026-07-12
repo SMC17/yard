@@ -10,6 +10,7 @@ wall-sided GZ curve → IMO IS Code 2008 Part A 2.2 evaluation.
 
 ```sh
 zig build run
+zig build run -- --envelope   # ArtifactEnvelope JSON for Sovereign Experience
 zig build test
 ```
 
