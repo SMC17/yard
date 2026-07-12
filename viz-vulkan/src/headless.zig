@@ -13,15 +13,16 @@ pub const Error = error{
 pub fn renderSceneSvg(allocator: std.mem.Allocator, json: []const u8) Error![]u8 {
     const sc = scene.parseSceneJson(allocator, json) catch return Error.ParseFailed;
     defer scene.freeScene(allocator, sc);
-    const kind: viz.hull_profile_svg.HullKind = if (std.mem.eql(u8, sc.hull.kind, "wigley"))
+    const hull = sc.primaryHull();
+    const kind: viz.hull_profile_svg.HullKind = if (std.mem.eql(u8, hull.kind, "wigley"))
         .wigley
     else
         .box_barge;
     return viz.hull_profile_svg.render(allocator, .{
         .kind = kind,
-        .length = sc.hull.length_m,
-        .beam = sc.hull.beam_m,
-        .draft = sc.hull.draft_m,
+        .length = hull.length_m,
+        .beam = hull.beam_m,
+        .draft = hull.draft_m,
         .title = sc.title,
     }) catch return Error.RenderFailed;
 }
