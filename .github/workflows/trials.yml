@@ -6,11 +6,13 @@ on:
     paths:
       - "mission/**"
       - "trials/**"
+      - "arena/src/counter_rng.zig"
   pull_request:
     branches: [main]
     paths:
       - "mission/**"
       - "trials/**"
+      - "arena/src/counter_rng.zig"
 
 jobs:
   rescore:
