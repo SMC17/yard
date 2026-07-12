@@ -1,0 +1,52 @@
+{
+  "title": "Yard Formation Frame",
+  "simulation_time_s": 42.0,
+  "vessels": [
+    {
+      "id": "lead",
+      "hull": {
+        "kind": "wigley",
+        "length_m": 120.0,
+        "beam_m": 18.0,
+        "draft_m": 6.0
+      },
+      "pose": {
+        "north_m": 45.0,
+        "east_m": 0.0,
+        "roll_rad": 0.06,
+        "pitch_rad": -0.02,
+        "yaw_rad": 0.18
+      }
+    },
+    {
+      "id": "port-wing",
+      "hull": {
+        "kind": "wigley",
+        "length_m": 72.0,
+        "beam_m": 11.0,
+        "draft_m": 4.0
+      },
+      "pose": {
+        "north_m": -45.0,
+        "east_m": -70.0,
+        "roll_rad": -0.04,
+        "yaw_rad": 0.1
+      }
+    },
+    {
+      "id": "starboard-wing",
+      "hull": {
+        "kind": "box_barge",
+        "length_m": 64.0,
+        "beam_m": 14.0,
+        "draft_m": 4.5
+      },
+      "pose": {
+        "north_m": -55.0,
+        "east_m": 75.0,
+        "roll_rad": 0.03,
+        "yaw_rad": 0.25
+      }
+    }
+  ]
+}

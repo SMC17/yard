@@ -1,50 +1,50 @@
-# viz-vulkan — High-Fidelity Rendering Layer
+# viz-vulkan - native simulation viewer roadmap
 
-**Status:** Skeleton / Phase 2  
-**Proof level:** Not yet implemented
+## Landed foundation
 
-## Architecture Split
+Proof level: deterministic reference path `unit-tested`; optional native Vulkan
+bootstrap `integration-tested` when the Vulkan test gate passes on a host.
 
-```
-┌─────────────────────┐     scene_graph + physics_state (JSON)
-│  Fine-tuned model   │ ──────────────────────────────────────►
-│  or agent layer     │
-└─────────────────────┘
-                              ┌─────────────────────┐
-                              │  yard-viz-vulkan    │
-                              │  Zig + Vulkan       │
-                              │  deterministic draw │
-                              └─────────────────────┘
-                                        │
-                    ┌───────────────────┼───────────────────┐
-                    ▼                   ▼                   ▼
-              2D GZ curves        3D hull mesh      stress/wave overlay
-```
+- versioned fleet scene shape with dynamic 6-axis vessel poses
+- legacy single-hull scene compatibility
+- deterministic 3D wireframe fleet frame and golden SHA-256
+- Vulkan physical-device and queue-family discovery
+- Vulkan command-pool/buffer execution, synchronization, host-visible readback
+- GPU/readback frame parity against the CPU reference
+- CLI fixture for multi-vessel formation frames
 
-The model outputs **structured scene graphs**. The renderer draws them deterministically.
-Numbers always come from yard oracle/Zig — never from the model.
+## Next graphics gate
 
-## Phase 2 Deliverables
+1. Create a Vulkan graphics pipeline with explicit SPIR-V shader provenance.
+2. Upload hull vertex/index buffers rather than compositing reference lines.
+3. Render to an offscreen color/depth image and preserve deterministic readback.
+4. Add camera matrices, depth ordering, and pressure/wave scalar overlays.
+5. Gate every frame on nonblank pixels, golden fixture tolerance, and device-loss handling.
 
-1. **2D curve renderer** (Vulkan line/polygon) — parity with `viz/gz_svg.zig`
-2. **Box-barge 3D mesh** from principal particulars
-3. **Waterplane + heel animation** for stability review
-4. **Export:** PNG sequence, glTF for AR/VR review
+## Native viewer gate
 
-## Phase 3 Deliverables
+1. Add a Wayland/XCB surface abstraction and `VK_KHR_swapchain` negotiation.
+2. Run a fixed-step simulation clock independent of presentation cadence.
+3. Consume immutable fleet snapshots from the telemetry/replay boundary.
+4. Add orbit/pan/zoom controls, vessel selection, trails, and formation errors.
+5. Record frames with simulation tick, scene hash, and replay-chain head.
 
-- Pressure distribution heatmap from hydro output
-- Wave field overlay from strip-theory / bem reduced-order
-- Real-time capable path (<16ms frame for ops dashboards)
+## Fidelity expansion
 
-## Dependencies (planned)
+- pressure and structural-margin heatmaps
+- directional wave field and encounter-frequency overlays
+- heel, trim, sinkage, rudder, sail, and thruster state animation
+- bathymetry, routes, gates, and mission geometry
+- glTF export only after coordinate, unit, and provenance contracts are frozen
 
-- Zig 0.16+
-- Vulkan 1.2+ (GTX 1650 OK via Vulkan; CUDA not required for render)
-- Optional: FMI coupling for external CFD/FEA textures
+## Proof gates before performance claims
 
-## Non-Goals (Phase 2)
+- fixed public scene corpus and output hashes
+- Vulkan validation-layer clean run
+- offscreen/native parity policy with documented tolerances
+- frame-time benchmark with resolution, vessel count, GPU class, and command
+- device-loss and missing-loader negative tests
+- at least one replay-driven multi-vessel integration test
 
-- Class-society regulatory rendering standards
-- Photo-real ocean simulation
-- Model-in-the-loop physics (oracle only)
+Photo-real rendering and regulatory display approval remain out of scope until
+the deterministic engineering viewer is complete and measured.

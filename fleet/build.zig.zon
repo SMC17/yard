@@ -1,0 +1,13 @@
+.{
+    .name = .yard_fleet,
+    .version = "0.1.0",
+    .fingerprint = 0xa8e6fea0c314f06e,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "README.md",
+        "src",
+    },
+}
