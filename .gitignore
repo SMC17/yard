@@ -13,4 +13,9 @@ tools/dataset/out/eval_multimodal.jsonl
 models/
 out/
 zig-out/
+fleet-formation.ppm
 trials/results-holdout/
+.agents/
+examples/design-spiral-wigley/vessel_sim.zig
+examples/design-spiral-wigley/pareto_front.svg
+examples/design-spiral-wigley/simulation_output.csv
