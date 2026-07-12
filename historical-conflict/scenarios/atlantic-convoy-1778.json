@@ -1,0 +1,213 @@
+{
+  "schema_version": "yard.historical-conflict.scenario.v0",
+  "scenario_id": "atlantic-convoy-screening-1778-v0",
+  "title": "Counterfactual 1778 merchant convoy screening case",
+  "year": 1778,
+  "seed": 17781015,
+  "timestep_seconds": 60,
+  "max_steps": 120,
+  "initial_range_m": {
+    "central": 1100.0,
+    "minimum": 800.0,
+    "maximum": 1400.0,
+    "source_id": "yard-aggregate-assumptions-v0"
+  },
+  "environment": {
+    "wind_speed_mps": {
+      "central": 9.0,
+      "minimum": 5.0,
+      "maximum": 14.0,
+      "source_id": "qdl-mercury-journal-1777-1784"
+    },
+    "sea_severity": {
+      "central": 0.35,
+      "minimum": 0.15,
+      "maximum": 0.65,
+      "source_id": "yard-aggregate-assumptions-v0"
+    },
+    "visibility_fraction": {
+      "central": 0.82,
+      "minimum": 0.55,
+      "maximum": 1.0,
+      "source_id": "yard-aggregate-assumptions-v0"
+    }
+  },
+  "sources": [
+    {
+      "source_id": "qdl-mercury-journal-1777-1784",
+      "kind": "primary_log",
+      "title": "Journal of the East India Company ship Mercury, 1777-1784",
+      "uri": "https://www.qdl.qa/en/archive/81055/vdc_100113993973.0x00008c",
+      "license": "Open Government Licence catalogue and images; attribution required",
+      "note": "Documents daily courses, knots, fathoms, winds, and remarks. It does not document this counterfactual encounter."
+    },
+    {
+      "source_id": "loc-chapman-1775-1820",
+      "kind": "public_reference",
+      "title": "Chapman, A Treatise on Ship-Building; English translation of the 1775 work",
+      "uri": "https://www.loc.gov/item/14021345/",
+      "license": "Public domain; Library of Congress credit",
+      "note": "Period naval-architecture provenance only; no vessel in this scenario is a reconstruction."
+    },
+    {
+      "source_id": "rmg-knowles-signals-1778",
+      "kind": "museum_catalogue",
+      "title": "A Set of Signals for a Fleet on a Plan Entirely New, Sir Charles Knowles, 1778",
+      "uri": "https://www.rmg.co.uk/collections/objects/rmgc-object-505057",
+      "license": "Catalogue citation only; no collection media embedded",
+      "note": "Supports the availability of fleet signal systems in 1778, not the numerical delay assumptions."
+    },
+    {
+      "source_id": "nps-black-powder-reference",
+      "kind": "public_reference",
+      "title": "Gunpowder, Castillo de San Marcos National Monument",
+      "uri": "https://www.nps.gov/casa/learn/historyculture/gunpowder.htm",
+      "license": "United States Government public information",
+      "note": "Supports black-powder period context; numerical gunnery behavior remains a declared model assumption."
+    },
+    {
+      "source_id": "yard-aggregate-assumptions-v0",
+      "kind": "model_assumption",
+      "title": "Yard 1778 aggregate conflict screening assumptions v0",
+      "uri": "https://github.com/SMC17/yard/tree/main/historical-conflict",
+      "license": "Same license as Yard source distribution",
+      "note": "Unvalidated uncertainty envelopes selected to exercise conservation, command delay, morale, fire, flooding, surrender, and disengagement."
+    }
+  ],
+  "vessels": [
+    {
+      "vessel_id": "convoy-escort-a",
+      "side": "convoy",
+      "role": "convoy_escort",
+      "displacement_t": 930.0,
+      "capabilities": [
+        "wooden_primary_structure", "canvas_sail", "sail_propulsion",
+        "human_lookout", "signal_flags", "lantern_signals", "speaking_trumpet",
+        "manual_pump", "smoothbore_muzzle_loading_cannon", "black_powder",
+        "solid_round_shot", "iron_fasteners"
+      ],
+      "provenance_ids": ["loc-chapman-1775-1820", "rmg-knowles-signals-1778", "nps-black-powder-reference", "yard-aggregate-assumptions-v0"],
+      "command": {
+        "signal": "signal_flags",
+        "order_delay_seconds": {"central": 180.0, "minimum": 90.0, "maximum": 360.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "signal_failure_probability": {"central": 0.08, "minimum": 0.02, "maximum": 0.20, "source_id": "yard-aggregate-assumptions-v0"}
+      },
+      "crew": {
+        "complement": 180,
+        "initial_morale": {"central": 0.82, "minimum": 0.68, "maximum": 0.92, "source_id": "yard-aggregate-assumptions-v0"},
+        "training_fraction": {"central": 0.72, "minimum": 0.55, "maximum": 0.86, "source_id": "yard-aggregate-assumptions-v0"},
+        "surrender_morale_threshold": 0.16
+      },
+      "gunnery": {
+        "gun_count": 28,
+        "shot_rounds": 420,
+        "powder_kg": 2100.0,
+        "shot_mass_kg": 8.16,
+        "powder_per_round_kg": {"central": 4.0, "minimum": 3.2, "maximum": 4.8, "source_id": "yard-aggregate-assumptions-v0"},
+        "reload_seconds": {"central": 150.0, "minimum": 100.0, "maximum": 240.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "effective_range_m": {"central": 2200.0, "minimum": 1500.0, "maximum": 2800.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "hit_probability_at_reference": {"central": 0.085, "minimum": 0.04, "maximum": 0.13, "source_id": "yard-aggregate-assumptions-v0"},
+        "damage_points_per_hit": {"central": 2.6, "minimum": 1.4, "maximum": 4.2, "source_id": "yard-aggregate-assumptions-v0"},
+        "crew_loss_probability_per_hit": {"central": 0.18, "minimum": 0.08, "maximum": 0.30, "source_id": "yard-aggregate-assumptions-v0"},
+        "fire_probability_per_hit": {"central": 0.11, "minimum": 0.04, "maximum": 0.22, "source_id": "yard-aggregate-assumptions-v0"},
+        "flooding_probability_per_hit": {"central": 0.10, "minimum": 0.03, "maximum": 0.20, "source_id": "yard-aggregate-assumptions-v0"}
+      },
+      "damage_control": {
+        "hull_integrity_points": 110.0,
+        "flooding_capacity": 1.0,
+        "fire_suppression_per_step": {"central": 0.018, "minimum": 0.008, "maximum": 0.028, "source_id": "yard-aggregate-assumptions-v0"},
+        "pumping_per_step": {"central": 0.014, "minimum": 0.006, "maximum": 0.023, "source_id": "yard-aggregate-assumptions-v0"},
+        "withdrawal_hull_fraction": 0.30
+      }
+    },
+    {
+      "vessel_id": "merchantman-mercury-screening",
+      "side": "convoy",
+      "role": "merchantman",
+      "displacement_t": 760.0,
+      "capabilities": [
+        "wooden_primary_structure", "canvas_sail", "sail_propulsion",
+        "human_lookout", "signal_flags", "manual_pump",
+        "smoothbore_muzzle_loading_cannon", "black_powder", "solid_round_shot", "iron_fasteners"
+      ],
+      "provenance_ids": ["qdl-mercury-journal-1777-1784", "loc-chapman-1775-1820", "yard-aggregate-assumptions-v0"],
+      "command": {
+        "signal": "signal_flags",
+        "order_delay_seconds": {"central": 260.0, "minimum": 120.0, "maximum": 520.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "signal_failure_probability": {"central": 0.12, "minimum": 0.04, "maximum": 0.28, "source_id": "yard-aggregate-assumptions-v0"}
+      },
+      "crew": {
+        "complement": 95,
+        "initial_morale": {"central": 0.72, "minimum": 0.55, "maximum": 0.86, "source_id": "yard-aggregate-assumptions-v0"},
+        "training_fraction": {"central": 0.46, "minimum": 0.30, "maximum": 0.62, "source_id": "yard-aggregate-assumptions-v0"},
+        "surrender_morale_threshold": 0.22
+      },
+      "gunnery": {
+        "gun_count": 12,
+        "shot_rounds": 144,
+        "powder_kg": 520.0,
+        "shot_mass_kg": 4.08,
+        "powder_per_round_kg": {"central": 2.5, "minimum": 1.8, "maximum": 3.1, "source_id": "yard-aggregate-assumptions-v0"},
+        "reload_seconds": {"central": 190.0, "minimum": 130.0, "maximum": 300.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "effective_range_m": {"central": 1700.0, "minimum": 1100.0, "maximum": 2200.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "hit_probability_at_reference": {"central": 0.05, "minimum": 0.02, "maximum": 0.09, "source_id": "yard-aggregate-assumptions-v0"},
+        "damage_points_per_hit": {"central": 1.6, "minimum": 0.8, "maximum": 2.8, "source_id": "yard-aggregate-assumptions-v0"},
+        "crew_loss_probability_per_hit": {"central": 0.12, "minimum": 0.04, "maximum": 0.22, "source_id": "yard-aggregate-assumptions-v0"},
+        "fire_probability_per_hit": {"central": 0.10, "minimum": 0.03, "maximum": 0.20, "source_id": "yard-aggregate-assumptions-v0"},
+        "flooding_probability_per_hit": {"central": 0.08, "minimum": 0.02, "maximum": 0.16, "source_id": "yard-aggregate-assumptions-v0"}
+      },
+      "damage_control": {
+        "hull_integrity_points": 82.0,
+        "flooding_capacity": 0.85,
+        "fire_suppression_per_step": {"central": 0.012, "minimum": 0.004, "maximum": 0.021, "source_id": "yard-aggregate-assumptions-v0"},
+        "pumping_per_step": {"central": 0.010, "minimum": 0.003, "maximum": 0.018, "source_id": "yard-aggregate-assumptions-v0"},
+        "withdrawal_hull_fraction": 0.40
+      }
+    },
+    {
+      "vessel_id": "opposing-period-cruiser-a",
+      "side": "opposing",
+      "role": "period_cruiser",
+      "displacement_t": 1050.0,
+      "capabilities": [
+        "wooden_primary_structure", "canvas_sail", "sail_propulsion",
+        "human_lookout", "signal_flags", "lantern_signals", "speaking_trumpet",
+        "manual_pump", "smoothbore_muzzle_loading_cannon", "black_powder",
+        "solid_round_shot", "iron_fasteners"
+      ],
+      "provenance_ids": ["loc-chapman-1775-1820", "rmg-knowles-signals-1778", "nps-black-powder-reference", "yard-aggregate-assumptions-v0"],
+      "command": {
+        "signal": "signal_flags",
+        "order_delay_seconds": {"central": 150.0, "minimum": 60.0, "maximum": 300.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "signal_failure_probability": {"central": 0.06, "minimum": 0.01, "maximum": 0.16, "source_id": "yard-aggregate-assumptions-v0"}
+      },
+      "crew": {
+        "complement": 210,
+        "initial_morale": {"central": 0.84, "minimum": 0.70, "maximum": 0.94, "source_id": "yard-aggregate-assumptions-v0"},
+        "training_fraction": {"central": 0.76, "minimum": 0.60, "maximum": 0.90, "source_id": "yard-aggregate-assumptions-v0"},
+        "surrender_morale_threshold": 0.14
+      },
+      "gunnery": {
+        "gun_count": 32,
+        "shot_rounds": 512,
+        "powder_kg": 2600.0,
+        "shot_mass_kg": 8.16,
+        "powder_per_round_kg": {"central": 4.1, "minimum": 3.2, "maximum": 5.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "reload_seconds": {"central": 140.0, "minimum": 90.0, "maximum": 220.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "effective_range_m": {"central": 2300.0, "minimum": 1600.0, "maximum": 2900.0, "source_id": "yard-aggregate-assumptions-v0"},
+        "hit_probability_at_reference": {"central": 0.09, "minimum": 0.045, "maximum": 0.14, "source_id": "yard-aggregate-assumptions-v0"},
+        "damage_points_per_hit": {"central": 2.8, "minimum": 1.5, "maximum": 4.4, "source_id": "yard-aggregate-assumptions-v0"},
+        "crew_loss_probability_per_hit": {"central": 0.19, "minimum": 0.08, "maximum": 0.31, "source_id": "yard-aggregate-assumptions-v0"},
+        "fire_probability_per_hit": {"central": 0.12, "minimum": 0.04, "maximum": 0.23, "source_id": "yard-aggregate-assumptions-v0"},
+        "flooding_probability_per_hit": {"central": 0.11, "minimum": 0.03, "maximum": 0.21, "source_id": "yard-aggregate-assumptions-v0"}
+      },
+      "damage_control": {
+        "hull_integrity_points": 120.0,
+        "flooding_capacity": 1.1,
+        "fire_suppression_per_step": {"central": 0.019, "minimum": 0.009, "maximum": 0.030, "source_id": "yard-aggregate-assumptions-v0"},
+        "pumping_per_step": {"central": 0.015, "minimum": 0.006, "maximum": 0.025, "source_id": "yard-aggregate-assumptions-v0"},
+        "withdrawal_hull_fraction": 0.28
+      }
+    }
+  ]
+}
