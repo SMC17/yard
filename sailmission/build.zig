@@ -108,6 +108,22 @@ pub fn build(b: *std.Build) void {
         });
         mod.addImport("yard_arena", arena_mod);
 
+        // Mercury mission artifacts live in arena/, outside this module's
+        // package path; expose them as anonymous imports so @embedFile works.
+        const mercury_mission = "../arena/missions/mercury-1778-outbound-v0/";
+        mod.addAnonymousImport("mercury_mission_json", .{
+            .root_source_file = b.path(mercury_mission ++ "mission.json"),
+        });
+        mod.addAnonymousImport("mercury_environment_json", .{
+            .root_source_file = b.path(mercury_mission ++ "environment/cliwoc-route-ensemble.v0.json"),
+        });
+        mod.addAnonymousImport("mercury_backend_config_json", .{
+            .root_source_file = b.path(mercury_mission ++ "backend-config.json"),
+        });
+        mod.addAnonymousImport("mercury_submission_example_json", .{
+            .root_source_file = b.path(mercury_mission ++ "submission.example.json"),
+        });
+
         const mercury_exe = b.addExecutable(.{
             .name = "yard-mercury",
             .root_module = b.createModule(.{
@@ -120,6 +136,10 @@ pub fn build(b: *std.Build) void {
             }),
         });
         b.installArtifact(mercury_exe);
+
+        const install_mercury = b.addInstallArtifact(mercury_exe, .{});
+        const install_mercury_step = b.step("install-mercury", "Install only the trusted Mercury evaluator");
+        install_mercury_step.dependOn(&install_mercury.step);
 
         const mercury_cmd = b.addRunArtifact(mercury_exe);
         if (b.args) |args| mercury_cmd.addArgs(args);

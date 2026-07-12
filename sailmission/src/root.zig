@@ -15,6 +15,10 @@ pub const physics = @import("physics.zig");
 pub const gates = @import("gates.zig");
 pub const voyage = @import("voyage.zig");
 pub const runner = @import("runner.zig");
+pub const historical_env = @import("historical_env.zig");
+pub const mercury = @import("mercury.zig");
+pub const hosted_evaluator = @import("hosted_evaluator.zig");
+pub const arena = @import("yard_arena");
 
 test {
     _ = spec;
@@ -23,4 +27,8 @@ test {
     _ = gates;
     _ = voyage;
     _ = runner;
+    _ = historical_env;
+    _ = mercury;
+    _ = hosted_evaluator;
+    _ = arena;
 }
