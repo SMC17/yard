@@ -75,6 +75,7 @@ pub fn evaluate(
             error.RouteInvalid => return Error.RouteInvalid,
             error.ResistanceFailed => return Error.ResistanceFailed,
             error.InsufficientPower => rejection = "insufficient_power",
+            error.InvalidRngAlgorithm => rejection = "invalid_rng_algorithm",
         }
     }
 

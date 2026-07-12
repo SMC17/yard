@@ -64,6 +64,31 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const strength_mod = b.addModule("yard_strength", .{
+        .root_source_file = b.path("../strength/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const eedi_mod = b.addModule("yard_eedi", .{
+        .root_source_file = b.path("../eedi/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const cii_mod = b.addModule("yard_cii", .{
+        .root_source_file = b.path("../cii/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const vimstab_mod = b.addModule("yard_vimstab", .{
+        .root_source_file = b.path("../vimstab/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const csr_mod = b.addModule("yard_csr", .{
+        .root_source_file = b.path("../csr/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const benchmark_mod = b.addModule("yard_benchmark", .{
         .root_source_file = b.path("../benchmark/src/root.zig"),
         .target = target,
@@ -95,6 +120,11 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_strip_theory", .module = strip_mod },
             .{ .name = "yard_dynpos", .module = dynpos_mod },
             .{ .name = "yard_benchmark", .module = benchmark_mod },
+            .{ .name = "yard_strength", .module = strength_mod },
+            .{ .name = "yard_eedi", .module = eedi_mod },
+            .{ .name = "yard_cii", .module = cii_mod },
+            .{ .name = "yard_vimstab", .module = vimstab_mod },
+            .{ .name = "yard_csr", .module = csr_mod },
         },
     });
 

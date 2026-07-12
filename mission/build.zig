@@ -57,6 +57,12 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const arena_rng_mod = b.addModule("yard_arena_rng", .{
+        .root_source_file = b.path("../arena/src/counter_rng.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const mod = b.addModule("yard_mission", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
@@ -67,6 +73,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "yard_routing", .module = routing_mod },
             .{ .name = "yard_box_barge", .module = box_barge_mod },
             .{ .name = "yard_cargo_resistance", .module = cargo_resistance_mod },
+            .{ .name = "yard_arena_rng", .module = arena_rng_mod },
         },
     });
 

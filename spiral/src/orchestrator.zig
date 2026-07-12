@@ -12,6 +12,11 @@ const strip = @import("yard_strip_theory");
 const benchmark = @import("yard_benchmark");
 const stages = @import("stages.zig");
 const dp_feedback = @import("dp_feedback.zig");
+const strength = @import("yard_strength");
+const eedi = @import("yard_eedi");
+const cii = @import("yard_cii");
+const vimstab = @import("yard_vimstab");
+const csr = @import("yard_csr");
 
 pub const Error = error{
     OutOfMemory,
@@ -49,6 +54,9 @@ pub const DesignParameters = struct {
     /// DP station-keeping max horizontal excursion [m] (high-fidelity feedback).
     dp_max_excursion_m: f64 = 0.0,
     dp_capable: bool = false,
+    regulatory_compliant: bool = true,
+    steel_grade: csr.section_check.SteelGrade = .ht36,
+    corrosion_allowance_m: f64 = 0.002,
     /// Benchmark hull for published tank C_T ingest (optional).
     tank_hull: TankHull = .none,
 };
@@ -109,8 +117,8 @@ pub const Orchestrator = struct {
             .hull_form => self.stageHullForm(params),
             .resistance_powering => self.stageResistance(params),
             .stability => self.stageStability(params),
-            .structure => self.stageStub(stage, params, "structure margins deferred"),
-            .arrangements => self.stageStub(stage, params, "arrangements deferred"),
+            .structure => self.stageStructure(params),
+            .arrangements => self.stageArrangements(params),
             .weights_centers => self.stageWeights(params),
             .cost_operability => self.stageCost(params),
             .feedback_requirements => self.stageFeedback(params),
@@ -347,6 +355,150 @@ pub const Orchestrator = struct {
         };
     }
 
+    fn steelYieldMpa(grade: csr.section_check.SteelGrade) f64 {
+        return switch (grade) {
+            .mild => 235.0,
+            .ht32 => 315.0,
+            .ht36 => 355.0,
+            .ht40 => 390.0,
+        };
+    }
+
+    fn stageStructure(self: Orchestrator, params: *DesignParameters) Error!StageResult {
+        const L = params.length;
+        const B = params.beam;
+        const C_B = params.c_b;
+        const rho = self.constants.rho_seawater;
+        const g = self.constants.g;
+
+        var message: []const u8 = "structure: L below CSR limit (90m), default scantling applied";
+        var flags = naval.ValidityFlags.initEmpty();
+
+        if (L >= strength.ur_s11.validity.L_min_m and L <= strength.ur_s11.validity.L_max_m) {
+            // 1. Calculate Wave Bending Moments per CSR-H Section 5
+            const M_wv_hog = csr.hull_girder.waveBendingHoggingKNm(L, B, C_B) catch return Error.StageFailed;
+            const M_wv_sag = csr.hull_girder.waveBendingSaggingKNm(L, B, C_B) catch return Error.StageFailed;
+
+            // 2. Estimate Still-Water Bending Moments (standard hog/sag proxies)
+            const M_sw_hog = 0.05 * rho * g * L * L * B * C_B * 1e-6;
+            const M_sw_sag = -0.04 * rho * g * L * L * B * C_B * 1e-6;
+
+            // 3. Simplified Midship Section gross section modulus
+            // Assuming hull depth D = 1.6 * draft, and plate thickness t_plate.
+            const D_hull = params.draft * 1.6;
+            const t_plate_m = (L / 1000.0 + 0.005);
+            const sec_area_m2 = 2.0 * (B + D_hull) * t_plate_m;
+            const Z_gross = sec_area_m2 * D_hull / 4.0;
+
+            // 4. Corrosion Deduction
+            const sec_area_corr_m2 = 2.0 * (B + D_hull) * params.corrosion_allowance_m;
+            const delta_Z_corrosion = sec_area_corr_m2 * D_hull / 4.0;
+
+            // 5. Evaluate Loading Conditions per CSR Section 6
+            const cond_hog = csr.section_check.LoadingCondition{
+                .name = "Full load departure",
+                .M_sw_hog_kNm = M_sw_hog,
+                .M_sw_sag_kNm = 0.0,
+                .M_wv_hog_kNm = M_wv_hog,
+                .M_wv_sag_kNm = 0.0,
+                .delta_Z_corrosion_m3 = delta_Z_corrosion,
+            };
+            const cond_sag = csr.section_check.LoadingCondition{
+                .name = "Ballast arrival",
+                .M_sw_hog_kNm = 0.0,
+                .M_sw_sag_kNm = M_sw_sag,
+                .M_wv_hog_kNm = 0.0,
+                .M_wv_sag_kNm = M_wv_sag,
+                .delta_Z_corrosion_m3 = delta_Z_corrosion,
+            };
+
+            const sec_geom = csr.section_check.Section{
+                .Z_gross_m3 = Z_gross,
+                .grade = params.steel_grade,
+            };
+
+            const res_hog = csr.section_check.evaluate(cond_hog, sec_geom) catch return Error.StageFailed;
+            const res_sag = csr.section_check.evaluate(cond_sag, sec_geom) catch return Error.StageFailed;
+
+            // 6. Ultimate Vertical Bending Capacity Check
+            const M_U = csr.hull_girder.ultimateMomentKNm(res_hog.Z_net_m3, steelYieldMpa(params.steel_grade), 1.1) catch return Error.StageFailed;
+            const ultimate_verdict = csr.hull_girder.ultimateStrengthVerdict(M_U, M_sw_hog, M_wv_hog, 1.15, 1.2) catch return Error.StageFailed;
+
+            // 7. Calculate steel weight and add to displacement
+            const structural_weight_kg = sec_area_m2 * L * 7850.0;
+            params.displacement += structural_weight_kg;
+
+            if (res_hog.overall == .fail or res_sag.overall == .fail or ultimate_verdict == .fail) {
+                flags.insert(.outside_validity_envelope);
+                params.regulatory_compliant = false;
+                message = "structure: CSR-H check failed (section stress exceedance or ultimate strength failure)";
+            } else {
+                message = "structure: CSR gross/net sectional check and ultimate capacity passed";
+            }
+        } else {
+            // Apply default rule-of-thumb scantling weight
+            params.displacement += L * B * params.draft * 0.05 * 1025.0;
+        }
+
+        return .{
+            .stage = .structure,
+            .fidelity = self.fidelity,
+            .gm_m = params.gm_m,
+            .power_kw = params.estimated_power_kw,
+            .displacement_t = params.displacement / 1000.0,
+            .flags = flags,
+            .message = message,
+        };
+    }
+
+    fn stageArrangements(self: Orchestrator, params: *DesignParameters) Error!StageResult {
+        const g = self.constants.g;
+        
+        // 1. Container stack racking check (design stack: 4 tiers, each 20 tonnes)
+        const tier_masses = [_]f64{ 20_000.0, 20_000.0, 20_000.0, 20_000.0 };
+        const m_total = vimstab.container_stack.totalStackMassKg(&tier_masses) catch return Error.StageFailed;
+        
+        // Instantaneous roll angle limit = 25 degrees = 0.4363 rad
+        const roll_limit = 0.4363;
+        // Lateral acceleration component at CG (proxy: 1.5 m/s^2)
+        const a_y_cg = 1.5;
+        const a_lat = vimstab.container_stack.lateralAccelerationMPS2(g, roll_limit, a_y_cg) catch return Error.StageFailed;
+        const F_lat = vimstab.container_stack.lateralForceN(m_total, a_lat) catch return Error.StageFailed;
+        
+        // Combined lashing/corner-post stiffness k = 2.0e7 N/m
+        const k_total = 2.0e7;
+        const delta = vimstab.container_stack.rackingDeflectionM(F_lat, k_total) catch return Error.StageFailed;
+        
+        // Allowable deflection limit = 25mm = 0.025m
+        const delta_allow = 0.025;
+        const verdict = vimstab.container_stack.deflectionVerdict(delta, delta_allow) catch return Error.StageFailed;
+        
+        var flags = naval.ValidityFlags.initEmpty();
+        var message: []const u8 = "arrangements: container stack racking passed MSC.252(83)";
+        if (verdict == .fail) {
+            flags.insert(.outside_validity_envelope);
+            message = "arrangements: container stack racking failed MSC.252(83) screening";
+        }
+
+        // 2. Tank Free Surface Correction: subtract free surface correction (GG') based on tank size
+        const tank_b = params.beam * 0.2;
+        const tank_l = 5.0;
+        const i_fsm = (tank_l * tank_b * tank_b * tank_b) / 12.0;
+        const vol = params.displacement / self.constants.rho_seawater;
+        const gg_prime = i_fsm / @max(vol, 1.0);
+        params.gm_m -= gg_prime;
+
+        return .{
+            .stage = .arrangements,
+            .fidelity = self.fidelity,
+            .gm_m = params.gm_m,
+            .power_kw = params.estimated_power_kw,
+            .displacement_t = params.displacement / 1000.0,
+            .flags = flags,
+            .message = message,
+        };
+    }
+
     fn stageStub(self: Orchestrator, stage: stages.Stage, params: *DesignParameters, msg: []const u8) Error!StageResult {
         return .{
             .stage = stage,
@@ -429,23 +581,88 @@ pub const Orchestrator = struct {
     }
 
     fn stageFeedback(self: Orchestrator, params: *DesignParameters) Error!StageResult {
-        var msg: []const u8 = "feedback to mission requirements";
+        var msg: []const u8 = "feedback: mission requirements verified";
+        var flags = naval.ValidityFlags.initEmpty();
+        params.regulatory_compliant = true;
+
         if (self.fidelity == .high or self.fidelity == .ultra) {
             _ = try self.runHighFidelitySim(params);
             const dp = try self.runCoupledDpFeedback(params);
             params.dp_max_excursion_m = dp.max_excursion_m;
             params.dp_capable = dp.capable and params.gm_m >= 0.5;
-            msg = if (params.dp_capable)
-                "feedback: DP capable under coupled irregular-wave sim"
-            else
-                "feedback: DP excursion or stability marginal";
+            if (!params.dp_capable) {
+                flags.insert(.outside_validity_envelope);
+                params.regulatory_compliant = false;
+                msg = "feedback: DP excursion or stability marginal";
+            }
         }
+
+        // Regulatory Compliance check: attained EEDI & attained CII rating
+        // Setup simple bulk carrier EEDI parameters
+        const me = eedi.eedi.Engine{
+            .P_kw = @max(params.estimated_power_kw * 0.75, 10.0),
+            .SFC_g_per_kwh = 190.0,
+            .fuel = .HFO,
+        };
+        const ae = eedi.eedi.Engine{
+            .P_kw = @max(params.estimated_power_kw * 0.05, 5.0),
+            .SFC_g_per_kwh = 220.0,
+            .fuel = .HFO,
+        };
+        const me_arr = [_]eedi.eedi.Engine{me};
+        const ae_arr = [_]eedi.eedi.Engine{ae};
+        // DWT capacity proxy = displacement * 0.65
+        const dwt_t = (params.displacement / 1000.0) * 0.65;
+        // V_ref in knots = service speed (converted to knots)
+        const v_ref = params.service_speed * 1.94384;
+
+        const attained_eedi = eedi.eedi.attainedValueGCO2PerTNm(.{
+            .main_engines = &me_arr,
+            .auxiliary_engines = &ae_arr,
+            .capacity_t = @max(dwt_t, 1.0),
+            .V_ref_kt = @max(v_ref, 1.0),
+            .f_i = 1.0,
+        }) catch 999.0;
+
+        // Operating Profile for CII calculation (250 days/yr, 50,000 nm distance)
+        const distance_nm = 50000.0;
+        const annual_fc_t = (me.P_kw * me.SFC_g_per_kwh + ae.P_kw * ae.SFC_g_per_kwh) * 1e-6 * 6000.0;
+        const fuel_entries = [_]cii.cii.FuelEntry{.{
+            .fuel = .HFO,
+            .consumption_t = annual_fc_t,
+        }};
+        const attained_aer = cii.cii.attainedAERgCO2PerTNm(&fuel_entries, @max(dwt_t, 1.0), distance_nm) catch 999.0;
+        
+        // IMO CII baseline: 2019 baseline ref value typical of bulk carrier (~ 5.0 g/t-nm)
+        const cii_required = cii.cii.requiredCIIgCO2PerTNm(5.0, 2026) catch attained_aer;
+        const cii_rating = cii.cii.classifyBulkCarrier(attained_aer, cii_required);
+
+        // Reject designs that fall under D or E CII operational ratings or exceed Phase 3 EEDI limits
+        const baseline_eedi = 961.79 * std.math.pow(f64, @max(dwt_t, 1.0), -0.477);
+        const required_eedi = eedi.eedi.requiredValueGCO2PerTNm(baseline_eedi, .phase_3) catch 15.0;
+
+        if (cii_rating == .D or cii_rating == .E or attained_eedi > required_eedi) {
+            flags.insert(.outside_validity_envelope);
+            params.regulatory_compliant = false;
+            msg = "feedback: regulatory check failed (CII rating D/E or EEDI exceeds Phase 3 limit)";
+        } else {
+            if (!params.regulatory_compliant) {
+                // Keep the DP error message
+            } else {
+                msg = if (self.fidelity == .high or self.fidelity == .ultra)
+                    "feedback: DP capable under coupled irregular-wave sim (EEDI & CII Rating A/B/C achieved)"
+                else
+                    "feedback: EEDI Compliant & CII Rating A/B/C achieved";
+            }
+        }
+
         return .{
             .stage = .feedback_requirements,
             .fidelity = self.fidelity,
             .gm_m = params.gm_m,
             .power_kw = params.estimated_power_kw,
             .displacement_t = params.displacement / 1000.0,
+            .flags = flags,
             .message = msg,
         };
     }
@@ -547,7 +764,21 @@ pub fn evaluateObjective(params: DesignParameters, gm_min: f64) f64 {
     const power_term = params.estimated_power_kw / 1000.0;
     const gm_penalty = if (params.gm_m < gm_min) (gm_min - params.gm_m) * 100.0 else 0.0;
     const disp_term = params.displacement / 1.0e6;
-    return power_term + gm_penalty + disp_term;
+    const reg_penalty = if (!params.regulatory_compliant) @as(f64, 1000.0) else 0.0;
+
+    // Material cost factor: HT40 steel is more expensive than Mild steel.
+    // Mild steel base cost factor = 1.0. HT32 = 1.15. HT36 = 1.25. HT40 = 1.4.
+    const mat_cost_factor: f64 = switch (params.steel_grade) {
+        .mild => 1.0,
+        .ht32 => 1.15,
+        .ht36 => 1.25,
+        .ht40 => 1.4,
+    };
+    // Proxy for steel weight (around 15% of displacement)
+    const steel_weight_t = (params.displacement / 1000.0) * 0.15;
+    const material_cost_term = steel_weight_t * mat_cost_factor * 0.05;
+
+    return power_term + gm_penalty + disp_term + reg_penalty + material_cost_term;
 }
 
 test "single spiral loop on cargo-scale hull" {
