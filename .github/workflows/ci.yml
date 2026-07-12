@@ -66,6 +66,33 @@ jobs:
       - name: Test native Vulkan queue and readback
         working-directory: viz-vulkan
         run: zig build test -Dvulkan=true --summary all
+      - name: Mesh-derived box-barge CPU PPM smoke
+        working-directory: viz-vulkan
+        run: |
+          zig build render-frame -- scenes/box-barge-mesh-canonical.json -o /tmp/box-barge-mesh-ref.ppm
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("/tmp/box-barge-mesh-ref.ppm")
+          data = p.read_bytes()
+          assert data.startswith(b"P6"), data[:16]
+          assert p.stat().st_size > 64, p.stat().st_size
+          print(f"cpu ppm ok bytes={p.stat().st_size}")
+          PY
+      - name: Mesh-derived box-barge native Vulkan PPM smoke
+        working-directory: viz-vulkan
+        run: |
+          zig build native-frame -Dvulkan=true -- \
+            scenes/box-barge-mesh-canonical.json \
+            -o /tmp/box-barge-mesh-native.ppm --width 960 --height 540
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("/tmp/box-barge-mesh-native.ppm")
+          data = p.read_bytes()
+          assert data.startswith(b"P6"), data[:16]
+          # 960*540*3 + header
+          assert p.stat().st_size > 960 * 540, p.stat().st_size
+          print(f"native ppm ok bytes={p.stat().st_size}")
+          PY
 
   test-hosted-arena:
     name: Hosted Arena control plane

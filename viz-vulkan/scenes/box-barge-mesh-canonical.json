@@ -1,0 +1,28 @@
+{
+  "title": "mesh-envelope:yard-box-barge-mesh-canonical",
+  "simulation_time_s": 0,
+  "mesh_envelope_id": "yard-box-barge-mesh-canonical",
+  "mesh_frame": "ship",
+  "mesh_triangle_count": 12,
+  "vessels": [
+    {
+      "id": "canonical",
+      "hull": {
+        "kind": "box_barge",
+        "length_m": 10,
+        "beam_m": 4,
+        "draft_m": 1.5
+      },
+      "pose": {
+        "north_m": 0,
+        "east_m": 0,
+        "heave_m": 0,
+        "roll_rad": 0,
+        "pitch_rad": 0,
+        "yaw_rad": 0
+      }
+    }
+  ],
+  "operational_qualification_claimed": false,
+  "note": "Derived from Sovereign mesh envelope for viz-vulkan ingest; not a Rhino scene."
+}
