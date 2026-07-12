@@ -17,6 +17,7 @@ const std = @import("std");
 pub const MaterialId = enum {
     oak,
     teak,
+    softwood,
     wrought_iron,
     riveted_steel,
     mild_steel,
@@ -45,6 +46,9 @@ pub const all = [_]Material{
     .{ .id = .oak, .available_from_year = -3000, .density_kg_m3 = 755, .allowable_stress_mpa = 13.0, .youngs_modulus_gpa = 12.3, .max_hull_length_m = 90.0 },
     // Teak: MOR ~100 MPa clear (Wood Handbook), /8.
     .{ .id = .teak, .available_from_year = 1600, .density_kg_m3 = 655, .allowable_stress_mpa = 12.5, .youngs_modulus_gpa = 10.7, .max_hull_length_m = 90.0 },
+    // Conservative generic shipbuilding softwood envelope. Species, grade,
+    // moisture, knots, and fastener details remain explicit uncertainty.
+    .{ .id = .softwood, .available_from_year = -3000, .density_kg_m3 = 500, .allowable_stress_mpa = 7.5, .youngs_modulus_gpa = 9.5, .max_hull_length_m = 70.0 },
     // Wrought iron plate: UTS ~340 MPa, /4.
     .{ .id = .wrought_iron, .available_from_year = 1820, .density_kg_m3 = 7700, .allowable_stress_mpa = 85.0, .youngs_modulus_gpa = 193.0, .max_hull_length_m = 130.0 },
     // Early riveted mild steel: UTS ~430 MPa, /4 (joint efficiency separate).

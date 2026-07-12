@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yard.dev/schema/arena/log-transcription.v0.json",
+  "title": "Yard Historical Log Transcription Ledger v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ledger_id", "source", "calendar", "records"],
+  "properties": {
+    "schema_version": { "const": "yard.arena.log-transcription.v0" },
+    "ledger_id": { "$ref": "#/$defs/nonempty" },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "archive_reference", "record_url", "iiif_manifest_url", "license", "image_count"],
+      "properties": {
+        "title": { "$ref": "#/$defs/nonempty" },
+        "archive_reference": { "$ref": "#/$defs/nonempty" },
+        "record_url": { "type": "string", "format": "uri" },
+        "iiif_manifest_url": { "type": "string", "format": "uri" },
+        "license": { "$ref": "#/$defs/nonempty" },
+        "image_count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "calendar": { "enum": ["gregorian_as_catalogued", "julian", "unknown"] },
+    "records": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["record_id", "record_type", "date_raw", "date_iso", "folio", "page_url", "raw_text", "normalized", "confidence", "review"],
+        "properties": {
+          "record_id": { "$ref": "#/$defs/nonempty" },
+          "record_type": { "enum": ["catalogue_route_anchor", "daily_log", "port_event", "weather_observation", "cargo_event", "encounter", "remark"] },
+          "date_raw": { "$ref": "#/$defs/nonempty" },
+          "date_iso": { "type": "string", "format": "date" },
+          "folio": { "$ref": "#/$defs/nonempty" },
+          "page_url": { "type": "string", "format": "uri" },
+          "raw_text": { "type": ["string", "null"] },
+          "normalized": {
+            "type": "object", "additionalProperties": false,
+            "required": ["place_historical", "place_current", "event"],
+            "properties": {
+              "place_historical": { "type": ["string", "null"] },
+              "place_current": { "type": ["string", "null"] },
+              "event": { "$ref": "#/$defs/nonempty" },
+              "course_deg": { "type": ["number", "null"], "minimum": 0, "maximum": 360 },
+              "speed_kn": { "type": ["number", "null"], "minimum": 0 },
+              "wind_direction_raw": { "type": ["string", "null"] },
+              "wind_speed_mps": { "type": ["number", "null"], "minimum": 0 },
+              "remarks": { "type": ["string", "null"] }
+            }
+          },
+          "confidence": {
+            "type": "object", "additionalProperties": false,
+            "required": ["date", "folio", "place", "transcription"],
+            "properties": {
+              "date": { "$ref": "#/$defs/confidence" },
+              "folio": { "$ref": "#/$defs/confidence" },
+              "place": { "$ref": "#/$defs/confidence" },
+              "transcription": { "$ref": "#/$defs/confidence" }
+            }
+          },
+          "review": {
+            "type": "object", "additionalProperties": false,
+            "required": ["status", "method", "reviewer"],
+            "properties": {
+              "status": { "enum": ["catalogue_verified", "single_transcription", "double_transcription", "adjudicated"] },
+              "method": { "$ref": "#/$defs/nonempty" },
+              "reviewer": { "$ref": "#/$defs/nonempty" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonempty": { "type": "string", "minLength": 1 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

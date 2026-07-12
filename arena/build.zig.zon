@@ -1,0 +1,19 @@
+.{
+    .name = .yard_arena,
+    .version = "0.1.0",
+    .fingerprint = 0x24293f3c2c5f46b3,
+    .minimum_zig_version = "0.16.0",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "README.md",
+        "STATUS.md",
+        "docs",
+        "leaderboard",
+        "missions",
+        "schema",
+        "scripts",
+        "src",
+        "web",
+    },
+}

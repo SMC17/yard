@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yard.dev/schema/arena/simulation-result.v0.json",
+  "title": "Yard Arena Trusted Simulation Result v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evaluator_id", "mission_id", "mission_version", "submission_id", "mission_sha256", "submission_sha256", "backend_version", "environment_sha256", "replay_algorithm", "replay_head_sha256", "replay_event_count", "season_commitment_sha256", "seed", "scenario_count", "metrics"],
+  "properties": {
+    "schema_version": { "const": "yard.arena.simulation-result.v0" },
+    "evaluator_id": { "$ref": "#/$defs/nonempty" },
+    "mission_id": { "$ref": "#/$defs/nonempty" },
+    "mission_version": { "$ref": "#/$defs/nonempty" },
+    "submission_id": { "$ref": "#/$defs/nonempty" },
+    "mission_sha256": { "$ref": "#/$defs/sha256" },
+    "submission_sha256": { "$ref": "#/$defs/sha256" },
+    "backend_version": { "$ref": "#/$defs/nonempty" },
+    "environment_sha256": { "$ref": "#/$defs/sha256" },
+    "replay_algorithm": { "const": "sha256-chain-v1" },
+    "replay_head_sha256": { "$ref": "#/$defs/sha256" },
+    "replay_event_count": { "type": "integer", "minimum": 1 },
+    "season_commitment_sha256": { "$ref": "#/$defs/sha256" },
+    "seed": { "type": "integer", "minimum": 0 },
+    "scenario_count": { "type": "integer", "minimum": 1 },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": ["delivered_cargo_t", "mean_transit_days", "p95_transit_days", "loss_fraction", "crew_casualty_fraction"],
+      "properties": {
+        "delivered_cargo_t": { "$ref": "#/$defs/nonnegative" },
+        "mean_transit_days": { "$ref": "#/$defs/nonnegative" },
+        "p95_transit_days": { "$ref": "#/$defs/nonnegative" },
+        "loss_fraction": { "$ref": "#/$defs/fraction" },
+        "crew_casualty_fraction": { "$ref": "#/$defs/fraction" },
+        "crew_exposure_days": { "type": ["number", "null"], "minimum": 0 },
+        "emissions_t_co2e": { "type": ["number", "null"], "minimum": 0 },
+        "required_freight_rate_units_per_t": { "type": ["number", "null"], "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "nonempty": { "type": "string", "minLength": 1 },
+    "nonnegative": { "type": "number", "minimum": 0 },
+    "fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

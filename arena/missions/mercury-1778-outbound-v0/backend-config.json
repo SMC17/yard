@@ -1,0 +1,27 @@
+{
+  "schema_version": "yard.arena.mercury-backend.v0",
+  "backend_version": "yard-mercury-empirical-sail-v0.1.0",
+  "scenario_count": 256,
+  "start_month": 12,
+  "segment_nm": 250.0,
+  "becalmed_floor_mps": 0.2,
+  "storm_threshold_mps": 18.0,
+  "storm_loss_probability": 0.0002,
+  "storm_severity_exponent": 2.0,
+  "max_segment_loss_probability": 0.01,
+  "max_transit_days": 365.0,
+  "min_gm_m": 0.3,
+  "gate_wind_mps": 8.0,
+  "max_heel_deg": 35.0,
+  "require_is_code": true,
+  "economics": {
+    "interest_rate": 0.06,
+    "life_years": 18,
+    "crew_cost_units_per_person_year": 0.5,
+    "maintenance_fraction": 0.04,
+    "insurance_fraction": 0.02,
+    "port_cost_units_per_voyage": 5.0,
+    "turnaround_days": 45.0,
+    "operating_days_per_year": 350.0
+  }
+}

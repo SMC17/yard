@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yard.dev/schema/arena/submission.v0.json",
+  "title": "Yard Arena Submission v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "submission_id", "mission_id", "mission_version", "ruleset_id", "track", "entrant", "provenance", "fleet"],
+  "properties": {
+    "schema_version": { "const": "yard.arena.submission.v0" },
+    "submission_id": { "$ref": "#/$defs/nonempty" },
+    "mission_id": { "$ref": "#/$defs/nonempty" },
+    "mission_version": { "$ref": "#/$defs/nonempty" },
+    "ruleset_id": { "$ref": "#/$defs/nonempty" },
+    "track": { "enum": ["declared_human", "human_ai", "autonomous_agent", "exhibition"] },
+    "entrant": { "$ref": "#/$defs/nonempty" },
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["yard_revision", "zig_version", "authoring_system"],
+      "properties": {
+        "yard_revision": { "$ref": "#/$defs/nonempty" },
+        "zig_version": { "$ref": "#/$defs/nonempty" },
+        "authoring_system": { "$ref": "#/$defs/nonempty" },
+        "ai_system": { "type": ["string", "null"] },
+        "method_uri": { "type": ["string", "null"] }
+      }
+    },
+    "fleet": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["design_id", "class_name", "count", "hull_form", "material", "propulsion", "length_m", "beam_m", "draft_m", "block_coefficient", "displacement_t", "cargo_capacity_t", "sail_area_m2", "crew", "unit_cost_units"],
+        "properties": {
+          "design_id": { "$ref": "#/$defs/nonempty" },
+          "class_name": { "$ref": "#/$defs/nonempty" },
+          "count": { "type": "integer", "minimum": 1 },
+          "hull_form": { "enum": ["monohull", "catamaran", "trimaran", "submersible"] },
+          "material": { "enum": ["oak", "teak", "softwood", "iron", "steel", "aluminum", "composite"] },
+          "propulsion": { "enum": ["sail", "sail_and_oar", "steam", "diesel", "hybrid", "electric", "nuclear"] },
+          "length_m": { "$ref": "#/$defs/nonnegative" },
+          "beam_m": { "$ref": "#/$defs/nonnegative" },
+          "draft_m": { "$ref": "#/$defs/nonnegative" },
+          "block_coefficient": { "$ref": "#/$defs/fraction" },
+          "displacement_t": { "$ref": "#/$defs/nonnegative" },
+          "cargo_capacity_t": { "$ref": "#/$defs/nonnegative" },
+          "sail_area_m2": { "$ref": "#/$defs/nonnegative" },
+          "crew": { "type": "integer", "minimum": 0 },
+          "unit_cost_units": { "$ref": "#/$defs/nonnegative" },
+          "depth_m": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+          "kg_m": { "type": ["number", "null"], "minimum": 0 },
+          "wetted_surface_m2": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+          "residuary_coefficient": { "type": ["number", "null"], "minimum": 0 },
+          "form_factor": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+          "min_brace_deg": { "type": ["number", "null"], "minimum": 0, "maximum": 90 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonempty": { "type": "string", "minLength": 1 },
+    "nonnegative": { "type": "number", "minimum": 0 },
+    "fraction": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

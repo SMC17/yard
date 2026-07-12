@@ -1,0 +1,75 @@
+{
+  "schema_version": "yard.arena.log-transcription.v0",
+  "ledger_id": "qdl-mercury-catalogue-route-anchors-v0",
+  "source": {
+    "title": "Mercury: Journal",
+    "archive_reference": "IOR/L/MAR/B/454C-E",
+    "record_url": "https://www.qdl.qa/en/archive/81055/vdc_100113993973.0x00005b",
+    "iiif_manifest_url": "https://www.qdl.qa/en/iiif/81055/vdc_100000000148.0x0000a5/manifest",
+    "license": "Open Government Licence",
+    "image_count": 679
+  },
+  "calendar": "gregorian_as_catalogued",
+  "records": [
+    {
+      "record_id": "mercury-1778-deptford",
+      "record_type": "catalogue_route_anchor",
+      "date_raw": "21 November 1778",
+      "date_iso": "1778-11-21",
+      "folio": "6",
+      "page_url": "https://www.qdl.qa/en/archive/81055/vdc_100000000148.0x0000a5",
+      "raw_text": null,
+      "normalized": { "place_historical": "Deptford", "place_current": "Deptford", "event": "departure sequence anchor" },
+      "confidence": { "date": 1.0, "folio": 1.0, "place": 1.0, "transcription": 0.0 },
+      "review": { "status": "catalogue_verified", "method": "QDL full-record catalogue metadata", "reviewer": "yard-source-ingest" }
+    },
+    {
+      "record_id": "mercury-1778-downs",
+      "record_type": "catalogue_route_anchor",
+      "date_raw": "14 December 1778",
+      "date_iso": "1778-12-14",
+      "folio": "9",
+      "page_url": "https://www.qdl.qa/en/archive/81055/vdc_100000000148.0x0000a5",
+      "raw_text": null,
+      "normalized": { "place_historical": "the Downs", "place_current": "The Downs", "event": "outbound route anchor" },
+      "confidence": { "date": 1.0, "folio": 1.0, "place": 1.0, "transcription": 0.0 },
+      "review": { "status": "catalogue_verified", "method": "QDL full-record catalogue metadata", "reviewer": "yard-source-ingest" }
+    },
+    {
+      "record_id": "mercury-1779-st-helena",
+      "record_type": "catalogue_route_anchor",
+      "date_raw": "20 March 1779",
+      "date_iso": "1779-03-20",
+      "folio": "33",
+      "page_url": "https://www.qdl.qa/en/archive/81055/vdc_100000000148.0x0000a5",
+      "raw_text": null,
+      "normalized": { "place_historical": "St Helena", "place_current": "Saint Helena", "event": "arrival" },
+      "confidence": { "date": 1.0, "folio": 1.0, "place": 1.0, "transcription": 0.0 },
+      "review": { "status": "catalogue_verified", "method": "QDL full-record catalogue metadata", "reviewer": "yard-source-ingest" }
+    },
+    {
+      "record_id": "mercury-1779-table-bay",
+      "record_type": "catalogue_route_anchor",
+      "date_raw": "21 April 1779",
+      "date_iso": "1779-04-21",
+      "folio": "39v",
+      "page_url": "https://www.qdl.qa/en/archive/81055/vdc_100000000148.0x0000a5",
+      "raw_text": null,
+      "normalized": { "place_historical": "Table Bay, Cape Bona Esperance", "place_current": "Table Bay/Cape Town", "event": "arrival" },
+      "confidence": { "date": 1.0, "folio": 1.0, "place": 1.0, "transcription": 0.0 },
+      "review": { "status": "catalogue_verified", "method": "QDL full-record catalogue metadata", "reviewer": "yard-source-ingest" }
+    },
+    {
+      "record_id": "mercury-1779-bombay",
+      "record_type": "catalogue_route_anchor",
+      "date_raw": "18 July 1779",
+      "date_iso": "1779-07-18",
+      "folio": "59",
+      "page_url": "https://www.qdl.qa/en/archive/81055/vdc_100000000148.0x0000a5",
+      "raw_text": null,
+      "normalized": { "place_historical": "Bombay", "place_current": "Mumbai", "event": "arrival" },
+      "confidence": { "date": 1.0, "folio": 1.0, "place": 1.0, "transcription": 0.0 },
+      "review": { "status": "catalogue_verified", "method": "QDL full-record catalogue metadata", "reviewer": "yard-source-ingest" }
+    }
+  ]
+}

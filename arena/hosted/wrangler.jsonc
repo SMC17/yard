@@ -1,0 +1,76 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "yard-arena-hosted",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "vars": {
+    "SERVICE_VERSION": "yard-arena-hosted-v0.1.0",
+    "MAX_JSON_BODY_BYTES": "1048576",
+    "MAX_ARTIFACT_BYTES": "33554432",
+    "SANDBOX_TRANSPORT": "rpc",
+    "SANDBOX_LOG_LEVEL": "info",
+    "SANDBOX_LOG_FORMAT": "json",
+    "COMMAND_TIMEOUT_MS": "600000",
+    "RUNNER_BASE_IMAGE_DIGEST": "sha256:23f67e16131b780865a5fa5aa3c8607408a730105c248836409f4e02bb6bf042",
+    "RUNNER_IMAGE_DIGEST": "sha256:8cb69434e20ad8366921c17e10cfcf64fcd930a017fc7b91eb105c1e44f2d118"
+  },
+  "containers": [
+    {
+      "class_name": "YardAgentSandbox",
+      "image": "./Dockerfile",
+      "instance_type": "lite",
+      "max_instances": 20
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "RUN_COORDINATOR", "class_name": "RunCoordinator" },
+      { "name": "AGENT_SANDBOX", "class_name": "YardAgentSandbox" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["RunCoordinator", "YardAgentSandbox"]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "yard-arena-hosted",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "ARTIFACTS", "bucket_name": "yard-arena-artifacts" }
+  ],
+  "queues": {
+    "producers": [
+      { "binding": "RUN_QUEUE", "queue": "yard-arena-runs" }
+    ],
+    "consumers": [
+      {
+        "queue": "yard-arena-runs",
+        "max_batch_size": 1,
+        "max_batch_timeout": 2,
+        "max_retries": 3,
+        "dead_letter_queue": "yard-arena-runs-dlq",
+        "max_concurrency": 20,
+        "retry_delay": 15
+      }
+    ]
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "limits": {
+    "cpu_ms": 300000
+  }
+}

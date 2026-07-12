@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yard.dev/schema/arena/scorecard.v0.json",
+  "title": "Yard Arena Scorecard v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evaluator_version", "evaluator_id", "run_id", "mission_id", "mission_version", "ruleset_id", "submission_id", "track", "mission_sha256", "submission_sha256", "simulation_result_sha256", "backend_version", "environment_sha256", "replay_algorithm", "replay_head_sha256", "replay_event_count", "season_commitment_sha256", "seed", "scenario_count", "feasible", "total_vessels", "total_cost_units", "total_nominal_cargo_t", "violations", "objectives"],
+  "properties": {
+    "schema_version": { "const": "yard.arena.scorecard.v0" },
+    "evaluator_version": { "$ref": "#/$defs/nonempty" },
+    "evaluator_id": { "$ref": "#/$defs/nonempty" },
+    "run_id": { "$ref": "#/$defs/sha256" },
+    "mission_id": { "$ref": "#/$defs/nonempty" },
+    "mission_version": { "$ref": "#/$defs/nonempty" },
+    "ruleset_id": { "$ref": "#/$defs/nonempty" },
+    "submission_id": { "$ref": "#/$defs/nonempty" },
+    "track": { "enum": ["declared_human", "human_ai", "autonomous_agent", "exhibition"] },
+    "mission_sha256": { "$ref": "#/$defs/sha256" },
+    "submission_sha256": { "$ref": "#/$defs/sha256" },
+    "simulation_result_sha256": { "$ref": "#/$defs/sha256" },
+    "backend_version": { "$ref": "#/$defs/nonempty" },
+    "environment_sha256": { "$ref": "#/$defs/sha256" },
+    "replay_algorithm": { "const": "sha256-chain-v1" },
+    "replay_head_sha256": { "$ref": "#/$defs/sha256" },
+    "replay_event_count": { "type": "integer", "minimum": 1 },
+    "season_commitment_sha256": { "$ref": "#/$defs/sha256" },
+    "seed": { "type": "integer", "minimum": 0 },
+    "scenario_count": { "type": "integer", "minimum": 1 },
+    "feasible": { "type": "boolean" },
+    "total_vessels": { "type": "integer", "minimum": 0 },
+    "total_cost_units": { "$ref": "#/$defs/nonnegative" },
+    "total_nominal_cargo_t": { "$ref": "#/$defs/nonnegative" },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["code", "subject", "detail"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "subject": { "$ref": "#/$defs/nonempty" },
+          "detail": { "$ref": "#/$defs/nonempty" }
+        }
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "direction", "aggregate", "epsilon", "value"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "direction": { "enum": ["minimize", "maximize"] },
+          "aggregate": { "enum": ["fixed", "mean", "median", "p95", "cvar90"] },
+          "epsilon": { "$ref": "#/$defs/nonnegative" },
+          "value": { "type": "number" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonempty": { "type": "string", "minLength": 1 },
+    "nonnegative": { "type": "number", "minimum": 0 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}
