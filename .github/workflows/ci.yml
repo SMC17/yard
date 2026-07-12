@@ -30,8 +30,65 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.16.0
-      - name: Test all 69 modules
+      - name: Test all primitive modules
         run: zig build test-all --summary all
+
+  test-frontier:
+    name: Fleet, Arena, telemetry, and viewer proofs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install proof-gate tools
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Run frontier integration gate
+        run: zig build test-frontier --summary all
+      - name: Check Arena browser sources
+        run: |
+          node --check arena/web/app.js
+          node --check arena/web/tests/smoke.mjs
+
+  test-native-vulkan:
+    name: Native Vulkan frame parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Install Vulkan loader and software device
+        run: sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
+      - name: Test native Vulkan queue and readback
+        working-directory: viz-vulkan
+        run: zig build test -Dvulkan=true --summary all
+
+  test-hosted-arena:
+    name: Hosted Arena control plane
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: arena/hosted/package-lock.json
+      - name: Install pinned Worker dependencies
+        working-directory: arena/hosted
+        run: npm ci
+      - name: Test contracts, coordination, crypto, and config drift
+        working-directory: arena/hosted
+        run: npm run check
+      - name: Apply a fresh local D1 schema
+        working-directory: arena/hosted
+        run: npm run db:local
+      - name: Dry-run Worker and pinned Sandbox image build
+        working-directory: arena/hosted
+        run: npm run build
 
   oracle-and-dataset:
     name: Oracle + dataset integrity
