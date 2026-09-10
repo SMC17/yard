@@ -81,7 +81,7 @@ pub fn main() !void {
             try stdout.flush();
             return;
         };
-        try writeL1(stdout, r, "L1_holtrop_hm1984");
+        try writeL1(stdout, r, "hm1984_zig");
     }
 
     try stdout.writeAll("}\n");
