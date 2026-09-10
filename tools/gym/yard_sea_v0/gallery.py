@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -68,6 +69,7 @@ def write_gallery(
     use_corpus: bool = False,
     l3_openfoam: bool = False,
     l15_michell: bool = False,
+    use_botorch: bool = False,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
     children_dir = out_dir / "children"
@@ -85,7 +87,7 @@ def write_gallery(
     for i, p in enumerate(parents):
         r = estimate_resistance(p)
         parent_meta.append({"index": i, "ct": r.Ct, "hull": p.to_dict()})
-    results = run_search(parents, steps=steps, seed=seed, evidence_root=evidence_dir)
+    results = run_search(parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch)
     improved = [r for r in results if r.get("improved")]
     l3_dir = out_dir / "l3_openfoam"
     l3_summaries: list[dict[str, Any]] = []
@@ -109,8 +111,14 @@ def write_gallery(
                 B=hull.get("B"),
                 T=hull.get("T"),
                 availability=avail,
+                timeout_s=float(os.environ.get("YARD_SEA_L3_TIMEOUT", "180")),
             )
             r["l3_openfoam"] = l3
+            # Surface Cd / fidelity for gallery consumers (L3_rans forceCoeffs teacher).
+            r["Cd"] = l3.get("Cd")
+            r["l3_fidelity"] = l3.get("fidelity")
+            r["l3_Ct"] = l3.get("Ct")
+            r["l3_solver"] = l3.get("solver")
             (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
             l3_summaries.append(
                 {
@@ -119,6 +127,8 @@ def write_gallery(
                     "skipped": l3.get("skipped"),
                     "skip_reason": l3.get("skip_reason"),
                     "Cd": l3.get("Cd"),
+                    "Ct": l3.get("Ct"),
+                    "solver": l3.get("solver"),
                 }
             )
 
@@ -144,6 +154,7 @@ def write_gallery(
         "seed": seed,
         "use_shipd": use_shipd,
         "use_corpus": use_corpus,
+        "use_botorch": use_botorch,
         "l3_openfoam": l3_openfoam,
         "l3_availability": avail.to_dict() if avail else None,
         "l3_summaries": l3_summaries,
@@ -165,6 +176,7 @@ def write_gallery(
         f"- Best ΔCt: {manifest['best_delta_ct']:.6f}",
         "",
         "Fidelity: L0 monitors + L1 Holtrop-simplified. Not ITTC powering / not class.",
+        f"- BoTorch: {'on' if use_botorch else 'off'}",
         f"- L3 OpenFOAM: {'on' if l3_openfoam else 'off'}"
         + (
             f" (available={avail.available})" if avail else ""
