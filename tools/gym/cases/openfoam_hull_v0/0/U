@@ -24,21 +24,21 @@ boundaryField
     {
         type            zeroGradient;
     }
+    yMin
+    {
+        type            slip;
+    }
+    yMax
+    {
+        type            slip;
+    }
     bottom
     {
-        type            noSlip;
+        type            slip;
     }
     top
     {
         type            slip;
-    }
-    front
-    {
-        type            symmetry;
-    }
-    back
-    {
-        type            symmetry;
     }
     hull
     {

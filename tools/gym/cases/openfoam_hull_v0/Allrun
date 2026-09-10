@@ -1,17 +1,27 @@
 #!/bin/sh
-# Yard-Sea-v0 openfoam_hull_v0 smoke runner.
-# Requires sourced OpenFOAM environment (foamVersion / etc.).
+# Yard-Sea-v0 openfoam_hull_v0: snappyHexMesh + short simpleFoam forceCoeffs smoke.
+# Prefer teacher-driven hybrid (native mesh + docker simpleFoam) when available.
+# Debian OpenFOAM 1912: FOAM_ETC=/usr/share/openfoam/etc (libforces sha1 bug → use Docker 2412).
 cd "${0%/*}" || exit 1
 set -e
-. "${WM_PROJECT_DIR:?OpenFOAM not sourced}/bin/tools/RunFunctions" 2>/dev/null || true
 
-runApplication blockMesh
-# snappyHexMesh optional when STL present:
+run_app() {
+  name="$1"; shift
+  echo "Running $name $*"
+  "$name" "$@" > "log.$name" 2>&1 || {
+    echo "$name failed; see log.$name"
+    return 1
+  }
+}
+
+run_app blockMesh
 if [ -f constant/triSurface/hull.stl ]; then
-  runApplication surfaceFeatureExtract 2>/dev/null || true
-  runApplication snappyHexMesh -overwrite 2>/dev/null || true
+  run_app snappyHexMesh -overwrite
 fi
-runApplication checkMesh
-# potentialFoam for quick irrotational smoke; swap to simpleFoam for drag coeffs.
-runApplication potentialFoam -writephi 2>/dev/null || runApplication potentialFoam
-# If forceCoeffs exist from a prior simpleFoam setup, leave postProcessing intact.
+run_app checkMesh
+potentialFoam -writep -writephi > log.potentialFoam 2>&1 || true
+# ForceCoeffs: simpleFoam (needs turbulence model). May fail on Debian 1912 sha1.
+if ! find postProcessing -name 'forceCoeffs.dat' -o -name 'coefficient.dat' 2>/dev/null | grep -q .; then
+  sed -i 's/application[[:space:]]\+potentialFoam;/application     simpleFoam;/' system/controlDict || true
+  simpleFoam > log.simpleFoam 2>&1 || true
+fi

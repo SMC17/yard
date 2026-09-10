@@ -1,8 +1,11 @@
 """L1.5 Michell thin-ship wave-drag teacher for Yard-Sea-v0.
 
-Wraps vendored Ship-D ``ModifiedMichellCw.ModMichell`` (Douglas Read / Bagazinski)
-with a synthetic Wigley-like half-breadth grid from ``HullState`` when no Ship-D
-offset mesh is supplied.
+Wraps vendored Ship-D ``ModifiedMichellCw.ModMichell`` (Douglas Read / Bagazinski).
+
+Offset sources (priority):
+1. Explicit ``Y`` / ``X`` / ``Z`` half-breadth grid
+2. Ship-D length-45 ``vector`` → waterlines from ``Hull_Parameterization.gen_MeshGridWL``
+3. Synthetic Wigley-like grid from ``HullState`` (fallback)
 
 Fidelity: **L1.5_michell** — thin-ship wave-drag ranking only.
 NOT ITTC powering, NOT model-test validated, NOT class / FAA / operational.
@@ -15,7 +18,7 @@ import sys
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -103,6 +106,83 @@ def wigley_offsets(
     return Y, X, Z
 
 
+def shipd_waterline_offsets(
+    vector: Sequence[float] | np.ndarray | Any,
+    *,
+    nx: int = 41,
+    nz: int = 11,
+    draft: float | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Half-breadth grid for ModMichell from Ship-D ``Hull_Parameterization``.
+
+    Uses ``gen_MeshGridWL`` (stations / waterlines API) at each submerged height,
+    then interpolates half-breadth onto a uniform Michell station grid.
+
+    Coordinate map:
+      Ship-D z: keel = 0 … design WL = ``hp.WL``
+      Michell Z: free surface = 0 … keel = ``-T``  (Z = z_shipd - T)
+
+    X spans ``[0, LOA]`` (Ship-D Cw convention uses LOA). Stations outside a
+    waterline's longitudinal extent get Y = 0. Nx forced odd for Filon.
+
+    Returns
+    -------
+    Y : (nx, nz) half-breadths [m]
+    X : (nx,) stations from 0 → LOA [m]
+    Z : (nz,) Michell depths from 0 → -T [m]
+    """
+    from ..shipd import ShipDVector
+    from ..shipd_surface import _hull_param
+
+    if nx % 2 == 0:
+        nx += 1
+    if isinstance(vector, ShipDVector):
+        vec = vector
+    else:
+        arr = np.asarray(list(vector), dtype=np.float64).reshape(-1)
+        if arr.size != 45:
+            raise ValueError(f"Ship-D vector must be length 45, got {arr.size}")
+        vec = arr
+
+    hp = _hull_param(vec)
+    loa = float(hp.LOA)
+    t_design = float(hp.WL)
+    t = float(draft) if draft is not None else t_design
+    if t <= 0.0:
+        raise ValueError(f"draft must be positive, got {t}")
+    t = min(t, t_design) if t_design > 0 else t
+
+    X = np.linspace(0.0, loa, nx)
+    Z_mich = np.linspace(0.0, -t, nz)
+    # Avoid exact keel z=0 special-case (flat Y=0 keel line in gen_MeshGridWL)
+    eps = max(1e-6 * float(hp.Dd), 1e-8)
+    Z_shipd = np.clip(t + Z_mich, eps, t)
+
+    Y = np.zeros((nx, nz), dtype=np.float64)
+    # Query slightly beyond [0, LOA] so bulbs / overhangs contribute before clip
+    x_query = np.linspace(-0.05 * loa, 1.05 * loa, max(2 * nx - 1, nx))
+
+    for j, z in enumerate(Z_shipd):
+        pts = np.asarray(hp.gen_MeshGridWL(x_query, float(z)), dtype=np.float64)
+        if pts.ndim != 2 or pts.shape[0] == 0 or pts.shape[1] < 2:
+            continue
+        order = np.argsort(pts[:, 0])
+        xs = pts[order, 0]
+        ys = np.abs(pts[order, 1])
+        uniq_x, idx = np.unique(xs, return_index=True)
+        uniq_y = ys[idx]
+        if uniq_x.size == 1:
+            # Degenerate WL — fill only exact station match
+            y_row = np.where(np.isclose(X, uniq_x[0]), float(uniq_y[0]), 0.0)
+        else:
+            y_row = np.interp(X, uniq_x, uniq_y, left=0.0, right=0.0)
+            y_row[X < uniq_x[0]] = 0.0
+            y_row[X > uniq_x[-1]] = 0.0
+        Y[:, j] = np.maximum(y_row, 0.0)
+
+    return Y, X, Z_mich
+
+
 def run(
     h: HullState | None = None,
     *,
@@ -114,14 +194,25 @@ def run(
     Y: np.ndarray | None = None,
     X: np.ndarray | None = None,
     Z: np.ndarray | None = None,
+    vector: Sequence[float] | np.ndarray | Any | None = None,
     availability: MichellAvailability | None = None,
 ) -> dict[str, Any]:
-    """Compute Michell thin-ship wave drag for a hull (or explicit offset grid).
+    """Compute Michell thin-ship wave drag for a hull / Ship-D vector / offset grid.
 
-    Returns ResistanceResult-like dict plus Cw / Rw / U / teacher metadata.
+    When ``vector`` (length-45 Ship-D) is given and Y/X/Z omitted, offsets come
+    from ``shipd_waterline_offsets``. Otherwise Wigley synthetic from HullState.
     """
     avail = availability if availability is not None else detect()
-    hull = h or HullState()
+
+    if h is None and vector is not None:
+        from ..shipd import project_to_hull
+
+        hull = project_to_hull(
+            vector, fn=float(Fn) if Fn is not None else 0.20
+        )
+    else:
+        hull = h or HullState()
+
     fn = float(Fn if Fn is not None else hull.Fn)
     L = float(hull.L)
     U = fn * math.sqrt(G * L)
@@ -151,13 +242,19 @@ def run(
         return base
 
     offset_source = "wigley_synthetic"
-    if Y is None or X is None or Z is None:
-        Y, X, Z = wigley_offsets(hull, nx=nx, nz=nz)
-    else:
+    if Y is not None and X is not None and Z is not None:
         offset_source = "provided"
         Y = np.asarray(Y, dtype=np.float64)
         X = np.asarray(X, dtype=np.float64)
         Z = np.asarray(Z, dtype=np.float64)
+    elif vector is not None:
+        Y, X, Z = shipd_waterline_offsets(vector, nx=nx, nz=nz, draft=float(hull.T))
+        offset_source = "shipd_hp_waterlines"
+        # Prefer Ship-D LOA for L / U / Cw denom when vector drives offsets
+        L = float(X[-1]) if X.size else L
+        U = fn * math.sqrt(G * L)
+    else:
+        Y, X, Z = wigley_offsets(hull, nx=nx, nz=nz)
 
     ModMichell, Calc_Cf = _load_mod_michell()
     with warnings.catch_warnings():
@@ -183,6 +280,7 @@ def run(
                 "teacher": TEACHER,
                 "Rw_N": None,
                 "U": U,
+                "offset_source": offset_source,
                 "availability": avail.to_dict(),
             }
         )
@@ -200,6 +298,12 @@ def run(
     ct = rt / denom if denom > 0 else float("nan")
     rn = U * L / 1.19e-6
 
+    notes = (
+        "Michell thin-ship wave drag (vendored ModifiedMichellCw) + ITTC57 Cf. "
+        f"Offsets: {offset_source}. "
+        "Exploratory L1.5 — not ITTC powering / not class / not operational."
+    )
+
     base = ResistanceResult(
         Fn=fn,
         Rn=rn,
@@ -209,11 +313,7 @@ def run(
         Rt_N=rt,
         Ct=ct,
         fidelity=FIDELITY,
-        notes=(
-            "Michell thin-ship wave drag (vendored ModifiedMichellCw) + ITTC57 Cf. "
-            "Synthetic Wigley offsets unless Y/X/Z supplied. "
-            "Exploratory L1.5 — not ITTC powering / not class / not operational."
-        ),
+        notes=notes,
     ).to_dict()
     base.update(
         {
@@ -224,6 +324,7 @@ def run(
             "Rf_N": rf,
             "U": U,
             "S_m2": sa,
+            "L_m": L,
             "nx": int(Y.shape[0]),
             "nz": int(Y.shape[1]),
             "n_theta": int(n_theta),

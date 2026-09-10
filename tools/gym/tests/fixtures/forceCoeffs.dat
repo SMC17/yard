@@ -1,0 +1,14 @@
+# Force coefficients
+# CofR        : (0 0 0)
+# dragDir     : (1 0 0)
+# liftDir     : (0 0 1)
+# pitchAxis   : (0 1 0)
+# magUInf     : 6.86
+# lRef        : 120
+# Aref        : 160
+# rhoInf      : 1025
+#
+# Time    Cd    Cd(f)    Cd(r)    Cl    Cl(f)    Cl(r)    CmPitch    CmPitch(f)    CmPitch(r)
+1         0.2100  0.1000   0.1100   0.012  0.006    0.006    0.019       0.010         0.009
+2         0.1980  0.0940   0.1040   0.011  0.005    0.006    0.018       0.009         0.009
+4         0.1912  0.0900   0.1012   0.010  0.005    0.005    0.017       0.008         0.009

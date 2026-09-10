@@ -1,0 +1,3 @@
+# Binary install via tools/install_openvsp.sh - do not commit 175MB tree
+*
+!.gitignore

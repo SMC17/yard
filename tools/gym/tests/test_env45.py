@@ -90,3 +90,59 @@ def test_apply_shipd_delta_clamps_and_bits():
 
     for i in BIT_INDICES:
         assert out[i] in (0.0, 1.0)
+
+
+def test_env45_hp_hydro_on_reset():
+    """use_hp_hydro=True attaches HP volumes on reset; default stays off."""
+    env0 = DesignSearchEnv45(sample_index=0, max_steps=3, seed=10)
+    _, info0 = env0.reset()
+    assert info0.get("use_hp_hydro") is False or "hp_hydro" not in info0
+
+    env = DesignSearchEnv45(
+        sample_index=0,
+        max_steps=5,
+        seed=11,
+        use_hp_hydro=True,
+        hp_hydro_every_n=0,
+    )
+    _, info = env.reset()
+    assert info["use_hp_hydro"] is True
+    hydro = info["hp_hydro"]
+    assert hydro["primary"]["volume_m3"] > 0
+    assert hydro["primary"]["displacement_t"] > 0
+    assert np.isfinite(hydro["primary"]["lcb_m"])
+    assert np.isfinite(hydro["primary"]["vcb_m"])
+    assert hydro["primary"]["awp_m2"] > 0
+    # HullState refined from HP volumes on reset
+    assert env.parent.volume() > 0
+    # zero step without every_n should not reattach hp_hydro
+    _, _, _, _, step_info = env.step(np.zeros(ACTION_DIM, dtype=np.float32))
+    if not step_info["rejected"]:
+        assert "hp_hydro" not in step_info
+
+
+def test_env45_hp_hydro_every_n():
+    env = DesignSearchEnv45(
+        sample_index=0,
+        max_steps=6,
+        seed=12,
+        use_hp_hydro=True,
+        hp_hydro_every_n=2,
+        delta_frac=0.02,
+    )
+    _, rinfo = env.reset()
+    assert "hp_hydro" in rinfo
+    # Zero actions stay feasible; steps 2 and 4 should refresh HP hydro.
+    saw_even = saw_odd_without = False
+    for _ in range(4):
+        _, _, _, _, info = env.step(np.zeros(ACTION_DIM, dtype=np.float32))
+        assert info.get("rejected") is False
+        sc = env.step_count
+        if sc % 2 == 0:
+            assert "hp_hydro" in info
+            assert info["hp_hydro"]["primary"]["volume_m3"] > 0
+            saw_even = True
+        else:
+            assert "hp_hydro" not in info
+            saw_odd_without = True
+    assert saw_even and saw_odd_without
