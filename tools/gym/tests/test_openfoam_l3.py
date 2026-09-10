@@ -17,10 +17,13 @@ from yard_sea_v0.teachers.openfoam_l3 import (
     FIDELITY_RANS,
     OpenFOAMAvailability,
     detect_openfoam,
+    native_forces_health,
     parse_force_coeffs,
     prepare_case,
     run_teacher,
     stl_bbox,
+    _sha1_preload_so,
+    _skip_reason_hint,
 )
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -205,3 +208,26 @@ def test_forcecoeffs_integration_smoke(tmp_path: Path):
     assert result["fidelity"] in (FIDELITY_POTENTIAL, FIDELITY_RANS)
     assert result["Cd"] is not None
     assert result["skipped"] is False
+
+
+def test_native_forces_health_shape():
+    h = native_forces_health(ensure_preload=True)
+    assert "ok" in h and "method" in h and "detail" in h
+    assert "sha1_bug" in h
+    # On this Debian box we expect sha1 bug + preload, but keep soft if layout differs.
+    if h.get("sha1_bug") and _sha1_preload_so() is not None:
+        assert h["ok"] is True
+        assert h["method"] == "sha1_preload"
+
+
+def test_detect_includes_native_forces_fields():
+    d = detect_openfoam().to_dict()
+    assert "native_forces_ok" in d
+    assert "native_forces_method" in d
+    assert "native_forces_detail" in d
+
+
+def test_skip_reason_hint_sha1():
+    hint = _skip_reason_hint("forceCoeffs_sha1_bug")
+    assert "OSHA1stream" in hint or "sha1buf" in hint
+    assert "OPENSSL" in hint or "OpenSSL" in hint or "SECLEVEL" in hint
