@@ -49,8 +49,25 @@ def ittc57_cf(rn: float) -> float:
     return 0.075 / (math.log10(rn) - 2.0) ** 2
 
 
-def estimate_resistance(h: HullState, nu: float = 1.19e-6) -> ResistanceResult:
-    """Return calm-water total resistance estimate at h.Fn."""
+def estimate_resistance(
+    h: HullState,
+    nu: float = 1.19e-6,
+    *,
+    prefer_zig_hm1984: bool = False,
+) -> ResistanceResult:
+    """Return calm-water total resistance estimate at h.Fn.
+
+    If prefer_zig_hm1984 and yard_sea_zig is available, use Zig HM1984
+    (see teachers.zig_l1 / zig_bridge). Otherwise Python Holtrop-simplified.
+    """
+    if prefer_zig_hm1984:
+        try:
+            from .zig_bridge import estimate_resistance_zig, zig_available
+
+            if zig_available():
+                return estimate_resistance_zig(h, fidelity="hm1984")
+        except Exception:
+            pass
     L, B, T, Cb = h.L, h.B, h.T, h.Cb
     Fn = h.Fn
     U = Fn * math.sqrt(G * L)

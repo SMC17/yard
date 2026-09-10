@@ -3,6 +3,10 @@
 Primary path: subprocess to `zig_gym/zig-out/bin/yard_sea_zig`.
 Optional ctypes: if a shared library is built later (`zig build -Dshared`),
 load via `ctypes.CDLL` — not required for L0/L1 parity today.
+
+L1 fidelity:
+  simplified — Holtrop-simplified (Python parity mirror)
+  hm1984     — vendored yard Holtrop-Mennen 1984 (holtrop.totalResistance)
 """
 
 from __future__ import annotations
@@ -12,13 +16,15 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from .hull import HullState
 from .resistance_l1 import ResistanceResult
 
 _PKG_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_BIN = _PKG_ROOT / "zig_gym" / "zig-out" / "bin" / "yard_sea_zig"
+
+Fidelity = Literal["simplified", "hm1984"]
 
 
 def resolve_zig_binary(explicit: str | Path | None = None) -> Path:
@@ -55,15 +61,31 @@ def _hull_args(h: HullState) -> list[str]:
     ]
 
 
+def _cli_mode(mode: str, fidelity: Fidelity | None = None) -> str:
+    """Map Python mode + fidelity → Zig CLI mode token."""
+    fid = fidelity or "simplified"
+    if mode == "l0":
+        return "l0"
+    if mode == "l1":
+        return "l1_hm1984" if fid == "hm1984" else "l1"
+    if mode == "both":
+        return "both_hm1984" if fid == "hm1984" else "both"
+    if mode in ("l1_hm1984", "both_hm1984", "hm1984"):
+        return "l1_hm1984" if mode == "hm1984" else mode
+    return mode
+
+
 def call_zig(
     h: HullState | None = None,
     mode: str = "both",
     binary: str | Path | None = None,
+    fidelity: Fidelity | None = None,
 ) -> dict[str, Any]:
     """Run Zig CLI and return parsed JSON."""
     hull = h or HullState()
     bin_path = resolve_zig_binary(binary)
-    cmd = [str(bin_path), mode, *_hull_args(hull)]
+    cli_mode = _cli_mode(mode, fidelity)
+    cmd = [str(bin_path), cli_mode, *_hull_args(hull)]
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         raise RuntimeError(
@@ -79,10 +101,20 @@ def evaluate_l0_zig(h: HullState | None = None, **kwargs: Any) -> dict[str, Any]
 
 
 def estimate_resistance_zig(
-    h: HullState | None = None, **kwargs: Any
+    h: HullState | None = None,
+    fidelity: Fidelity = "simplified",
+    **kwargs: Any,
 ) -> ResistanceResult:
-    data = call_zig(h, mode="l1", **kwargs)
+    """Estimate resistance via Zig CLI.
+
+    fidelity:
+      'simplified' — L1 Holtrop-simplified (parity with Python resistance_l1)
+      'hm1984'     — full HM 1984 via vendored yard holtrop.zig
+    """
+    data = call_zig(h, mode="l1", fidelity=fidelity, **kwargs)
     l1 = data["l1"]
+    if "error" in l1:
+        raise RuntimeError(f"zig HM1984 failed: {l1.get('error')}")
     return ResistanceResult(
         Fn=float(l1["Fn"]),
         Rn=float(l1["Rn"]),
@@ -91,7 +123,19 @@ def estimate_resistance_zig(
         Cw=float(l1["Cw"]),
         Rt_N=float(l1["Rt_N"]),
         Ct=float(l1["Ct"]),
-        fidelity=str(l1.get("fidelity", "L1_holtrop_simplified")),
+        fidelity=str(
+            l1.get(
+                "fidelity",
+                "L1_holtrop_hm1984" if fidelity == "hm1984" else "L1_holtrop_simplified",
+            )
+        ),
+        notes=(
+            "Vendored yard Holtrop-Mennen 1984 (Zig); not ITTC powering claim."
+            if fidelity == "hm1984"
+            else (
+                "Exploratory HM-style estimate for ranking only; not ITTC powering claim."
+            )
+        ),
     )
 
 
