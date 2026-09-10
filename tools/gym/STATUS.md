@@ -7,6 +7,8 @@ Implemented:
 - Gallery CLI + pytest
 - Zig L0 mirror under `gym/`
 - Soft IS-like GZ@30 bonus via `stability_bridge.py`
+- Box STL mesh export (`mesh.py`) + optional CadQuery fillet
+- `DesignSearchEnv45` Ship-D-seeded env
 - GitHub Actions workflow
 - **Ship-D 45-D schema** (`shipd.py`, labels from public X_LABELS.npy), sample CSV, projection → HullState, `--shipd` gallery seed
 
