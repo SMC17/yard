@@ -14,6 +14,7 @@ from .shipd import load_sample_vectors, project_to_hull
 from .mesh import export_hull_stl
 from .teachers.openfoam_l3 import detect_openfoam, run_teacher
 from .teachers.michell_l15 import detect as detect_michell, run as run_michell
+from .teachers.panel_l2 import detect as detect_panel, run as run_panel
 
 
 def default_parents(n: int = 5, seed: int = 0) -> list[HullState]:
@@ -69,6 +70,7 @@ def write_gallery(
     use_corpus: bool = False,
     l3_openfoam: bool = False,
     l15_michell: bool = False,
+    l2_panel: bool = False,
     use_botorch: bool = False,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
@@ -92,8 +94,10 @@ def write_gallery(
     l3_dir = out_dir / "l3_openfoam"
     l3_summaries: list[dict[str, Any]] = []
     l15_summaries: list[dict[str, Any]] = []
+    l2_summaries: list[dict[str, Any]] = []
     avail = detect_openfoam() if l3_openfoam else None
     michell_avail = detect_michell() if l15_michell else None
+    panel_avail = detect_panel() if l2_panel else None
     for j, r in enumerate(results):
         (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
         stl_path = None
@@ -148,6 +152,30 @@ def write_gallery(
                     "Ct": l15.get("Ct"),
                 }
             )
+
+        if l2_panel and r.get("hull"):
+            from .hull import HullState as _HS2
+            hh2 = r["hull"]
+            hull_obj2 = _HS2(**{k: hh2[k] for k in ("L","B","T","Cb","lcb_frac","kg_frac","Fn") if k in hh2})
+            l2 = run_panel(
+                hull_obj2,
+                stl_path=stl_path,
+                availability=panel_avail,
+            )
+            r["l2_panel"] = l2
+            (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
+            l2_summaries.append(
+                {
+                    "child": j,
+                    "fidelity": l2.get("fidelity"),
+                    "skipped": l2.get("skipped"),
+                    "skip_reason": l2.get("skip_reason"),
+                    "Cw": l2.get("Cw"),
+                    "Cd": l2.get("Cd"),
+                    "Ct": l2.get("Ct"),
+                    "backend": l2.get("backend"),
+                }
+            )
     manifest = {
         "n_parents": n_parents,
         "steps": steps,
@@ -161,6 +189,9 @@ def write_gallery(
         "l15_michell": l15_michell,
         "l15_availability": michell_avail.to_dict() if michell_avail else None,
         "l15_summaries": l15_summaries,
+        "l2_panel": l2_panel,
+        "l2_availability": panel_avail.to_dict() if panel_avail else None,
+        "l2_summaries": l2_summaries,
         "n_results": len(results),
         "n_improved": len(improved),
         "parents": parent_meta,
@@ -184,6 +215,10 @@ def write_gallery(
         f"- L1.5 Michell: {'on' if l15_michell else 'off'}"
         + (
             f" (available={michell_avail.available})" if michell_avail else ""
+        ),
+        f"- L2 panel/BEM: {'on' if l2_panel else 'off'}"
+        + (
+            f" (available={panel_avail.available})" if panel_avail else ""
         ),
         "",
     ]
