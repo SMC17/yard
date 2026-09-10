@@ -16,10 +16,24 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--steps", type=int, default=40)
     run.add_argument("--seed", type=int, default=0)
     run.add_argument("--out", type=Path, default=Path("out/gallery"))
+    run.add_argument(
+        "--shipd",
+        action="store_true",
+        help="Seed parents from public Ship-D sample vectors",
+    )
     args = p.parse_args(argv)
     if args.cmd == "run-search":
-        manifest = write_gallery(args.out, n_parents=args.parents, steps=args.steps, seed=args.seed)
-        print(f"Wrote {args.out} improved={manifest['n_improved']} best_dCt={manifest['best_delta_ct']:.6f}")
+        manifest = write_gallery(
+            args.out,
+            n_parents=args.parents,
+            steps=args.steps,
+            seed=args.seed,
+            use_shipd=args.shipd,
+        )
+        print(
+            f"Wrote {args.out} improved={manifest['n_improved']} "
+            f"best_dCt={manifest['best_delta_ct']:.6f} shipd={manifest.get('use_shipd')}"
+        )
         return 0
     return 2
 

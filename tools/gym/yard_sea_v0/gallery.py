@@ -9,6 +9,7 @@ from typing import Any
 from .hull import HullState
 from .resistance_l1 import estimate_resistance
 from .search import run_search
+from .shipd import load_sample_vectors, project_to_hull
 
 
 def default_parents(n: int = 5, seed: int = 0) -> list[HullState]:
@@ -32,17 +33,34 @@ def default_parents(n: int = 5, seed: int = 0) -> list[HullState]:
     return parents
 
 
+def shipd_parents(n: int = 5) -> list[HullState]:
+    """Seed parents from public Ship-D sample vectors (projected)."""
+    samples = load_sample_vectors()
+    out: list[HullState] = []
+    for v in samples:
+        h = project_to_hull(v)
+        from .hull import evaluate_l0
+        if evaluate_l0(h).feasible:
+            out.append(h)
+        if len(out) >= n:
+            break
+    if len(out) < n:
+        out.extend(default_parents(n - len(out), seed=1))
+    return out[:n]
+
+
 def write_gallery(
     out_dir: Path,
     n_parents: int = 5,
     steps: int = 40,
     seed: int = 0,
+    use_shipd: bool = False,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
     children_dir = out_dir / "children"
     evidence_dir = out_dir / "evidence"
     children_dir.mkdir(parents=True, exist_ok=True)
-    parents = default_parents(n_parents, seed=seed)
+    parents = shipd_parents(n_parents) if use_shipd else default_parents(n_parents, seed=seed)
     parent_meta = []
     for i, p in enumerate(parents):
         r = estimate_resistance(p)
@@ -55,6 +73,7 @@ def write_gallery(
         "n_parents": n_parents,
         "steps": steps,
         "seed": seed,
+        "use_shipd": use_shipd,
         "n_results": len(results),
         "n_improved": len(improved),
         "parents": parent_meta,
