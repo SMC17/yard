@@ -61,4 +61,4 @@ pytest -q tests/test_botorch_search.py tests/test_l3_gallery_cd.py \
 
 ## Branch
 
-`feat/yard-sea-botorch-l3` on SMC17/yard (`tools/gym/…`).
+`feat/yard-sea-botorch-l3` on SMC17/yard (`tools/gym/…`) — PR https://github.com/SMC17/yard/pull/6
