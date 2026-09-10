@@ -36,7 +36,7 @@ pub fn main(init: std.process.Init) !u8 {
     try w.print("  IS Code:       {}\n\n", .{out.stability.is_code.overall});
 
     try w.print("--- Resistance @ {d:.1} m/s ---\n", .{out.resistance.speed_mps});
-    try w.print("  Fn = {d:.4}  Rn = {d:.2e}\n", .{ out.resistance.froude, out.resistance.reynolds });
+    try w.print("  Fn = {d:.4}  Rn = {e:.2}\n", .{ out.resistance.froude, out.resistance.reynolds });
     try w.print("  R_total = {d:.1} N\n\n", .{out.resistance.r_total});
 
     try w.print("Proof level: unit-tested (not class-society grade)\n", .{});
