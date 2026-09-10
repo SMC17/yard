@@ -42,4 +42,5 @@ def test_sample_vectors_project_and_l0():
 def test_constraints_documented():
     c = constraint_checklist()
     assert c["n"] == 49
-    assert c["status"] == "not_evaluated_in_yard_sea_v0"
+    assert c["status"] == "evaluated_via_shipd_surface"
+    assert "shipd_surface" in c["wrapper"]

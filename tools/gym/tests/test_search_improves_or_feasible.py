@@ -7,4 +7,5 @@ def test_gallery_runs(tmp_path: Path):
     assert manifest["n_results"] >= 6
     assert (tmp_path / "summary.md").exists()
     assert (tmp_path / "manifest.json").exists()
+    # At least some feasible evaluations occurred
     assert manifest["n_results"] > 0
