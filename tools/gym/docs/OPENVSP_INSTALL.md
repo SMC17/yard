@@ -69,6 +69,8 @@ newer glibc host. CLI path is enough for the current stub.
 
 ## Stub behavior
 
-- `detect()` → PATH `vspscript`/`vsp`, else `vendor/openvsp/vspscript`.
-- `run()` → minimal AngelScript: `ClearVSPModel` + `POD` + `WriteVSPFile`.
-- `CL`/`CD`/`CM` remain `None` until a VSPAERO adapter is wired.
+- `detect()` → PATH `vspscript`/`vsp`, else `vendor/openvsp/vspscript`; also reports `vspaero`.
+- `run()` → prefers `teachers.vspaero_l1` (thin wing + `VSPAEROComputeGeometry` +
+  `VSPAEROSweep`) for real `CL`/`CD`/`CM`; falls back to POD + `WriteVSPFile` if
+  `vspaero` is missing.
+- Dedicated module: `yard_sea_v0.teachers.vspaero_l1` (fidelity `aero_vspaero_l1`).

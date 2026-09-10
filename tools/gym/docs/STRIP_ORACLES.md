@@ -14,9 +14,10 @@ and are now stubbed so the air path can reuse the same teacher protocol.
 | L0 reject | `hull.evaluate_l0` + monitors | Algebraic / hydrostatic filter |
 | L1 rank | `resistance_l1` | Holtrop-simplified calm-water |
 | **L1.5 wave** | `teachers.michell_l15` | Michell thin-ship Cw; Ship-D HP waterlines when vector given, else Wigley |
-| L3 CFD | `teachers.openfoam_l3` | OpenFOAM case + forceCoeffs (often pending) |
+| L3 CFD | `teachers.openfoam_l3` | OpenFOAM snappy + forceCoeffs (`L3_rans` / `L3_potential` / `L3_pending`) |
 | Strip overlay | `strip_assurance.strip_overlay` | ODD / claims / `not_certification` flags |
-| Aero geometry | `teachers.openvsp_stub` | OpenVSP detect/run (skip if absent) |
+| Aero geometry | `teachers.openvsp_stub` | OpenVSP detect/run; VSPAERO CL/CD/CM when `vspaero` present |
+| Aero VLM L1 | `teachers.vspaero_l1` | Thin wing VSPAEROComputeGeometry + VSPAEROSweep |
 | Aero section | `teachers.neuralfoil_stub` | NeuralFoil Kulfan thin call |
 | Aero FDM | `teachers.jsbsim_stub` | JSBSim integrate smoke |
 
@@ -38,8 +39,8 @@ See docstring in `yard_sea_v0/teachers/__init__.py`:
 | Michell L1.5 | **Yes (vendored)** | `vendor/shipd_upstream/ModifiedMichellCw.py` |
 | NeuralFoil | **Yes** | `pip install neuralfoil` |
 | JSBSim | **Yes** | `pip install jsbsim` |
-| OpenVSP | **No** (this box) | Binary from https://openvsp.org/ or build OpenVSP/OpenVSP |
-| OpenFOAM L3 | **No** (this box) | Native FOAM or Docker image (see `out/openfoam_result.md`) |
+| OpenVSP / VSPAERO | **Yes** (`vendor/openvsp/{vspscript,vspaero}`, Ubuntu 24.04 .deb) | See docs/OPENVSP_INSTALL.md |
+| OpenFOAM L3 | **Yes (hybrid)** | Native 1912 mesh + Docker 2412 simpleFoam (see `out/forcecoeffs_result.md`) |
 
 ## CLI
 
