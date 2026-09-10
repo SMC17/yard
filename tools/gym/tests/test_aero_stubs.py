@@ -1,12 +1,12 @@
-"""Tests for Strip-path aero oracle stubs (OpenVSP / NeuralFoil / JSBSim)."""
+"""Tests for Strip-path aero oracle stubs (OpenVSP / NeuralFoil / JSBSim / VSPAERO)."""
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from pathlib import Path
 
 import pytest
 
-from yard_sea_v0.teachers import jsbsim_stub, neuralfoil_stub, openvsp_stub
+from yard_sea_v0.teachers import jsbsim_stub, neuralfoil_stub, openvsp_stub, vspaero_l1
 
 
 def test_openvsp_detect_and_skip():
@@ -14,6 +14,7 @@ def test_openvsp_detect_and_skip():
     d = avail.to_dict()
     assert "available" in d
     assert "install_hint" in d
+    assert "vspaero" in d
     # Force unavailable path
     fake = openvsp_stub.OpenVSPAvailability()
     r = openvsp_stub.run(availability=fake)
@@ -30,9 +31,16 @@ def test_openvsp_thin_call_when_cli_available(tmp_path):
     r = openvsp_stub.run(availability=avail, work_dir=str(tmp_path), alpha_deg=2.0)
     assert r["skipped"] is False
     assert r["fidelity"] == openvsp_stub.FIDELITY
-    assert r["CL"] is None  # VSPAERO not wired
     assert r["skip_reason"] is None
-    assert (tmp_path / "yard_sea_smoke.vsp3").is_file()
+    # With vspaero present, expect real coeffs; else geometry-only None
+    if avail.vspaero:
+        assert r["CL"] is not None and abs(r["CL"]) > 0.01
+        assert r["CD"] is not None and r["CD"] > 0
+        assert r["CM"] is not None
+        assert (tmp_path / "yard_sea_vspaero.vsp3").is_file()
+    else:
+        assert r["CL"] is None
+        assert (tmp_path / "yard_sea_smoke.vsp3").is_file()
 
 
 def test_openvsp_cli_missing_with_python_only():
@@ -40,6 +48,58 @@ def test_openvsp_cli_missing_with_python_only():
     r = openvsp_stub.run(availability=fake)
     assert r["skipped"] is True
     assert r["skip_reason"] == "openvsp_cli_missing"
+
+
+def test_vspaero_detect_and_skip():
+    avail = vspaero_l1.detect()
+    d = avail.to_dict()
+    assert "available" in d
+    assert "install_hint" in d
+    fake = vspaero_l1.VSPAEROAvailability()
+    r = vspaero_l1.run(availability=fake)
+    assert r["skipped"] is True
+    assert r["skip_reason"] == "vspaero_unavailable"
+    assert r["fidelity"] == vspaero_l1.FIDELITY_PENDING
+
+
+def test_vspaero_parse_markers():
+    text = "yard_sea_CL=0.182078\nyard_sea_CD=0.00629931\nyard_sea_CM=-0.0411911\n"
+    m = vspaero_l1.parse_markers(text)
+    assert m["CL"] == pytest.approx(0.182078)
+    assert m["CD"] == pytest.approx(0.00629931)
+    assert m["CM"] == pytest.approx(-0.0411911)
+
+
+def test_vspaero_parse_polar(tmp_path):
+    polar = tmp_path / "yard_sea_vspaero.polar"
+    polar.write_text(
+        "\n".join(
+            [
+                "header junk",
+                "      Beta             Mach             AoA             Re/1e6             CLo             CLi            CLtot              CDo              CDi             CDtot              CSo              CSi            CStot               L/D              E               CMox             CMoy             CMoz             CMix             CMiy             CMiz             CMxtot           CMytot           CMztot",
+                "  0.000000000000   0.100000000000   2.000000000000  10.000000000000  -0.000188046132   0.182265973011   0.182077926879   0.005384936665   0.000914368647   0.006299305313   0.0 0.0 0.0 28.9 0.96 0.0 0.0 0.0 0.0 -0.041191086938 0.0 0.0 -0.041191086938 0.0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    m = vspaero_l1.parse_polar(polar)
+    assert m["CL"] == pytest.approx(0.182077926879)
+    assert m["CD"] == pytest.approx(0.006299305313)
+    assert m["CM"] == pytest.approx(-0.041191086938)
+
+
+def test_vspaero_thin_wing_when_available(tmp_path):
+    avail = vspaero_l1.detect()
+    if not avail.available:
+        pytest.skip("vspscript/vspaero not installed under vendor/openvsp")
+    r = vspaero_l1.run(availability=avail, work_dir=str(tmp_path), alpha_deg=2.0)
+    assert r["skipped"] is False
+    assert r["fidelity"] == vspaero_l1.FIDELITY
+    assert r["CL"] is not None and abs(r["CL"]) > 0.05
+    assert r["CD"] is not None and 0 < r["CD"] < 0.1
+    assert r["CM"] is not None
+    assert (tmp_path / "yard_sea_vspaero.vsp3").is_file()
+    assert (tmp_path / "yard_sea_vspaero.polar").is_file()
 
 
 def test_neuralfoil_skip_when_unavailable():
@@ -89,4 +149,5 @@ def test_teacher_protocol_exports():
     assert hasattr(teachers, "neuralfoil_stub")
     assert hasattr(teachers, "jsbsim_stub")
     assert hasattr(teachers, "michell_l15")
+    assert hasattr(teachers, "vspaero_l1")
     assert "Teacher protocol" in (teachers.__doc__ or "")
