@@ -10,6 +10,7 @@ from .hull import HullState
 from .resistance_l1 import estimate_resistance
 from .search import run_search
 from .shipd import load_sample_vectors, project_to_hull
+from .mesh import write_box_stl
 
 
 def default_parents(n: int = 5, seed: int = 0) -> list[HullState]:
@@ -69,6 +70,9 @@ def write_gallery(
     improved = [r for r in results if r.get("improved")]
     for j, r in enumerate(results):
         (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
+        if r.get("hull"):
+            from .hull import HullState
+            write_box_stl(HullState(**{k: r["hull"][k] for k in ("L","B","T","Cb","lcb_frac","kg_frac","Fn") if k in r["hull"]}), children_dir / f"child_{j:03d}.stl")
     manifest = {
         "n_parents": n_parents,
         "steps": steps,
