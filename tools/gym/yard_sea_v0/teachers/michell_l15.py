@@ -205,10 +205,12 @@ def run(
     avail = availability if availability is not None else detect()
 
     if h is None and vector is not None:
-        from ..shipd import project_to_hull
+        from ..hp_rank import hull_from_shipd_primary
 
-        hull = project_to_hull(
-            vector, fn=float(Fn) if Fn is not None else 0.20
+        hull, _src, _vol, _reason = hull_from_shipd_primary(
+            vector,
+            prefer_hp=True,
+            fn=float(Fn) if Fn is not None else 0.20,
         )
     else:
         hull = h or HullState()

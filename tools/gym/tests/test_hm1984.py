@@ -59,7 +59,7 @@ def test_hm1984_finite_ct(hm1984_ready):
     assert math.isfinite(r.Rt_N) and r.Rt_N > 0
     assert math.isfinite(r.Rn) and r.Rn > 0
     assert math.isfinite(r.Cf) and r.Cf > 0
-    assert "hm1984" in r.fidelity.lower() or "1984" in r.fidelity
+    assert r.fidelity == "hm1984_zig" or "hm1984" in r.fidelity.lower()
 
 
 def test_hm1984_not_required_to_match_simplified(hm1984_ready):
@@ -85,4 +85,4 @@ def test_resistance_l1_prefer_flag(hm1984_ready):
 
     r = estimate_resistance(HullState(), prefer_zig_hm1984=True)
     assert math.isfinite(r.Ct)
-    assert "1984" in r.fidelity or r.fidelity.endswith("hm1984") or "hm1984" in r.fidelity.lower()
+    assert r.fidelity == "hm1984_zig" or "hm1984" in r.fidelity.lower()

@@ -6,3 +6,9 @@ matplotlib>=3.7
 # Optional Strip aero oracles (pip-light):
 # neuralfoil>=0.3
 # jsbsim>=1.2
+# Optional Bayesian search path (CLI --botorch):
+# botorch>=0.11
+# torch
+# Optional L2 panel/BEM teacher (CLI --l2-panel):
+# capytaine>=2.2
+# meshio>=5.0

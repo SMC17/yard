@@ -147,6 +147,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             "ct": res.Ct,
             "gm0": self.state.gm0(),
             "Rt_N": res.Rt_N,
+            "l1_fidelity": res.fidelity,
             "monitor": decision.to_dict(),
             "rejected": False,
         }

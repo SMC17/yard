@@ -44,6 +44,8 @@ def strip_overlay(evidence: dict[str, Any]) -> dict[str, Any]:
             "resistance_l1": has_l1 and l0_ok,
             "panel_l2": False,
             "cfd_l3": False,
+            "michell_l15": False,  # set True when teacher attached
+            "aero_oracle": False,  # OpenVSP/NeuralFoil/JSBSim Strip path
         },
         "next_gate": "L2_panel_or_ShipD_surface" if level == "L1_rank" else "repair_l0",
     }

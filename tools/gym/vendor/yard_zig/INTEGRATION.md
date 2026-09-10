@@ -14,19 +14,41 @@ Vendored **read-only** snippets from private `SMC17/yard` via GitHub Contents AP
 
 ## Current state (zig_gym)
 
-`zig_gym/` mirrors **Python** `hull.evaluate_l0` + `resistance_l1.estimate_resistance`
-(Holtrop-**simplified** exploratory ranking), not the full yard HM 1984 API.
+`zig_gym/` still mirrors Python Holtrop-**simplified** for L0/L1 parity, and now
+also wires **vendored HM 1984** via package import:
 
-## Next FFI steps (not done here)
+```zig
+// zig_gym/build.zig
+const yard_resistance = b.createModule(.{
+    .root_source_file = b.path("../vendor/yard_zig/resistance/src/root.zig"),
+    ...
+});
+```
 
-1. Add Zig module deps in `zig_gym/build.zig`:
-   ```zig
-   // addModule("yard_resistance", .{ .root_source_file = b.path("../vendor/yard_zig/resistance/src/root.zig") });
-   // addModule("yard_hydro", .{ .root_source_file = b.path("../vendor/yard_zig/hydro/src/root.zig") });
-   ```
-2. Map `Hull` → `holtrop.HullParticulars` (needs Cp, Cm, S, LCB abs, optional bulb/transom).
-3. Prefer `hydro.box_barge` GM for Cb≈1 barge cases; keep Python-parity `gm0` for high-Cb box L0.
-4. Export `export fn yard_l0(...)` / `yard_l1_hm1984(...)` C ABI + build shared lib for ctypes.
-5. Keep subprocess JSON bridge as fallback (`yard_sea_v0.zig_bridge`).
+CLI modes: `l0` | `l1` | `l1_hm1984` | `both` | `both_hm1984`
+
+Python: `estimate_resistance_zig(..., fidelity='simplified'|'hm1984')`
+Teacher: `yard_sea_v0.teachers.zig_l1.estimate_l1`
+
+## HullState → holtrop.HullParticulars mapping
+
+| Field | Source |
+|-------|--------|
+| L, B, T | HullState direct |
+| C_B | HullState.Cb |
+| displacement_vol | L·B·T·Cb |
+| S | wetted_approx() |
+| lcb_pct | lcb_frac × 100 (Holtrop %L, fwd+) |
+| C_M | **missing** → default 0.98 |
+| C_P | **missing** → C_B / C_M (clamped) |
+| C_WP | **missing** → Denny (1+2·C_B)/3 |
+| c_stern | **missing** → 0 (normal); simplified path used ≈10 |
+| bulb / transom | **missing** → null (no R_B / c5 correction) |
+
+## Remaining FFI steps
+
+1. Prefer `hydro.box_barge` GM for Cb≈1 barge cases; keep Python-parity `gm0` for high-Cb box L0.
+2. Optional: `export fn yard_l1_hm1984(...)` C ABI + shared lib for ctypes.
+3. Keep subprocess JSON bridge as primary (`yard_sea_v0.zig_bridge`).
 
 Do **not** push the yard monorepo from this box.
