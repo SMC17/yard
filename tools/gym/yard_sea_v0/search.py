@@ -22,6 +22,7 @@ class ChildResult:
     reward_sum: float
     method: str
     evidence_count: int
+    l1_fidelity: str = "simplified_py"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -29,6 +30,7 @@ class ChildResult:
             "ct": self.ct,
             "reward_sum": self.reward_sum,
             "evidence_count": self.evidence_count,
+            "l1_fidelity": self.l1_fidelity,
             "delta_ct_vs_parent": None,
             "hull": self.hull.to_dict(),
         }
@@ -54,13 +56,14 @@ def _run_episode(env: DesignSearchEnv, policy, steps: int) -> ChildResult:
         total_r += float(reward)
         if term or trunc:
             break
-    ct = estimate_resistance(env.state).Ct
+    res = estimate_resistance(env.state)
     return ChildResult(
         hull=env.state,
-        ct=ct,
+        ct=res.Ct,
         reward_sum=total_r,
         method=getattr(policy, "name", "policy"),
         evidence_count=len(env.evidence_packs),
+        l1_fidelity=res.fidelity,
     )
 
 

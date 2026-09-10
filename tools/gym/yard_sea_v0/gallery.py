@@ -86,7 +86,14 @@ def write_gallery(
     parent_meta = []
     for i, p in enumerate(parents):
         r = estimate_resistance(p)
-        parent_meta.append({"index": i, "ct": r.Ct, "hull": p.to_dict()})
+        parent_meta.append(
+            {
+                "index": i,
+                "ct": r.Ct,
+                "l1_fidelity": r.fidelity,
+                "hull": p.to_dict(),
+            }
+        )
     results = run_search(parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch)
     improved = [r for r in results if r.get("improved")]
     l3_dir = out_dir / "l3_openfoam"
@@ -164,6 +171,7 @@ def write_gallery(
         "n_results": len(results),
         "n_improved": len(improved),
         "parents": parent_meta,
+        "l1_fidelity_default": (parent_meta[0].get("l1_fidelity") if parent_meta else None),
         "best_delta_ct": max((r.get("delta_ct_vs_parent") or -1e9) for r in results if "delta_ct_vs_parent" in r),
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
@@ -175,7 +183,7 @@ def write_gallery(
         f"- Improved Ct vs parent: {len(improved)}",
         f"- Best ΔCt: {manifest['best_delta_ct']:.6f}",
         "",
-        "Fidelity: L0 monitors + L1 Holtrop-simplified. Not ITTC powering / not class.",
+        "Fidelity: L0 monitors + L1 default Zig HM1984 (hm1984_zig) when yard_sea_zig present; else Python Holtrop-simplified (simplified_py). Not ITTC powering / not class.",
         f"- BoTorch: {'on' if use_botorch else 'off'}",
         f"- L3 OpenFOAM: {'on' if l3_openfoam else 'off'}"
         + (
