@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| Yard-Sea-v0 openfoam_hull_v0 — potentialFoam / simpleFoam resistance stub  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     potentialFoam;
+
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         1;
+deltaT          1;
+writeControl    timeStep;
+writeInterval   1;
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable true;
+
+// Placeholder forceCoeffs — populated meaningfully under simpleFoam L3.
+// potentialFoam smoke may not emit these; parser treats missing as L3_pending.
+functions
+{
+    forceCoeffs1
+    {
+        type            forceCoeffs;
+        libs            ("libforces.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        patches         (hull);
+        rho             rhoInf;
+        rhoInf          1025;
+        liftDir         (0 0 1);
+        dragDir         (1 0 0);
+        CofR            (0 0 0);
+        pitchAxis       (0 1 0);
+        magUInf         __MAG_U_INF__;
+        lRef            __L_REF__;
+        Aref            __A_REF__;
+    }
+}
+
+// ************************************************************************* //

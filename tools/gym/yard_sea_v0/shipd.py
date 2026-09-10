@@ -1,14 +1,17 @@
 """Ship-D 45-D parametric schema + projection into Yard-Sea-v0 HullState.
 
 Public labels from MIT DeCoDe Ship-D (Bagazinski & Ahmed). Full surface
-generation and the 49 algebraic constraints live in their Hull_Parameterization;
-this module does not vend that code — it only:
+generation and the 49 algebraic constraints are wrapped in
+``yard_sea_v0.shipd_surface`` (vendored ``Hull_Parameterization``).
+
+This module:
 
 1. Names the 45 parameters and groups
 2. Projects principal dimensions into our exploratory HullState for L0/L1
 3. Loads sample vectors for regression tests / parent seeding
+4. Documents / forwards the 49-constraint checklist to shipd_surface when available
 
-See STATUS.md — CadQuery/OCCT mesh and full constraint eval are next PRs.
+See STATUS.md — not class / ITTC.
 """
 
 from __future__ import annotations
@@ -16,7 +19,6 @@ from __future__ import annotations
 import csv
 import json
 from dataclasses import dataclass
-from importlib import resources
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -94,6 +96,7 @@ def project_to_hull(
         cb = min(0.95, max(0.45, 0.55 + 0.35 * min(1.0, bc_full / B)))
     # Parallel midbody fraction as soft LCB bias (bow vs stern taper lengths)
     mid_frac = max(0.0, 1.0 - d["Lb"] - d["Ls"])
+    del mid_frac  # reserved for future volume map
     lcb_frac = 0.02 * (d["Ls"] - d["Lb"])  # more stern taper → LCB forward soft
     lcb_frac = max(-0.05, min(0.05, lcb_frac))
     return HullState(
@@ -124,11 +127,32 @@ def load_sample_vectors(path: Path | None = None) -> list[ShipDVector]:
 
 
 def constraint_checklist() -> dict[str, Any]:
-    """Document the 49 algebraic constraints without re-implementing them."""
-    return {
+    """Document the 49 algebraic constraints; evaluate via shipd_surface when present."""
+    base: dict[str, Any] = {
         "n": 49,
         "purpose": ["watertight", "non_self_intersecting"],
-        "implementation": "deferred_to_ShipD_Hull_Parameterization.input_Constraints",
+        "implementation": "Hull_Parameterization.input_Constraints",
         "source": "https://github.com/noahbagz/ShipD",
-        "status": "not_evaluated_in_yard_sea_v0",
+        "vendor": "vendor/shipd_upstream/",
+        "wrapper": "yard_sea_v0.shipd_surface.evaluate_constraints",
     }
+    try:
+        from .shipd_surface import N_CONSTRAINTS, upstream_available
+
+        if upstream_available():
+            base["status"] = "evaluated_via_shipd_surface"
+            base["n_runtime"] = N_CONSTRAINTS
+            return base
+    except Exception as exc:  # pragma: no cover
+        base["status"] = "import_error"
+        base["error"] = str(exc)
+        return base
+    base["status"] = "upstream_missing"
+    return base
+
+
+def is_feasible(vec: ShipDVector | Sequence[float]) -> bool:
+    """True iff Ship-D 49 algebraic constraints all pass (values <= 0)."""
+    from .shipd_surface import evaluate_constraints
+
+    return evaluate_constraints(vec).feasible
