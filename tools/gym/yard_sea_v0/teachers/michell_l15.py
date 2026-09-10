@@ -20,7 +20,7 @@ from typing import Any
 import numpy as np
 
 from ..hull import G, RHO_SW, HullState
-from ..resistance_l1 import ResistanceResult, ittc57_cf
+from ..resistance_l1 import ResistanceResult
 
 _VENDOR = Path(__file__).resolve().parents[2] / "vendor" / "shipd_upstream"
 FIDELITY = "L1.5_michell"
@@ -150,9 +150,11 @@ def run(
         )
         return base
 
+    offset_source = "wigley_synthetic"
     if Y is None or X is None or Z is None:
         Y, X, Z = wigley_offsets(hull, nx=nx, nz=nz)
     else:
+        offset_source = "provided"
         Y = np.asarray(Y, dtype=np.float64)
         X = np.asarray(X, dtype=np.float64)
         Z = np.asarray(Z, dtype=np.float64)
@@ -225,12 +227,10 @@ def run(
             "nx": int(Y.shape[0]),
             "nz": int(Y.shape[1]),
             "n_theta": int(n_theta),
-            "offset_source": "provided" if h is not None and Y is not None and X is not None else "wigley_synthetic",
+            "offset_source": offset_source,
             "availability": avail.to_dict(),
         }
     )
-    # Fix offset_source more carefully
-    base["offset_source"] = "wigley_synthetic"
     return base
 
 
