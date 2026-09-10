@@ -42,6 +42,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Attach Michell L1.5 wave-drag teacher per child hull (vendored ModMichell)",
     )
+    run.add_argument(
+        "--botorch",
+        action="store_true",
+        help="Enable BoTorch Bayesian optimization search path (requires botorch/torch)",
+    )
 
     ingest = sub.add_parser(
         "ingest-shipd",
@@ -97,11 +102,13 @@ def main(argv: list[str] | None = None) -> int:
             use_corpus=use_corpus,
             l3_openfoam=args.l3_openfoam,
             l15_michell=args.l15_michell,
+            use_botorch=args.botorch,
         )
         print(
             f"Wrote {args.out} improved={manifest['n_improved']} "
             f"best_dCt={manifest['best_delta_ct']:.6f} "
-            f"shipd={manifest.get('use_shipd')} corpus={manifest.get('use_corpus')}"
+            f"shipd={manifest.get('use_shipd')} corpus={manifest.get('use_corpus')} "
+            f"botorch={manifest.get('use_botorch')} l3={manifest.get('l3_openfoam')}"
         )
         return 0
 
