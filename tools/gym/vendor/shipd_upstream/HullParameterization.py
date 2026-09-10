@@ -1643,7 +1643,7 @@ class Hull_Parameterization:
         
         
 
-        print(Z.shape)
+        # print(Z.shape)  # Yard-Sea-v0: silence debug noise from gen_pointCloud
 
         
         if len(Z) == 0:
