@@ -1,0 +1,24 @@
+name: yard-sea-v0-gym
+on:
+  push:
+    paths: ['tools/gym/**', 'gym/**']
+  pull_request:
+    paths: ['tools/gym/**', 'gym/**']
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/gym
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: PYTHONPATH=. pytest -q
+      - run: PYTHONPATH=. python -m yard_sea_v0 run-search --parents 3 --steps 15 --out out/gallery
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yard-sea-v0-gallery
+          path: tools/gym/out/gallery
