@@ -1,4 +1,4 @@
-"""Ship-D surface: 49 algebraic constraints + STL via vendored Hull_Parameterization.
+"""Ship-D surface: 49 constraints + STL + HP Calc_Volumes hydrostatics.
 
 Wraps public upstream https://github.com/noahbagz/ShipD (vendored under
 vendor/shipd_upstream/). Feasibility rule matches upstream README:
@@ -6,7 +6,9 @@ vendor/shipd_upstream/). Feasibility rule matches upstream README:
     constraints = Hull.input_Constraints()
     feasible iff sum(constraints > 0) == 0
 
-This is watertight / non-self-intersecting algebra — not class / ITTC.
+Also exposes ``calc_volumes`` (Calc_VolumeProperties / Calc_Volumes) for
+displacement, LCB, VCB, and waterplane metrics. Default grid ~30 ms; see
+module cost notes. Not class / ITTC.
 """
 
 from __future__ import annotations

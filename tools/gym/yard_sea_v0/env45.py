@@ -7,7 +7,7 @@ Ship-D bits are rounded to {0,1}.
 Each step:
   1. apply delta → clamp
   2. evaluate_constraints (49) — reject (monitor) before L1 if infeasible
-  3. project_to_hull (surface hydrostatics reserved when cheap path exists)
+  3. project_to_hull (or HP calc_volumes when use_hp_hydro=True)
   4. L0 gate — reject before L1 if exploratory hydrostatics fail
   5. L1 resistance reward + evidence pack
 
@@ -33,7 +33,13 @@ from .shipd import (
     load_sample_vectors,
     project_to_hull,
 )
-from .shipd_surface import evaluate_constraints
+from .shipd_surface import (
+    DEFAULT_NUM_WL,
+    DEFAULT_POINTS_PER_WL,
+    calc_volumes,
+    evaluate_constraints,
+    hull_from_volumes,
+)
 
 try:
     from gymnasium import spaces
@@ -63,10 +69,16 @@ def apply_shipd_delta(
     return out
 
 
-def hull_from_shipd(vec: ShipDVector | np.ndarray | list[float]):
-    """Project Ship-D → HullState (prefer surface hydrostatics when available)."""
-    # Surface Calc_Volumes needs full PCMeasurement (expensive STL path).
-    # Keep projection until a cheap hydrostatics hook exists.
+def hull_from_shipd(
+    vec: ShipDVector | np.ndarray | list[float],
+    *,
+    use_hp_hydro: bool = False,
+    volumes_report=None,
+    **hydro_kwargs,
+):
+    """Project Ship-D → HullState; optionally refine Cb/LCB via HP calc_volumes."""
+    if use_hp_hydro:
+        return hull_from_volumes(vec, report=volumes_report, **hydro_kwargs)
     return project_to_hull(vec)
 
 
@@ -82,6 +94,10 @@ class DesignSearchEnv45(DesignSearchEnv):
         seed: int = 0,
         evidence_dir: str | None = None,
         delta_frac: float = 0.05,
+        use_hp_hydro: bool = False,
+        hp_hydro_every_n: int = 0,
+        hp_num_wl: int = DEFAULT_NUM_WL,
+        hp_points_per_wl: int = DEFAULT_POINTS_PER_WL,
         **kwargs: Any,
     ) -> None:
         samples = load_sample_vectors()
@@ -93,10 +109,27 @@ class DesignSearchEnv45(DesignSearchEnv):
         self._seed_vector = samples[sample_index]
         self.shipd_vector = self._seed_vector
         self.delta_frac = float(delta_frac)
+        # HP Calc_Volumes: default off. When on, run on reset/info; every N
+        # accepted steps if hp_hydro_every_n > 0 (0 = reset only).
+        self.use_hp_hydro = bool(use_hp_hydro)
+        self.hp_hydro_every_n = int(hp_hydro_every_n)
+        self.hp_num_wl = int(hp_num_wl)
+        self.hp_points_per_wl = int(hp_points_per_wl)
+        self._volumes_report = None
         self._lo, self._hi = load_action_bounds()
         self._scales = action_scales(self._lo, self._hi, delta_frac=self.delta_frac)
         self._constraint_report = evaluate_constraints(self.shipd_vector)
-        parent = hull_from_shipd(self.shipd_vector)
+        if self.use_hp_hydro:
+            self._volumes_report = calc_volumes(
+                self.shipd_vector,
+                num_wl=self.hp_num_wl,
+                points_per_wl=self.hp_points_per_wl,
+            )
+        parent = hull_from_shipd(
+            self.shipd_vector,
+            use_hp_hydro=self.use_hp_hydro,
+            volumes_report=self._volumes_report,
+        )
         # Parent 7-D env for shared obs/evidence plumbing; action_space overridden.
         super().__init__(
             parent=parent,
@@ -121,7 +154,19 @@ class DesignSearchEnv45(DesignSearchEnv):
         else:
             self.shipd_vector = self._seed_vector
         self._constraint_report = evaluate_constraints(self.shipd_vector)
-        self.parent = hull_from_shipd(self.shipd_vector)
+        if self.use_hp_hydro:
+            self._volumes_report = calc_volumes(
+                self.shipd_vector,
+                num_wl=self.hp_num_wl,
+                points_per_wl=self.hp_points_per_wl,
+            )
+        else:
+            self._volumes_report = None
+        self.parent = hull_from_shipd(
+            self.shipd_vector,
+            use_hp_hydro=self.use_hp_hydro,
+            volumes_report=self._volumes_report,
+        )
         if options is None:
             options = {}
         options = {**options, "parent": self.parent}
@@ -132,6 +177,9 @@ class DesignSearchEnv45(DesignSearchEnv):
         info["shipd_constraints"] = self._constraint_report.to_dict()
         info["shipd_feasible"] = self._constraint_report.feasible
         info["action_dim"] = ACTION_DIM
+        info["use_hp_hydro"] = self.use_hp_hydro
+        if self._volumes_report is not None:
+            info["hp_hydro"] = self._volumes_report.to_dict()
         return obs, info
 
     def step(self, action):
@@ -183,7 +231,24 @@ class DesignSearchEnv45(DesignSearchEnv):
             return self._obs(), reward, terminated, truncated, info
 
         candidate_vec = ShipDVector(tuple(float(x) for x in proposed))
-        projected = hull_from_shipd(candidate_vec)
+        # Cheap projection for L0 unless this step is an HP hydro refresh tick.
+        refresh_hp = (
+            self.use_hp_hydro
+            and self.hp_hydro_every_n > 0
+            and (self.step_count % self.hp_hydro_every_n == 0)
+        )
+        if refresh_hp:
+            step_vol = calc_volumes(
+                candidate_vec,
+                num_wl=self.hp_num_wl,
+                points_per_wl=self.hp_points_per_wl,
+            )
+            projected = hull_from_shipd(
+                candidate_vec, use_hp_hydro=True, volumes_report=step_vol
+            )
+            self._volumes_report = step_vol
+        else:
+            projected = hull_from_shipd(candidate_vec, use_hp_hydro=False)
         l0 = evaluate_l0(projected)
         if not l0.feasible:
             reward = -1.0
@@ -249,10 +314,13 @@ class DesignSearchEnv45(DesignSearchEnv):
             "shipd_infeasible": False,
             "shipd_constraints": report.to_dict(),
             "shipd_vector": list(self.shipd_vector.values),
+            "use_hp_hydro": self.use_hp_hydro,
             "monitor": {
                 "allow": True,
                 "reason_codes": [],
                 "projected": self.state.to_dict(),
             },
         }
+        if refresh_hp and self._volumes_report is not None:
+            info["hp_hydro"] = self._volumes_report.to_dict()
         return self._obs(), reward, terminated, truncated, info
