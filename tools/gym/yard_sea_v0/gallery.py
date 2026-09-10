@@ -12,6 +12,7 @@ from .search import run_search
 from .shipd import load_sample_vectors, project_to_hull
 from .mesh import export_hull_stl
 from .teachers.openfoam_l3 import detect_openfoam, run_teacher
+from .teachers.michell_l15 import detect as detect_michell, run as run_michell
 
 
 def default_parents(n: int = 5, seed: int = 0) -> list[HullState]:
@@ -66,6 +67,7 @@ def write_gallery(
     use_shipd: bool = False,
     use_corpus: bool = False,
     l3_openfoam: bool = False,
+    l15_michell: bool = False,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
     children_dir = out_dir / "children"
@@ -87,7 +89,9 @@ def write_gallery(
     improved = [r for r in results if r.get("improved")]
     l3_dir = out_dir / "l3_openfoam"
     l3_summaries: list[dict[str, Any]] = []
+    l15_summaries: list[dict[str, Any]] = []
     avail = detect_openfoam() if l3_openfoam else None
+    michell_avail = detect_michell() if l15_michell else None
     for j, r in enumerate(results):
         (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
         stl_path = None
@@ -117,6 +121,23 @@ def write_gallery(
                     "Cd": l3.get("Cd"),
                 }
             )
+
+        if l15_michell and r.get("hull"):
+            from .hull import HullState as _HS
+            hh = r["hull"]
+            hull_obj = _HS(**{k: hh[k] for k in ("L","B","T","Cb","lcb_frac","kg_frac","Fn") if k in hh})
+            l15 = run_michell(hull_obj, availability=michell_avail)
+            r["l15_michell"] = l15
+            (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
+            l15_summaries.append(
+                {
+                    "child": j,
+                    "fidelity": l15.get("fidelity"),
+                    "skipped": l15.get("skipped"),
+                    "Cw": l15.get("Cw"),
+                    "Ct": l15.get("Ct"),
+                }
+            )
     manifest = {
         "n_parents": n_parents,
         "steps": steps,
@@ -126,6 +147,9 @@ def write_gallery(
         "l3_openfoam": l3_openfoam,
         "l3_availability": avail.to_dict() if avail else None,
         "l3_summaries": l3_summaries,
+        "l15_michell": l15_michell,
+        "l15_availability": michell_avail.to_dict() if michell_avail else None,
+        "l15_summaries": l15_summaries,
         "n_results": len(results),
         "n_improved": len(improved),
         "parents": parent_meta,
@@ -144,6 +168,10 @@ def write_gallery(
         f"- L3 OpenFOAM: {'on' if l3_openfoam else 'off'}"
         + (
             f" (available={avail.available})" if avail else ""
+        ),
+        f"- L1.5 Michell: {'on' if l15_michell else 'off'}"
+        + (
+            f" (available={michell_avail.available})" if michell_avail else ""
         ),
         "",
     ]

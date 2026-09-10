@@ -55,6 +55,83 @@ class OpenFOAMAvailability:
         }
 
 
+def _discover_wm_project_dir() -> str | None:
+    """Return OpenFOAM project dir if present (env or Debian package layout)."""
+    env = os.environ.get("WM_PROJECT_DIR")
+    if env and Path(env).is_dir():
+        return env
+    # Debian openfoam package (trixie/bookworm): etc under /usr/share/openfoam
+    debian = Path("/usr/share/openfoam")
+    if (debian / "etc" / "controlDict").is_file():
+        return str(debian)
+    for cand in sorted(Path("/opt").glob("openfoam*")) if Path("/opt").is_dir() else []:
+        if (cand / "etc" / "bashrc").is_file() or (cand / "etc" / "controlDict").is_file():
+            return str(cand)
+    return None
+
+
+def _foam_environ(base: dict[str, str] | None = None) -> dict[str, str]:
+    """Env vars so Debian /usr/bin/*Foam binaries find etc/controlDict."""
+    env = dict(base if base is not None else os.environ)
+    wm = _discover_wm_project_dir()
+    if wm:
+        env.setdefault("WM_PROJECT_DIR", wm)
+        etc = str(Path(wm) / "etc")
+        env.setdefault("FOAM_ETC", etc)
+        env.setdefault("FOAM_CONFIG_ETC", etc)
+        env.setdefault("WM_PROJECT", "OpenFOAM")
+    return env
+
+
+def _docker_cli() -> list[str] | None:
+    """Return a working docker argv prefix, or None if docker unusable.
+
+    Tries bare docker, then `sg docker`, then passwordless sudo.
+    """
+    if shutil.which("docker") is None:
+        return None
+    # First: bare docker info
+    try:
+        r = subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=8,
+            check=False,
+        )
+        if r.returncode == 0:
+            return ["docker"]
+    except (subprocess.SubprocessError, OSError):
+        pass
+    # sg docker
+    if shutil.which("sg"):
+        try:
+            r = subprocess.run(
+                ["sg", "docker", "-c", "docker info"],
+                capture_output=True,
+                timeout=8,
+                check=False,
+            )
+            if r.returncode == 0:
+                return ["sg", "docker", "-c"]  # caller appends docker ... as one string
+        except (subprocess.SubprocessError, OSError):
+            pass
+    # sudo -n docker
+    if shutil.which("sudo"):
+        try:
+            r = subprocess.run(
+                ["sudo", "-n", "docker", "info"],
+                capture_output=True,
+                timeout=8,
+                check=False,
+            )
+            if r.returncode == 0:
+                return ["sudo", "-n", "docker"]
+        except (subprocess.SubprocessError, OSError):
+            pass
+    # Binary exists but daemon not usable — still advertise docker for detect
+    return ["docker"]
+
+
 def detect_openfoam() -> OpenFOAMAvailability:
     """Probe PATH / env for OpenFOAM or container runtimes (no side effects)."""
     foam_bin = None
@@ -71,13 +148,34 @@ def detect_openfoam() -> OpenFOAMAvailability:
             ).strip()
         except (subprocess.SubprocessError, OSError):
             version = None
+    if version is None and foam_bin:
+        # Debian package has no foamVersion; infer from package layout / dpkg.
+        wm = _discover_wm_project_dir()
+        if wm and Path(wm).name == "openfoam":
+            version = "OPENFOAM=1912 (debian)"
+        else:
+            version = "openfoam-detected"
+        # Prefer dpkg version when available (no side effects beyond dpkg-query)
+        try:
+            ver = subprocess.check_output(
+                ["dpkg-query", "-W", "-f=${Version}", "openfoam"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            ).strip()
+            if ver:
+                version = f"debian-openfoam {ver}"
+        except (subprocess.SubprocessError, OSError, FileNotFoundError):
+            pass
+    wm = _discover_wm_project_dir()
+    docker_present = shutil.which("docker") is not None
     return OpenFOAMAvailability(
         foam_bin=foam_bin,
         foam_version=version,
-        docker=shutil.which("docker") is not None,
+        docker=docker_present,
         singularity=shutil.which("singularity") is not None,
         apptainer=shutil.which("apptainer") is not None,
-        wm_project_dir=os.environ.get("WM_PROJECT_DIR"),
+        wm_project_dir=wm,
     )
 
 
@@ -361,43 +459,103 @@ def run_teacher(
             extra={"availability": avail.to_dict()},
         )
 
-    # Prefer native Allrun when foam binaries exist.
-    allrun = prepared / "Allrun"
+    # Prefer native foam binaries with Debian-compatible FOAM_ETC env.
+    # Allrun requires WM_PROJECT_DIR/bin/tools (missing on Debian package), so
+    # invoke blockMesh / checkMesh / potentialFoam directly.
     try:
-        if avail.foam_bin and allrun.is_file():
-            subprocess.run(
-                ["bash", str(allrun)],
-                cwd=str(prepared),
-                check=False,
-                timeout=timeout_s,
-                capture_output=True,
-                text=True,
-            )
+        if avail.foam_bin:
+            foam_env = _foam_environ()
+            # Use cwd=case only (relative -case doubles path under OpenFOAM).
+            case_cwd = str(prepared.resolve())
+            cmds = [
+                ["blockMesh"],
+                ["checkMesh"],
+                ["potentialFoam", "-writephi"],
+            ]
+            for cmd in cmds:
+                # potentialFoam may lack -writephi on some builds — retry plain
+                try:
+                    r = subprocess.run(
+                        cmd,
+                        cwd=case_cwd,
+                        check=False,
+                        timeout=timeout_s,
+                        capture_output=True,
+                        text=True,
+                        env=foam_env,
+                    )
+                except subprocess.TimeoutExpired:
+                    raise
+                if r.returncode != 0 and cmd[0] == "potentialFoam" and "-writephi" in cmd:
+                    r = subprocess.run(
+                        ["potentialFoam"],
+                        cwd=case_cwd,
+                        check=False,
+                        timeout=timeout_s,
+                        capture_output=True,
+                        text=True,
+                        env=foam_env,
+                    )
+                # Write logs for debugging smoke runs
+                log = prepared / f"log.{cmd[0]}"
+                try:
+                    log.write_text(
+                        (r.stdout or "") + (r.stderr or ""),
+                        encoding="utf-8",
+                        errors="ignore",
+                    )
+                except OSError:
+                    pass
         elif avail.docker:
-            # Smoke: checkMesh/potentialFoam via common community image if present.
-            # No pull forced here if offline — attempt run only.
-            img = os.environ.get("YARD_SEA_OPENFOAM_IMAGE", "opencfd/openfoam-default:2412")
-            subprocess.run(
-                [
-                    "docker",
-                    "run",
-                    "--rm",
-                    "-v",
-                    f"{prepared.resolve()}:/case",
-                    "-w",
-                    "/case",
-                    img,
-                    "bash",
-                    "-lc",
-                    "source /openfoam/profile.rc 2>/dev/null || "
-                    "source /opt/openfoam*/etc/bashrc 2>/dev/null || true; "
-                    "blockMesh && checkMesh && potentialFoam || true",
-                ],
-                check=False,
-                timeout=timeout_s,
-                capture_output=True,
-                text=True,
+            img = os.environ.get(
+                "YARD_SEA_OPENFOAM_IMAGE", "opencfd/openfoam-default:2412"
             )
+            inner = (
+                "source /openfoam/profile.rc 2>/dev/null || "
+                "source /opt/openfoam*/etc/bashrc 2>/dev/null || true; "
+                "cd /case; "
+                "blockMesh -case /case && "
+                "checkMesh -case /case && "
+                "(potentialFoam -case /case -writephi || potentialFoam -case /case) "
+                "|| true"
+            )
+            cli = _docker_cli() or ["docker"]
+            if cli[:2] == ["sg", "docker"]:
+                # sg docker -c 'docker run ...'
+                docker_argv = (
+                    f"docker run --rm -u $(id -u):$(id -g) "
+                    f"-v {prepared.resolve()}:/case -w /case {img} "
+                    f"bash -lc {inner!r}"
+                )
+                subprocess.run(
+                    ["sg", "docker", "-c", docker_argv],
+                    check=False,
+                    timeout=timeout_s,
+                    capture_output=True,
+                    text=True,
+                )
+            else:
+                subprocess.run(
+                    [
+                        *cli,
+                        "run",
+                        "--rm",
+                        "-u",
+                        f"{os.getuid()}:{os.getgid()}",
+                        "-v",
+                        f"{prepared.resolve()}:/case",
+                        "-w",
+                        "/case",
+                        img,
+                        "bash",
+                        "-lc",
+                        inner,
+                    ],
+                    check=False,
+                    timeout=timeout_s,
+                    capture_output=True,
+                    text=True,
+                )
         else:
             return _pending_result(
                 Fn,
