@@ -1,5 +1,5 @@
 /*--------------------------------*- C++ -*----------------------------------*\
-| Yard-Sea-v0 openfoam_hull_v0 — potentialFoam / simpleFoam resistance stub  |
+| Yard-Sea-v0 openfoam_hull_v0 — potentialFoam / simpleFoam forceCoeffs smoke |
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -15,7 +15,7 @@ application     potentialFoam;
 startFrom       startTime;
 startTime       0;
 stopAt          endTime;
-endTime         1;
+endTime         3;
 deltaT          1;
 writeControl    timeStep;
 writeInterval   1;
@@ -27,8 +27,6 @@ timeFormat      general;
 timePrecision   6;
 runTimeModifiable true;
 
-// Placeholder forceCoeffs — populated meaningfully under simpleFoam L3.
-// potentialFoam smoke may not emit these; parser treats missing as L3_pending.
 functions
 {
     forceCoeffs1
@@ -37,6 +35,7 @@ functions
         libs            ("libforces.so");
         writeControl    timeStep;
         writeInterval   1;
+        log             true;
         patches         (hull);
         rho             rhoInf;
         rhoInf          1025;

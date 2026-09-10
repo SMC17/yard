@@ -1,5 +1,5 @@
 /*--------------------------------*- C++ -*----------------------------------*\
-| Coarse box domain for smoke / pending snappyHexMesh around hull STL        |
+| Coarse box domain; prepare_case rewrites extents/cells from hull STL bbox  |
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -12,22 +12,22 @@ FoamFile
 
 scale   1;
 
-// Domain extents placeholder; prepare_case may rewrite for STL bbox.
+// Default 120 m hull-ish domain (overwritten by prepare_case).
 vertices
 (
-    (-200 -80 -40)
-    ( 400 -80 -40)
-    ( 400  80 -40)
-    (-200  80 -40)
-    (-200 -80  40)
-    ( 400 -80  40)
-    ( 400  80  40)
-    (-200  80  40)
+    (__XMIN__ __YMIN__ __ZMIN__)
+    (__XMAX__ __YMIN__ __ZMIN__)
+    (__XMAX__ __YMAX__ __ZMIN__)
+    (__XMIN__ __YMAX__ __ZMIN__)
+    (__XMIN__ __YMIN__ __ZMAX__)
+    (__XMAX__ __YMIN__ __ZMAX__)
+    (__XMAX__ __YMAX__ __ZMAX__)
+    (__XMIN__ __YMAX__ __ZMAX__)
 );
 
 blocks
 (
-    hex (0 1 2 3 4 5 6 7) (60 24 20) simpleGrading (1 1 1)
+    hex (0 1 2 3 4 5 6 7) (__NX__ __NY__ __NZ__) simpleGrading (1 1 1)
 );
 
 boundary
@@ -42,24 +42,24 @@ boundary
         type patch;
         faces ((1 2 6 5));
     }
-    bottom
+    yMin
     {
-        type wall;
+        type patch;
         faces ((0 1 5 4));
     }
-    top
+    yMax
     {
         type patch;
         faces ((3 7 6 2));
     }
-    front
+    bottom
     {
-        type symmetry;
+        type wall;
         faces ((0 3 2 1));
     }
-    back
+    top
     {
-        type symmetry;
+        type patch;
         faces ((4 5 6 7));
     }
 );
