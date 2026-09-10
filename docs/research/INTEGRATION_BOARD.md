@@ -4,50 +4,69 @@ Updated: 2026-09-10 · OSINT / public only
 ## Mission
 CAD-coupled long-horizon RL/harness platforms that search aero/naval design space under physics **and** evidence. Absorb public S&T + startup ideas; never classified/CUI/ITAR.
 
-## Positioning vs startups (what we steal vs ignore)
+**Wedge:** peers sell faster physics / more variants. We sell **search under evidence** — every candidate ships ODD, fidelity, monitors, residuals/uncertainty, provenance. CAD is the action space.
 
-| Player | Steal | Ignore / don't clone | Threat |
+## Positioning vs startups (steal vs ignore)
+
+| Player | Steal | Ignore | Threat |
 |---|---|---|---|
-| **PhysicsX** | Multi-fidelity: surrogate for search, classical for certify; LPM framing | Claiming to delete solvers entirely | H (capital, defense customers) |
-| **Neural Concept** | CAD-native geometry + physics-aware early explore; design *sets* not one concept | Closed proprietary training data moat | H |
-| **Compute Maritime / NeuralShipper** | GenAI hull → STAR-CCM+ validation ladder; NVIDIA accel pattern | Their proprietary 100k hull corpus | **H (direct sea peer)** |
-| **Luminary Cloud** | Production aero CFD cloud UX, validation discipline | Being "just cloud CFD" | M (air) |
-| **Rescale / SimScale** | HPC orchestration, democratized CAE access | Horizontal infra without evidence OS | L–M |
-| **nTop** | Field/implicit geometry + manufacturing constraints in the design object | Full CAD replacement | M (geometry ideas) |
-| **Synera / Quanscient / Secondmind / Monolith** | Workflow automation, Bayesian opt, sparse industrial data | Scattered horizontal tools | L–M |
-| **Ansys/Synopsys AI, Siemens Simcenter** | Incumbent genAI hooks; STAR-CCM+ as L3 teacher | Competing inside PLM | H (distribution) |
-| **NVIDIA PhysicsNeMo** | Open neural operators / DoMINO recipes | Vendor lock on stack | M (enabler) |
-| **Akselos** | Real-time twin for structures (energy) | Oil/gas-only GTM | L |
+| **PhysicsX** (~$2.4B) | Lifecycle physics-AI narrative; multi-fidelity search→certify | Closed LPM SaaS; “delete solvers” | **H** |
+| **Neural Concept** | CAD-native design *sets*; intent→geometry→multiphysics | Proprietary training moat | **H** |
+| **Compute Maritime / NeuralShipper** | GenAI hull → STAR-CCM+ ladder; manufacturing/class constraints; NVIDIA accel | Proprietary 100k hull corpus; CTV marketing | **H (Yard peer)** |
+| **Luminary Cloud** | Solver→DB→surrogate pipeline; aero OEM patterns | Pure cloud CFD economics | **H Strip / M Yard** |
+| **Rescale** | Agentic orchestration over solvers; FedRAMP/DoD path | HPC middleware identity | **M** |
+| **SimScale** | Agent-from-RFQ; API/Slack report agents | Mid-market CAE without evidence OS | **M** |
+| **nTop** | Failure-free parametric regen under DOE; agent-skillable geometry | AM/lattice product surface | **H (geometry)** |
+| **Synera** | Auditable connector agents across CAx (80+ tools) | Low-code without physics core | **M** |
+| **Quanscient** | Python-first multiphysics API for agent loops | Quantum narrative near-term | **L–M** |
+| **Secondmind** | Uncertainty-aware sample efficiency; feasible-region boxes | Auto calibration niche | **L** |
+| **Monolith → CoreWeave** | Test-plan / sim-to-real Field Eng (launched 2026-09-10) | Hyperscaler bundling | **M** |
+| **Akselos** | Reduced-order physics with **computable error bars** | Ops integrity SPM, not generative search | **L** (steal evidence pattern) |
+| **Ansys/Synopsys AI** | GeomAI / SimAI / mesh agents | Incumbent lock-in | **H** |
+| **Siemens Simcenter** | PhysicsAI Generate; STAR-CCM+ as L3 teacher | Portfolio noise; already partners NeuralShipper | **H** |
+| **NVIDIA PhysicsNeMo** | Open LPM training substrate (nn/mesh/diffusion) | Over-coupling to CUDA/Omniverse | **H ecosystem / L product** |
+| **HydroGym / FluidGym** | Gymnasium CFD env packaging; HF artifact discipline | Flow-*control* bias vs design-search | **M (infra)** |
+| **MIT DeCoDE (Ship-D / C-ShipGen)** | Parametric hull latent + drag guidance; dataset-first | Not a product; resistance-only early | **M (Yard seed)** |
 
-**Our wedge they underserve:** every candidate emits an **assurance/evidence pack** (ODD, fidelity tag, monitors, GSN stub). Surrogate speed without fail-closed claims is table stakes now — PhysicsX/Neural Concept sell speed; we sell **search that can prove what it claims**.
+## Open ecosystems to wire
 
-## Open ecosystems to wire (priority order for Yard-Sea-v0)
+1. Ship-D / C-ShipGen — corpus + generative prior  
+2. Gymnasium + HydroGym patterns — DesignSearchEnv API  
+3. BoTorch — outer loop before RL burns CFD  
+4. CadQuery / OCCT — every action emits valid CAD  
+5. OpenFOAM subset / DAFoam — L3 teacher + sparse adjoint  
+6. OpenMDAO — physics graph for coupled disciplines  
+7. Strip assurance vocab (FAA/F3269/AMLAS/GSN) on sea gym  
+8. PhysicsNeMo — train *our* surrogates on *our* evidence  
+9. Later: OpenVSP + NeuralFoil + JSBSim (Strip parallel)  
+10. ITTC metadata — V&V language  
 
-1. Ship-D / C-ShipGen / ShipGen — parametric hull + generative prior  
-2. Gymnasium — RL API  
-3. BoTorch — Bayesian opt baseline before RL  
-4. CadQuery / OCCT — watertight geometry  
-5. OpenFOAM (subset) — L3 calm-water teacher  
-6. ITTC procedure metadata — V&V language  
-7. Strip assurance vocab — FAA/F3269/AMLAS/GSN onto sea gym  
-8. Later: OpenVSP + NeuralFoil + JSBSim (air gym same harness)  
-9. Later: DAFoam / OpenMDAO patterns; JAX-Fluids sandbox  
+## Top 15 absorb in 90 days
 
-## Top ideas to integrate in 90 days
+1. Ship-D → Yard corpus + Zig hull param schema  
+2. C-ShipGen as proposal prior (class/human gates kept)  
+3. CadQuery action space (CAD-native or die)  
+4. Gymnasium DesignSearchEnv  
+5. BoTorch outer loop (Secondmind pattern)  
+6. OpenMDAO physics graph  
+7. Cheap hydro surrogate + NeuralFoil (Strip) for ms rewards  
+8. OpenVSP→JSBSim smoke (Strip parallel, same harness)  
+9. DAFoam sparse oracle for surrogate/RL verification  
+10. nTop-style zero-fail regen contract  
+11. PhysicsNeMo training substrate (don’t buy PhysicsX)  
+12. HydroGym packaging / HF checkpoint discipline  
+13. Synera-style audited CAD↔solver↔evidence connectors  
+14. Akselos-style residual/uncertainty on every claim  
+15. NeuralShipper-class manufacturability + class constraints in reward  
 
-1. Multi-fidelity ladder (L0 algebraic → L1 surrogate → L3 CFD) — PhysicsX/Neural Concept pattern  
-2. Runtime monitors reject illegal actions pre-CFD — ASTM F3269  
-3. Reward-directed / constrained generative prior — C-ShipGen / ShipGen  
-4. PPO/SAC sequential morph with hydrostatic continuity — JCDE RL hull  
-5. Evidence JSON every episode (MASS ODD + DNV-style claim/evidence)  
-6. Design *gallery* UX (Pareto board) — Neural Concept "design sets"; Yard arena/web reuse  
-7. Human-in-loop gate before any "promote to high fidelity" — ARP6983 Issue-1 posture  
-8. Reproduce one public baseline (drag shift / constraint SAT rate) as CI fixture  
-9. Competitor watch: Compute Maritime + PhysicsX weekly  
-10. N251-D07 / CREATE-SHIPS *public claims* as north-star language (not code)  
+**Defer:** quantum CFD, Rescale/SimScale as primary compute, Ansys/Siemens GenAI as product, CoreWeave FDE model.
+
+## Positioning one-liner
+Vs PhysicsX/Neural Concept: they sell faster physics; we sell **search under evidence**.  
+Vs NeuralShipper: they generate hulls; we **govern long-horizon design search with class-grade evidence**.
 
 ## Explicit non-goals (90 days)
-Full Maxsurf/NAPA clone · stealth/TS optimization · learning-in-ops on vehicles · CREATE binaries · dual sea+air gyms at once · resurrecting 77 yard-* leaves  
+Maxsurf/NAPA clone · stealth/TS · learning-in-ops · CREATE binaries · dual sea+air full build · resurrecting 77 `yard-*` leaves · LPM fundraising narrative
 
 ## Spec pointers
 - `docs/gym/YARD_SEA_V0.md`
