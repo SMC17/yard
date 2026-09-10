@@ -14,7 +14,7 @@
 | Env45 `use_hp_geometry=True` default when `shipd_surface` available | **PASS** — default via `hp_geometry_default()` |
 | Tests | **PASS** — `tests/test_hp_rank.py` + updated `test_env45.py` |
 | RESULT markdown | **PASS** — this file |
-| Push + PR | see Push section |
+| Push + PR | **PASS** — https://github.com/SMC17/yard/pull/8 |
 
 ## What landed
 
@@ -90,4 +90,6 @@ PYTHONPATH=. pytest -q tests/test_hp_rank.py tests/test_env45.py
 
 ## Push
 
-See PR on `feat/yard-sea-hp-primary` → `main` (or merge base of remaining-stones). Prefer separate branch over dumping onto multifidelity work-in-progress.
+- Branch: `feat/yard-sea-hp-primary`
+- PR: https://github.com/SMC17/yard/pull/8 (base `feat/yard-sea-remaining-stones`)
+- Prefer separate branch over dumping onto multifidelity WIP.
