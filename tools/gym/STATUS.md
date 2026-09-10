@@ -12,6 +12,7 @@ Implemented (on `feat/yard-sea-v0-gym`, PR #2 + local Ship-D surface / 45-D acti
   `vendor/shipd_upstream/HullParameterization.py` wrapped by
   `yard_sea_v0/shipd_surface.py` (`evaluate_constraints`, `generate_stl`);
   env45 rejects infeasible **actions** before L1; `mesh.write_shipd_stl`
+- **Michell L1.5 Ship-D waterlines** — `teachers.michell_l15.shipd_waterline_offsets` via HP `gen_MeshGridWL`; Wigley fallback retained (`out/michell_wl_result.md`)
 - Zig L0 mirror under `gym/`, GitHub Actions pytest+gallery
 - Local: pytest green with constraint + STL + act45 tests (see `out/shipd_surface_result.md`, `out/act45_result.md`)
 
