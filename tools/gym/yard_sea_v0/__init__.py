@@ -1,6 +1,6 @@
 """Yard-Sea-v0: evidence-coupled parametric hull design-search gym."""
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 from .env import DesignSearchEnv
 from .env45 import DesignSearchEnv45
