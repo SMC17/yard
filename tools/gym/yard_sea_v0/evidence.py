@@ -69,15 +69,21 @@ def build_evidence(
             }
         )
     if l0.feasible and resistance is not None and l1_accepted:
+        fid = getattr(resistance, "fidelity", None) or "simplified_py"
+        if fid == "hm1984_zig" or "hm1984" in str(fid).lower():
+            rank_desc = "L1 Zig HM1984 (hm1984_zig) Ct"
+        else:
+            rank_desc = "L1 Python Holtrop-simplified (simplified_py) Ct"
         claims.append(
             {
                 "id": "drag_rank_l1",
                 "statement": (
-                    "Hull is L0-feasible and ranked by L1 Holtrop-simplified Ct; "
+                    f"Hull is L0-feasible and ranked by {rank_desc}; "
                     "NOT an ITTC powering prediction."
                 ),
                 "status": "supported_at_l1",
                 "evidence": ["l0_report", "resistance_l1"],
+                "fidelity": fid,
             }
         )
         claims.append(
