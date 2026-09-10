@@ -11,6 +11,7 @@ from .evidence import build_evidence, write_evidence
 from .hull import HullState, evaluate_l0
 from .monitors import apply_action, monitor_action
 from .resistance_l1 import estimate_resistance
+from .stability_bridge import stability_bonus
 
 try:
     import gymnasium as gym
@@ -29,7 +30,7 @@ def _reward(h: HullState, parent_ct: float, parent_vol: float) -> float:
     ct_term = (parent_ct - r.Ct) / max(parent_ct, 1e-6)
     vol_term = (h.volume() - parent_vol) / max(parent_vol, 1e-6)
     gm_term = min(0.5, max(0.0, h.gm0() - 0.15)) * 0.1
-    return float(2.0 * ct_term + 0.5 * vol_term + gm_term)
+    return float(2.0 * ct_term + 0.5 * vol_term + gm_term + 0.25 * stability_bonus(h))
 
 
 class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
