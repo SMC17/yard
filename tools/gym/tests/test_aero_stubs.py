@@ -23,11 +23,23 @@ def test_openvsp_detect_and_skip():
     assert r["teacher"] == "openvsp_stub"
 
 
-def test_openvsp_skip_even_when_detected_adapter_pending():
-    fake = openvsp_stub.OpenVSPAvailability(vsp_bin="/usr/bin/vsp", python_mod=True)
+def test_openvsp_thin_call_when_cli_available(tmp_path):
+    avail = openvsp_stub.detect()
+    if not avail.vsp_bin:
+        pytest.skip("OpenVSP CLI not installed (vendor/openvsp or PATH)")
+    r = openvsp_stub.run(availability=avail, work_dir=str(tmp_path), alpha_deg=2.0)
+    assert r["skipped"] is False
+    assert r["fidelity"] == openvsp_stub.FIDELITY
+    assert r["CL"] is None  # VSPAERO not wired
+    assert r["skip_reason"] is None
+    assert (tmp_path / "yard_sea_smoke.vsp3").is_file()
+
+
+def test_openvsp_cli_missing_with_python_only():
+    fake = openvsp_stub.OpenVSPAvailability(vsp_bin=None, python_mod=True)
     r = openvsp_stub.run(availability=fake)
     assert r["skipped"] is True
-    assert r["skip_reason"] == "openvsp_adapter_pending"
+    assert r["skip_reason"] == "openvsp_cli_missing"
 
 
 def test_neuralfoil_skip_when_unavailable():

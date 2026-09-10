@@ -8,11 +8,13 @@ import numpy as np
 import pytest
 
 from yard_sea_v0.hull import HullState
+from yard_sea_v0.shipd import load_sample_vectors, project_to_hull
 from yard_sea_v0.teachers.michell_l15 import (
     FIDELITY,
     MichellAvailability,
     detect,
     run,
+    shipd_waterline_offsets,
     wigley_offsets,
 )
 
@@ -43,6 +45,7 @@ def test_run_returns_finite_cw():
     assert r["Cw"] > 0
     assert np.isfinite(r["Rw_N"])
     assert r["Rw_N"] > 0
+    assert r["offset_source"] == "wigley_synthetic"
     assert "not ittc" in r["notes"].lower()
 
 
@@ -52,6 +55,47 @@ def test_run_skips_when_vendor_missing():
     assert r["skipped"] is True
     assert r["skip_reason"] == "michell_vendor_missing"
     assert r["fidelity"] == "L1.5_pending"
+
+
+def test_shipd_waterline_offsets_shape_and_positive():
+    vec = load_sample_vectors()[0]
+    Y, X, Z = shipd_waterline_offsets(vec, nx=30, nz=9)
+    assert Y.shape[0] % 2 == 1
+    assert Y.shape == (X.size, Z.size)
+    assert X[0] == pytest.approx(0.0)
+    assert X[-1] == pytest.approx(float(vec.principal()["LOA"]))
+    assert Z[0] == pytest.approx(0.0)
+    assert Z[-1] < 0
+    assert np.all(Y >= 0)
+    assert Y.max() > 0.05  # real half-breadth, not empty
+
+
+def test_run_shipd_vector_finite_cw_differs_from_wigley():
+    """Sample Ship-D vector → finite Cw; differs from Wigley projection fallback."""
+    samples = load_sample_vectors()
+    vec = samples[0]
+    r_sd = run(vector=vec, Fn=0.20, nx=31, nz=9, n_theta=20)
+    assert r_sd["skipped"] is False
+    assert r_sd["offset_source"] == "shipd_hp_waterlines"
+    assert r_sd["fidelity"] == FIDELITY
+    assert np.isfinite(r_sd["Cw"]) and r_sd["Cw"] > 0
+    assert np.isfinite(r_sd["Rw_N"]) and r_sd["Rw_N"] > 0
+
+    h = project_to_hull(vec, fn=0.20)
+    r_wig = run(h, Fn=0.20, nx=31, nz=9, n_theta=20)
+    assert r_wig["offset_source"] == "wigley_synthetic"
+    assert np.isfinite(r_wig["Cw"])
+    # Real Ship-D waterlines should not collapse to the Wigley synthetic
+    assert r_sd["Cw"] != pytest.approx(r_wig["Cw"], rel=1e-3)
+
+
+def test_run_shipd_multiple_samples_finite():
+    for idx in (0, 3, 9):
+        vec = load_sample_vectors()[idx]
+        r = run(vector=vec, Fn=0.25, nx=31, nz=9, n_theta=16)
+        assert r["skipped"] is False, f"sample {idx} skipped: {r.get('skip_reason')}"
+        assert r["offset_source"] == "shipd_hp_waterlines"
+        assert np.isfinite(r["Cw"]) and r["Cw"] > 0
 
 
 def test_cli_l15_flag(tmp_path: Path):

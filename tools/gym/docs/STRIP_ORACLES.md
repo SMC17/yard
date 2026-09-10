@@ -13,7 +13,7 @@ and are now stubbed so the air path can reuse the same teacher protocol.
 |------|--------|------|
 | L0 reject | `hull.evaluate_l0` + monitors | Algebraic / hydrostatic filter |
 | L1 rank | `resistance_l1` | Holtrop-simplified calm-water |
-| **L1.5 wave** | `teachers.michell_l15` | Michell thin-ship Cw (Ship-D vendor wrap) |
+| **L1.5 wave** | `teachers.michell_l15` | Michell thin-ship Cw; Ship-D HP waterlines when vector given, else Wigley |
 | L3 CFD | `teachers.openfoam_l3` | OpenFOAM case + forceCoeffs (often pending) |
 | Strip overlay | `strip_assurance.strip_overlay` | ODD / claims / `not_certification` flags |
 | Aero geometry | `teachers.openvsp_stub` | OpenVSP detect/run (skip if absent) |
