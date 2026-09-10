@@ -15,7 +15,7 @@
 | Wire `--l2-panel` into gallery (+ multifidelity `use_l2` when present) | **PASS** (gallery/CLI on PR; local box also has `multifidelity.attach_l2`) |
 | Tests | **PASS** — `tests/test_panel_l2.py` **7 passed** |
 | RESULT markdown | **PASS** — this file |
-| Push `feat/yard-sea-panel-l2` + PR | **PASS** — branch + PR against `main` |
+| Push `feat/yard-sea-panel-l2` + PR | **PASS** — https://github.com/SMC17/yard/pull/7 |
 
 ## Research notes
 
