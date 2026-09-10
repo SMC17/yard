@@ -1,10 +1,10 @@
 """OpenVSP geometry/aero oracle stub (Strip air path).
 
 ``detect()`` probes PATH and ``vendor/openvsp/{vspscript,vsp}``.
-``run()`` executes a minimal AngelScript vehicle (empty + thin POD) via
-``vspscript -script`` when a binary is found; otherwise skips cleanly.
+``run()`` prefers real VSPAERO CL/CD/CM via ``teachers.vspaero_l1`` (thin wing
+through ``VSPAEROComputeGeometry`` + ``VSPAEROSweep``). If VSPAERO binaries are
+missing but ``vspscript`` is present, falls back to a POD-only geometry smoke.
 
-Full VSPAERO CL/CD/CM coupling is still deferred — thin geometry call only.
 Not certification, not operational.
 
 Install: see ``docs/OPENVSP_INSTALL.md`` (Ubuntu .deb extract into vendor/).
@@ -54,6 +54,7 @@ _MINIMAL_SCRIPT = """void main()
 @dataclass
 class OpenVSPAvailability:
     vsp_bin: str | None = None
+    vspaero: str | None = None
     python_mod: bool = False
     version: str | None = None
 
@@ -64,6 +65,7 @@ class OpenVSPAvailability:
     def to_dict(self) -> dict[str, Any]:
         return {
             "vsp_bin": self.vsp_bin,
+            "vspaero": self.vspaero,
             "python_mod": self.python_mod,
             "version": self.version,
             "available": self.available,
@@ -97,6 +99,14 @@ def _candidate_bins() -> list[Path]:
     return uniq
 
 
+def _find_vspaero() -> str | None:
+    p = _VENDOR_OPENVSP / "vspaero"
+    if p.is_file() and os.access(p, os.X_OK):
+        return str(p)
+    which = shutil.which("vspaero")
+    return which
+
+
 def detect() -> OpenVSPAvailability:
     """Probe PATH / vendor / import for OpenVSP (no side effects)."""
     vsp_bin: str | None = None
@@ -126,20 +136,27 @@ def detect() -> OpenVSPAvailability:
         python_mod = False
 
     if version is None and vsp_bin:
-        # Best-effort: package tree version from parent README / CHANGELOG not required
         version = "cli"
 
-    return OpenVSPAvailability(vsp_bin=vsp_bin, python_mod=python_mod, version=version)
+    return OpenVSPAvailability(
+        vsp_bin=vsp_bin,
+        vspaero=_find_vspaero(),
+        python_mod=python_mod,
+        version=version,
+    )
 
 
 def _run_vspscript(bin_path: str, work: Path) -> dict[str, Any]:
+    work = work.resolve()
+    work.mkdir(parents=True, exist_ok=True)
     script_path = work / "yard_sea_minimal.vspscript"
     script_path.write_text(_MINIMAL_SCRIPT, encoding="utf-8")
     out_vsp3 = work / "yard_sea_smoke.vsp3"
 
     # vspscript may abort on teardown (nonzero) after successful WriteVSPFile.
+    # Pass script basename only (relative path-as-module breaks GetModule).
     proc = subprocess.run(
-        [bin_path, "-script", str(script_path)],
+        [bin_path, "-script", script_path.name],
         cwd=str(work),
         capture_output=True,
         text=True,
@@ -171,10 +188,11 @@ def run(
     availability: OpenVSPAvailability | None = None,
     work_dir: str | None = None,
 ) -> dict[str, Any]:
-    """Attempt OpenVSP thin geometry script; skip if unavailable.
+    """OpenVSP teacher: prefer VSPAERO CL/CD/CM; else POD geometry smoke.
 
-    Does not yet run VSPAERO for CL/CD/CM — returns None aero coeffs with
-    notes that the geometry CLI path works.
+    When ``vspaero`` is available beside ``vspscript``, delegates to
+    ``vspaero_l1.run()`` for real vortex-lattice coefficients. Otherwise
+    runs the thin POD ``WriteVSPFile`` vehicle (CL/CD/CM remain None).
     """
     avail = availability if availability is not None else detect()
     if not avail.available:
@@ -194,6 +212,56 @@ def run(
                 "Not cert / not operational."
             ),
         }
+
+    # Prefer real VSPAERO when both vspscript and vspaero are present.
+    try:
+        from . import vspaero_l1
+    except ImportError:
+        vspaero_l1 = None  # type: ignore
+
+    if vspaero_l1 is not None and avail.vsp_bin and avail.vspaero:
+        va = vspaero_l1.VSPAEROAvailability(
+            vspscript=avail.vsp_bin
+            if Path(avail.vsp_bin).name == "vspscript"
+            else None,
+            vspaero=avail.vspaero,
+            version=avail.version,
+        )
+        if va.vspscript is None:
+            # detect() may have picked plain `vsp`; prefer vspscript for scripts
+            for cand in _candidate_bins():
+                if cand.name == "vspscript":
+                    va.vspscript = str(cand)
+                    break
+        if va.available:
+            vr = vspaero_l1.run(
+                alpha_deg=alpha_deg,
+                availability=va,
+                work_dir=work_dir,
+                model_path=model_path,
+            )
+            if not vr.get("skipped"):
+                return {
+                    "teacher": TEACHER,
+                    "skipped": False,
+                    "skip_reason": None,
+                    "fidelity": FIDELITY,
+                    "CL": vr["CL"],
+                    "CD": vr["CD"],
+                    "CM": vr["CM"],
+                    "alpha_deg": alpha_deg,
+                    "model_path": model_path,
+                    "availability": avail.to_dict(),
+                    "cli": vr.get("cli"),
+                    "vspaero_teacher": vr.get("teacher"),
+                    "notes": (
+                        "OpenVSP + VSPAERO thin wing OK "
+                        f"(CL={vr['CL']}, CD={vr['CD']}, CM={vr['CM']} @ "
+                        f"alpha={alpha_deg} deg). "
+                        "Not cert / not operational."
+                    ),
+                }
+            # VSPAERO failed — fall through to geometry-only smoke
 
     bin_path = avail.vsp_bin
     if not bin_path:
@@ -301,13 +369,13 @@ def run(
             "returncode": detail["returncode"],
             "vsp3_bytes": detail["vsp3_bytes"],
             "note": (
-                "vspscript often exits nonzero after successful WriteVSPFile "
-                "(teardown); success judged by markers + .vsp3 size."
+                "Geometry-only fallback (VSPAERO unavailable or failed). "
+                "vspscript often exits nonzero after successful WriteVSPFile."
             ),
         },
         "notes": (
             "OpenVSP thin geometry call OK (ClearVSPModel + POD + WriteVSPFile). "
-            "VSPAERO CL/CD/CM adapter not wired yet. Not cert / not operational."
+            "VSPAERO CL/CD/CM not available on this run. Not cert / not operational."
         ),
     }
 

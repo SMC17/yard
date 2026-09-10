@@ -24,13 +24,17 @@ Fidelity ladder (Yard-Sea ↔ Strip bridge):
 * L0 — algebraic / hydrostatic reject
 * L1 — Holtrop-simplified calm-water rank
 * L1.5 — Michell thin-ship wave drag (``michell_l15``)
-* L3 — OpenFOAM calm-water teacher (``openfoam_l3``, often pending)
-* aero_* — OpenVSP / NeuralFoil / JSBSim Strip-path oracles (stubs or thin calls)
+* L2 — Capytaine panel/BEM ranking proxies (``panel_l2``; L2_panel_bem / L2_pending)
+* L3 — OpenFOAM calm-water teacher (``openfoam_l3``; L3_potential / L3_rans / L3_pending)
+* aero_* — OpenVSP / VSPAERO L1 / NeuralFoil / JSBSim Strip-path oracles
 
 See ``docs/STRIP_ORACLES.md`` and ``yard_sea_v0.strip_assurance``.
 """
 
 from .openfoam_l3 import (
+    FIDELITY_PENDING,
+    FIDELITY_POTENTIAL,
+    FIDELITY_RANS,
     OpenFOAMAvailability,
     detect_openfoam,
     parse_force_coeffs,
@@ -41,8 +45,13 @@ from . import michell_l15
 from . import openvsp_stub
 from . import neuralfoil_stub
 from . import jsbsim_stub
+from . import vspaero_l1
+from . import panel_l2
 
 __all__ = [
+    "FIDELITY_PENDING",
+    "FIDELITY_POTENTIAL",
+    "FIDELITY_RANS",
     "OpenFOAMAvailability",
     "detect_openfoam",
     "parse_force_coeffs",
@@ -52,4 +61,6 @@ __all__ = [
     "openvsp_stub",
     "neuralfoil_stub",
     "jsbsim_stub",
+    "vspaero_l1",
+    "panel_l2",
 ]

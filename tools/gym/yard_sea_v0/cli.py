@@ -42,6 +42,33 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Attach Michell L1.5 wave-drag teacher per child hull (vendored ModMichell)",
     )
+    run.add_argument(
+        "--l2-panel",
+        action="store_true",
+        help="Attach Capytaine L2 panel/BEM teacher per child (skips if capytaine missing)",
+    )
+    run.add_argument(
+        "--botorch",
+        action="store_true",
+        help="Enable BoTorch Bayesian optimization search path (requires botorch/torch)",
+    )
+    run.add_argument(
+        "--multifidelity",
+        action="store_true",
+        help="Stage A L1(/L1.5) search then Stage B L3_rans on top-k elites only",
+    )
+    run.add_argument(
+        "--l3-top",
+        type=int,
+        default=3,
+        metavar="K",
+        help="With --multifidelity: number of Stage-A elites to evaluate at L3 (default 3)",
+    )
+    run.add_argument(
+        "--no-cost-aware",
+        action="store_true",
+        help="With --multifidelity --botorch: use plain BoTorch EI instead of cost-weighted qLogEI",
+    )
 
     ingest = sub.add_parser(
         "ingest-shipd",
@@ -74,6 +101,7 @@ def main(argv: list[str] | None = None) -> int:
                 steps=args.steps,
                 seed=args.seed,
                 out_dir=args.out,
+                use_michell_rank=bool(getattr(args, "l15_michell", False)),
             )
             n_ok = sum(1 for r in rows if not r.get("all_rejected"))
             print(
@@ -97,11 +125,18 @@ def main(argv: list[str] | None = None) -> int:
             use_corpus=use_corpus,
             l3_openfoam=args.l3_openfoam,
             l15_michell=args.l15_michell,
+            l2_panel=args.l2_panel,
+            use_botorch=args.botorch,
+            multifidelity=args.multifidelity,
+            l3_top=args.l3_top,
+            cost_aware=not args.no_cost_aware,
         )
         print(
             f"Wrote {args.out} improved={manifest['n_improved']} "
             f"best_dCt={manifest['best_delta_ct']:.6f} "
-            f"shipd={manifest.get('use_shipd')} corpus={manifest.get('use_corpus')}"
+            f"shipd={manifest.get('use_shipd')} corpus={manifest.get('use_corpus')} "
+            f"botorch={manifest.get('use_botorch')} l3={manifest.get('l3_openfoam')} "
+            f"mf={manifest.get('multifidelity')} l3_top={manifest.get('l3_top')}"
         )
         return 0
 

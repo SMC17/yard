@@ -21,6 +21,7 @@ import numpy as np
 
 from .hull import HullState, evaluate_l0
 from .shipd import ShipDVector, project_to_hull
+from .hp_rank import hull_from_shipd_primary
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DEFAULT_VECTORS_PATH = DATA_DIR / "InputVectors_30k.npy"
@@ -180,7 +181,7 @@ def sample_parent_indices(
             if ok is False:
                 continue
         if filter_l0:
-            hull = project_to_hull(vec)
+            hull = hull_from_shipd_primary(vec, prefer_hp=True)[0]
             if not evaluate_l0(hull).feasible:
                 continue
         chosen.append(int(i))
@@ -206,7 +207,7 @@ def sample_parents(
         filter_l0=filter_l0,
     )
     arr = load_input_vectors(path)
-    parents = [project_to_hull(arr[i]) for i in idxs]
+    parents = [hull_from_shipd_primary(arr[i], prefer_hp=True)[0] for i in idxs]
     if len(parents) < n:
         # Pad with default exploratory hulls if corpus filter is too strict.
         from .gallery import default_parents

@@ -12,6 +12,7 @@ Vendored for Yard-Sea-v0 local constraint eval + STL generation:
 
 1. **NumPy 2.x `np.trapz`**: shim to `np.trapezoid` when missing.
 2. **NumPy 2.x scalar assign**: `halfBeam_BB(...)[0]` in `gen_waterline_bow_BB` (upstream omitted `[0]`).
+3. **Silence** `print(Z.shape)` in `gen_pointCloud` (debug leftover).
 
 Not a full git submodule — parent agents refresh from upstream as needed.
 

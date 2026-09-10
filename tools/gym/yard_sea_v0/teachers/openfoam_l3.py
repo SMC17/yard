@@ -6,6 +6,15 @@ Fidelity labels:
 - L3_rans      — parsed forceCoeffs from simpleFoam (laminar RANS smoke)
 - L3_openfoam  — alias kept for older callers (mapped to L3_potential)
 
+Backend preference (auto):
+1. Native mesh + native simpleFoam when forceCoeffs health-check passes
+   (plain, or Debian-1912 SHA1 preload under tools/foam_sha1_fix/)
+2. Native mesh + Docker OpenFOAM-2412 simpleFoam when native forces broken
+3. Full Docker pipeline if no native FOAM binaries
+
+Debian OpenFOAM 1912 libforces hits OSHA1stream/sha1buf::overflow FATAL
+(mislabelled historically as OpenSSL sha1); OPENSSL_CONF does not fix it.
+
 When FOAM/docker/singularity are absent, run_teacher returns a
 ResistanceResult-like dict with fidelity=L3_pending and skipped=True.
 """
@@ -45,6 +54,9 @@ class OpenFOAMAvailability:
     singularity: bool = False
     apptainer: bool = False
     wm_project_dir: str | None = None
+    native_forces_ok: bool = False
+    native_forces_method: str | None = None  # "plain" | "sha1_preload"
+    native_forces_detail: str | None = None
 
     @property
     def available(self) -> bool:
@@ -59,6 +71,9 @@ class OpenFOAMAvailability:
             "apptainer": self.apptainer,
             "wm_project_dir": self.wm_project_dir,
             "available": self.available,
+            "native_forces_ok": self.native_forces_ok,
+            "native_forces_method": self.native_forces_method,
+            "native_forces_detail": self.native_forces_detail,
         }
 
 
@@ -76,7 +91,124 @@ def _discover_wm_project_dir() -> str | None:
     return None
 
 
-def _foam_environ(base: dict[str, str] | None = None) -> dict[str, str]:
+def _sha1_preload_so() -> Path | None:
+    """Path to libfoam_sha1_check_bypass.so if present (or YARD_SEA_FOAM_SHA1_PRELOAD)."""
+    env = os.environ.get("YARD_SEA_FOAM_SHA1_PRELOAD", "").strip()
+    if env:
+        p = Path(env)
+        if p.is_file():
+            return p
+    cand = _PKG_ROOT / "tools" / "foam_sha1_fix" / "libfoam_sha1_check_bypass.so"
+    if cand.is_file():
+        return cand
+    return None
+
+
+def _ensure_sha1_preload_built() -> Path | None:
+    """Build the SHA1 check-bypass .so from tools/ source if missing and gcc exists."""
+    existing = _sha1_preload_so()
+    if existing is not None:
+        return existing
+    src_dir = _PKG_ROOT / "tools" / "foam_sha1_fix"
+    src = src_dir / "foam_sha1_check_bypass.c"
+    so = src_dir / "libfoam_sha1_check_bypass.so"
+    gcc = shutil.which("gcc")
+    if not src.is_file() or gcc is None:
+        return None
+    try:
+        subprocess.run(
+            [gcc, "-shared", "-fPIC", "-O2", "-o", str(so), str(src)],
+            check=True,
+            timeout=60,
+            capture_output=True,
+            text=True,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    return so if so.is_file() else None
+
+
+def _sha1buf_missing_overflow(lib: Path | None = None) -> bool | None:
+    """True if libOpenFOAM sha1buf has xsputn but no overflow (Debian 1912 bug).
+
+    None if nm/lib unavailable (unknown).
+    """
+    if lib is None:
+        for cand in (Path("/usr/lib/libOpenFOAM.so"), Path("/lib/libOpenFOAM.so")):
+            if cand.is_file():
+                lib = cand
+                break
+    if lib is None or not lib.is_file():
+        return None
+    nm = shutil.which("nm")
+    if nm is None:
+        return None
+    try:
+        out = subprocess.check_output(
+            [nm, "-D", str(lib)], text=True, stderr=subprocess.DEVNULL, timeout=15
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    has_xsputn = "sha1buf6xsputn" in out
+    has_overflow = "sha1buf8overflow" in out
+    if not has_xsputn:
+        return False
+    return not has_overflow
+
+
+def native_forces_health(*, ensure_preload: bool = True) -> dict[str, Any]:
+    """Static health check for native libforces / forceCoeffs.
+
+    Returns keys: ok, method ("plain"|"sha1_preload"|None), detail, sha1_bug.
+    """
+    broken = _sha1buf_missing_overflow()
+    preload = _ensure_sha1_preload_built() if ensure_preload else _sha1_preload_so()
+    if broken is False:
+        return {
+            "ok": True,
+            "method": "plain",
+            "detail": "libOpenFOAM sha1buf appears intact (overflow present or no xsputn)",
+            "sha1_bug": False,
+            "preload": str(preload) if preload else None,
+        }
+    if broken is True:
+        if preload is not None:
+            return {
+                "ok": True,
+                "method": "sha1_preload",
+                "detail": (
+                    "Debian OpenFOAM 1912 OSHA1stream/sha1buf lacks overflow "
+                    f"(gcc-12+ ABI); using LD_PRELOAD={preload}"
+                ),
+                "sha1_bug": True,
+                "preload": str(preload),
+            }
+        return {
+            "ok": False,
+            "method": None,
+            "detail": (
+                "Debian OpenFOAM 1912 OSHA1stream/sha1buf lacks overflow "
+                "(IOstream 'sha1' FATAL on libforces). OPENSSL_CONF/SECLEVEL "
+                "does not help. Build tools/foam_sha1_fix or use Docker OF-2412."
+            ),
+            "sha1_bug": True,
+            "preload": None,
+        }
+    # unknown — prefer Docker if available; allow plain attempt
+    return {
+        "ok": False,
+        "method": None,
+        "detail": "Could not nm-inspect libOpenFOAM; treating native forces as unverified",
+        "sha1_bug": False,
+        "preload": str(preload) if preload else None,
+    }
+
+
+def _foam_environ(
+    base: dict[str, str] | None = None,
+    *,
+    sha1_preload: bool = False,
+) -> dict[str, str]:
     """Env vars so Debian /usr/bin/*Foam binaries find etc/controlDict."""
     env = dict(base if base is not None else os.environ)
     wm = _discover_wm_project_dir()
@@ -86,6 +218,16 @@ def _foam_environ(base: dict[str, str] | None = None) -> dict[str, str]:
         env.setdefault("FOAM_ETC", etc)
         env.setdefault("FOAM_CONFIG_ETC", etc)
         env.setdefault("WM_PROJECT", "OpenFOAM")
+    if sha1_preload:
+        so = _ensure_sha1_preload_built()
+        if so is not None:
+            prev = env.get("LD_PRELOAD", "").strip()
+            sp = str(so.resolve())
+            if prev:
+                parts = [p for p in prev.split(":") if p and p != sp]
+                env["LD_PRELOAD"] = sp + ((":" + ":".join(parts)) if parts else "")
+            else:
+                env["LD_PRELOAD"] = sp
     return env
 
 
@@ -190,6 +332,13 @@ def detect_openfoam() -> OpenFOAMAvailability:
             pass
     wm = _discover_wm_project_dir()
     docker_present = shutil.which("docker") is not None
+    health = native_forces_health(ensure_preload=True) if foam_bin else {
+        "ok": False,
+        "method": None,
+        "detail": "no native foam_bin",
+        "sha1_bug": False,
+        "preload": None,
+    }
     return OpenFOAMAvailability(
         foam_bin=foam_bin,
         foam_version=version,
@@ -197,6 +346,9 @@ def detect_openfoam() -> OpenFOAMAvailability:
         singularity=shutil.which("singularity") is not None,
         apptainer=shutil.which("apptainer") is not None,
         wm_project_dir=wm,
+        native_forces_ok=bool(health.get("ok")),
+        native_forces_method=health.get("method"),
+        native_forces_detail=health.get("detail"),
     )
 
 
@@ -553,6 +705,29 @@ def _disk_free_gb(path: Path) -> float:
         return float("inf")
 
 
+
+def _skip_reason_hint(reason: str) -> str:
+    """Extra operator-facing hint for common skip reasons."""
+    r = (reason or "").lower()
+    if "sha1" in r:
+        return (
+            "Root cause: Debian OF-1912 OSHA1stream/sha1buf missing overflow "
+            "(gcc-12+), not OpenSSL SECLEVEL. Fix: tools/foam_sha1_fix "
+            "LD_PRELOAD or Docker opencfd/openfoam-default:2412. "
+        )
+    if reason in ("no_runnable_backend", "openfoam_unavailable"):
+        return (
+            "Need native OpenFOAM (+ optional SHA1 preload) or a usable Docker "
+            "daemon with OpenFOAM image. "
+        )
+    if reason == "forceCoeffs_missing_after_run":
+        return (
+            "Solver finished without coefficient.dat/forceCoeffs.dat — check "
+            "log.simpleFoam / Docker logs and hull patch. "
+        )
+    return ""
+
+
 def _pending_result(
     Fn: float,
     *,
@@ -573,7 +748,9 @@ def _pending_result(
         fidelity=FIDELITY_PENDING,
         notes=(
             "OpenFOAM L3 teacher; no forceCoeffs yet. "
-            f"Skip reason: {reason}. Not ITTC powering."
+            f"Skip reason: {reason}. "
+            + _skip_reason_hint(reason)
+            + " Not ITTC powering."
         ),
     ).to_dict()
     base.update(
@@ -864,14 +1041,17 @@ def _native_simplefoam(
     prepared: Path,
     foam_env: dict[str, str],
     timeout_s: float,
+    *,
+    sha1_preload: bool = False,
 ) -> tuple[str | None, str | None]:
-    """Last-resort native simpleFoam (may fail on Debian 1912 libforces/sha1)."""
+    """Native simpleFoam (+ optional SHA1 LD_PRELOAD for Debian 1912)."""
     _set_application(prepared, "simpleFoam")
+    env = _foam_environ(foam_env, sha1_preload=sha1_preload) if sha1_preload else foam_env
     try:
         r = _run_logged(
             ["simpleFoam"],
             cwd=str(prepared.resolve()),
-            env=foam_env,
+            env=env,
             timeout_s=timeout_s,
             log_name="simpleFoam",
         )
@@ -880,7 +1060,7 @@ def _native_simplefoam(
     if find_force_coeffs(prepared) is not None:
         return "simpleFoam", None
     log = (prepared / "log.simpleFoam").read_text(errors="ignore")
-    if "sha1" in log.lower():
+    if "sha1" in log.lower() or "osha1" in log.lower():
         return None, "forceCoeffs_sha1_bug"
     if r.returncode != 0:
         return None, "simpleFoam_failed"
@@ -960,33 +1140,70 @@ def run_teacher(
 
     solver_used: str | None = None
     skip_reason: str | None = None
+    backend_note: str | None = None
+    health: dict[str, Any] = {}
     try:
         foam_env = _foam_environ()
         docker_ok = bool(avail.docker) and _docker_usable()
-        # Prefer native mesh (fast) + Docker simpleFoam for forceCoeffs.
-        # Debian OpenFOAM 1912 libforces hits OpenSSL-3 sha1 IOstream bug.
+        health = native_forces_health(ensure_preload=True)
+        # Refresh availability fields from live health (detect may be stale).
+        avail.native_forces_ok = bool(health.get("ok"))
+        avail.native_forces_method = health.get("method")
+        avail.native_forces_detail = health.get("detail")
+        use_preload = health.get("method") == "sha1_preload"
+        solve_timeout = max(30.0, timeout_s * 0.5)
+
+        # Prefer native forces when healthy; else Docker for forceCoeffs.
         if avail.foam_bin:
             mesh_reason = _mesh_native(prepared, foam_env, timeout_s)
             if mesh_reason:
                 skip_reason = mesh_reason
-            elif docker_ok:
-                solver_used, skip_reason = _docker_simplefoam(prepared, max(30.0, timeout_s * 0.5))
-            else:
+            elif health.get("ok"):
                 solver_used, skip_reason = _native_simplefoam(
-                    prepared, foam_env, max(30.0, timeout_s * 0.5)
+                    prepared,
+                    foam_env,
+                    solve_timeout,
+                    sha1_preload=use_preload,
                 )
-                if skip_reason == "forceCoeffs_sha1_bug" and docker_ok:
+                backend_note = (
+                    f"native_simpleFoam({health.get('method')})"
+                    if solver_used
+                    else None
+                )
+                if skip_reason and docker_ok:
                     solver_used, skip_reason = _docker_simplefoam(
-                        prepared, max(30.0, timeout_s * 0.5)
+                        prepared, solve_timeout
                     )
+                    if solver_used:
+                        backend_note = (
+                            f"docker_fallback_after_native:{health.get('method')}"
+                        )
+            elif docker_ok:
+                solver_used, skip_reason = _docker_simplefoam(prepared, solve_timeout)
+                backend_note = "docker_simpleFoam_native_forces_unhealthy"
+            else:
+                # Last resort: attempt native (may sha1-FATAL) for a clear log.
+                solver_used, skip_reason = _native_simplefoam(
+                    prepared,
+                    foam_env,
+                    solve_timeout,
+                    sha1_preload=bool(health.get("preload")),
+                )
+                if skip_reason == "forceCoeffs_sha1_bug":
+                    skip_reason = "forceCoeffs_sha1_bug"
+                    backend_note = health.get("detail")
         elif docker_ok:
             solver_used, skip_reason = _docker_full_pipeline(prepared, timeout_s)
+            backend_note = "docker_full_pipeline"
         else:
             return _pending_result(
                 Fn,
                 reason="no_runnable_backend",
                 case_dir=prepared,
-                extra={"availability": avail.to_dict()},
+                extra={
+                    "availability": avail.to_dict(),
+                    "native_forces_health": health,
+                },
             )
     except subprocess.TimeoutExpired:
         return _pending_result(
@@ -1005,7 +1222,12 @@ def run_teacher(
 
     if skip_reason and skip_reason not in ("simpleFoam_failed",):
         # Mesh/timeout failures: do not claim empty-box forceCoeffs.
-        extra: dict[str, Any] = {"availability": avail.to_dict(), "solver": solver_used}
+        extra: dict[str, Any] = {
+            "availability": avail.to_dict(),
+            "solver": solver_used,
+            "backend_note": backend_note,
+            "native_forces_health": health or None,
+        }
         coeffs_path = find_force_coeffs(prepared)
         if coeffs_path is None:
             return _pending_result(
@@ -1036,7 +1258,7 @@ def run_teacher(
         fidelity = FIDELITY_RANS
     else:
         fidelity = FIDELITY_POTENTIAL
-    return _result_from_coeffs(
+    out = _result_from_coeffs(
         Fn,
         coeffs,
         case_dir=prepared,
@@ -1044,6 +1266,10 @@ def run_teacher(
         fidelity=fidelity,
         solver=solver_used or "potentialFoam",
     )
+    if backend_note:
+        out["backend_note"] = backend_note
+    out["native_forces_health"] = health or None
+    return out
 
 
 def maybe_annotate_gallery_child(

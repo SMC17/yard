@@ -42,6 +42,7 @@ class HullState:
         v = self.volume()
         if v <= 0:
             return 0.0
+        # waterplane ~ L*B for high-Cb; scale by approx Cw≈Cb^0.5 soft
         i_t = self.L * self.B**3 / 12.0
         return i_t / v
 
@@ -61,6 +62,7 @@ class HullState:
         return self.lcb_frac * self.L
 
     def wetted_approx(self) -> float:
+        # Guldhammer-Harvald-ish box approximation
         return self.L * (2.0 * self.T + self.B) * (0.9 + 0.1 * self.Cb)
 
     def as_vector(self) -> list[float]:
@@ -139,6 +141,7 @@ def evaluate_l0(h: HullState) -> L0Report:
     gm = h.gm0()
     if gm < GM_MIN:
         vios.append(f"gm0_below_floor:{gm:.3f}")
+    # wall-sided-ish envelope for box GM model honesty
     if h.B / (2.0 * h.T) <= 0.8:
         vios.append("hydrostatic_model_outside_envelope")
     metrics = {

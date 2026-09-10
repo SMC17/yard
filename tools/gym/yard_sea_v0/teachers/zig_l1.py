@@ -39,7 +39,7 @@ def estimate_l1(
                 return estimate_resistance_zig(hull, fidelity=fid)  # type: ignore[arg-type]
         except Exception:
             pass
-    return estimate_resistance(hull)
+    return estimate_resistance(hull, prefer_zig_hm1984=False)
 
 
 def teacher_meta() -> dict[str, Any]:
@@ -49,5 +49,5 @@ def teacher_meta() -> dict[str, Any]:
         "name": "zig_l1",
         "zig_available": zig_available(),
         "prefer_hm1984": prefer_zig_hm1984(),
-        "default_fidelity": "hm1984" if zig_available() and prefer_zig_hm1984() else "simplified",
+        "default_fidelity": "hm1984_zig" if zig_available() and prefer_zig_hm1984() else "simplified_py",
     }

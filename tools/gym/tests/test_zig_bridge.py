@@ -40,7 +40,7 @@ def test_bad_cb_rejected_both():
 
 def test_default_l1_parity():
     h = HullState()
-    py = estimate_resistance(h)
+    py = estimate_resistance(h, prefer_zig_hm1984=False)
     zg = estimate_resistance_zig(h)
     assert abs(zg.Cf - py.Cf) < 1e-12
     assert abs(zg.k1 - py.k1) < 1e-12
@@ -63,6 +63,6 @@ def test_perturbed_hull_parity():
     zg0 = evaluate_l0_zig(h)
     assert py0.feasible == zg0["feasible"]
     assert abs(zg0["gm0_m"] - py0.metrics["gm0_m"]) < 1e-9
-    py1 = estimate_resistance(h)
+    py1 = estimate_resistance(h, prefer_zig_hm1984=False)
     zg1 = estimate_resistance_zig(h)
     assert math.isclose(zg1.Ct, py1.Ct, rel_tol=0, abs_tol=1e-12)
