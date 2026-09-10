@@ -1,21 +1,25 @@
-"""L3 OpenFOAM resistance teacher interface for Yard-Sea-v0.
+"""L3 OpenFOAM resistance teacher for Yard-Sea-v0.
 
 Fidelity labels:
-- L3_pending — case prepared / FOAM absent / forceCoeffs missing (default here)
-- L3_openfoam — parsed forceCoeffs from a real solver run (when FOAM available)
+- L3_pending   — FOAM absent / timeout / disk / snappy or forceCoeffs missing
+- L3_potential — parsed forceCoeffs from potentialFoam (irrotational smoke)
+- L3_rans      — parsed forceCoeffs from simpleFoam (laminar RANS smoke)
+- L3_openfoam  — alias kept for older callers (mapped to L3_potential)
 
-This module scaffolds prepare_case / run_teacher without requiring OpenFOAM
-on the machine. When FOAM/docker/singularity are absent, run_teacher returns
-a ResistanceResult-like dict with fidelity=L3_pending and skipped=True.
+When FOAM/docker/singularity are absent, run_teacher returns a
+ResistanceResult-like dict with fidelity=L3_pending and skipped=True.
 """
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import re
 import shutil
+import struct
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -27,7 +31,10 @@ from ..resistance_l1 import ResistanceResult
 _PKG_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CASE_TEMPLATE = _PKG_ROOT / "cases" / "openfoam_hull_v0"
 FIDELITY_PENDING = "L3_pending"
-FIDELITY_OPENFOAM = "L3_openfoam"
+FIDELITY_POTENTIAL = "L3_potential"
+FIDELITY_RANS = "L3_rans"
+FIDELITY_OPENFOAM = "L3_openfoam"  # backward-compat alias
+DISK_SKIP_GB = 1.0
 
 
 @dataclass
@@ -60,7 +67,6 @@ def _discover_wm_project_dir() -> str | None:
     env = os.environ.get("WM_PROJECT_DIR")
     if env and Path(env).is_dir():
         return env
-    # Debian openfoam package (trixie/bookworm): etc under /usr/share/openfoam
     debian = Path("/usr/share/openfoam")
     if (debian / "etc" / "controlDict").is_file():
         return str(debian)
@@ -84,13 +90,9 @@ def _foam_environ(base: dict[str, str] | None = None) -> dict[str, str]:
 
 
 def _docker_cli() -> list[str] | None:
-    """Return a working docker argv prefix, or None if docker unusable.
-
-    Tries bare docker, then `sg docker`, then passwordless sudo.
-    """
+    """Return a working docker argv prefix, or None if docker unusable."""
     if shutil.which("docker") is None:
         return None
-    # First: bare docker info
     try:
         r = subprocess.run(
             ["docker", "info"],
@@ -102,7 +104,6 @@ def _docker_cli() -> list[str] | None:
             return ["docker"]
     except (subprocess.SubprocessError, OSError):
         pass
-    # sg docker
     if shutil.which("sg"):
         try:
             r = subprocess.run(
@@ -112,10 +113,9 @@ def _docker_cli() -> list[str] | None:
                 check=False,
             )
             if r.returncode == 0:
-                return ["sg", "docker", "-c"]  # caller appends docker ... as one string
+                return ["sg", "docker", "-c"]
         except (subprocess.SubprocessError, OSError):
             pass
-    # sudo -n docker
     if shutil.which("sudo"):
         try:
             r = subprocess.run(
@@ -128,8 +128,31 @@ def _docker_cli() -> list[str] | None:
                 return ["sudo", "-n", "docker"]
         except (subprocess.SubprocessError, OSError):
             pass
-    # Binary exists but daemon not usable — still advertise docker for detect
     return ["docker"]
+
+
+
+def _docker_usable() -> bool:
+    """True if a docker CLI prefix can run `docker info` successfully."""
+    if shutil.which("docker") is None:
+        return False
+    probes = [
+        ["docker", "info"],
+        ["sg", "docker", "-c", "docker info"],
+        ["sudo", "-n", "docker", "info"],
+    ]
+    for cmd in probes:
+        if cmd[0] == "sg" and shutil.which("sg") is None:
+            continue
+        if cmd[0] == "sudo" and shutil.which("sudo") is None:
+            continue
+        try:
+            r = subprocess.run(cmd, capture_output=True, timeout=8, check=False)
+            if r.returncode == 0:
+                return True
+        except (subprocess.SubprocessError, OSError):
+            continue
+    return False
 
 
 def detect_openfoam() -> OpenFOAMAvailability:
@@ -149,13 +172,11 @@ def detect_openfoam() -> OpenFOAMAvailability:
         except (subprocess.SubprocessError, OSError):
             version = None
     if version is None and foam_bin:
-        # Debian package has no foamVersion; infer from package layout / dpkg.
         wm = _discover_wm_project_dir()
         if wm and Path(wm).name == "openfoam":
             version = "OPENFOAM=1912 (debian)"
         else:
             version = "openfoam-detected"
-        # Prefer dpkg version when available (no side effects beyond dpkg-query)
         try:
             ver = subprocess.check_output(
                 ["dpkg-query", "-W", "-f=${Version}", "openfoam"],
@@ -179,22 +200,55 @@ def detect_openfoam() -> OpenFOAMAvailability:
     )
 
 
-def _estimate_l_from_stl(stl_path: Path) -> float:
-    """Best-effort LOA from ASCII STL vertex x-extent; default 120 m."""
-    xmin, xmax = None, None
+def stl_bbox(stl_path: str | Path) -> tuple[float, float, float, float, float, float] | None:
+    """Return (xmin, xmax, ymin, ymax, zmin, zmax) for ASCII or binary STL."""
+    path = Path(stl_path)
     try:
-        text = Path(stl_path).read_text(errors="ignore")
+        data = path.read_bytes()
     except OSError:
+        return None
+    if len(data) < 84:
+        return None
+    head = data[:200]
+    ascii_like = head.lstrip().lower().startswith(b"solid") and b"facet" in data[:4096]
+    xs: list[float] = []
+    ys: list[float] = []
+    zs: list[float] = []
+    if ascii_like:
+        text = data.decode("ascii", errors="ignore")
+        for line in text.splitlines():
+            parts = line.split()
+            if len(parts) >= 4 and parts[0] == "vertex":
+                try:
+                    xs.append(float(parts[1]))
+                    ys.append(float(parts[2]))
+                    zs.append(float(parts[3]))
+                except ValueError:
+                    continue
+    else:
+        ntri = struct.unpack_from("<I", data, 80)[0]
+        if ntri <= 0 or ntri > 5_000_000:
+            return None
+        off = 84
+        for _ in range(ntri):
+            if off + 50 > len(data):
+                break
+            tri = struct.unpack_from("<12f", data, off)
+            xs.extend((tri[3], tri[6], tri[9]))
+            ys.extend((tri[4], tri[7], tri[10]))
+            zs.extend((tri[5], tri[8], tri[11]))
+            off += 50
+    if not xs:
+        return None
+    return (min(xs), max(xs), min(ys), max(ys), min(zs), max(zs))
+
+
+def _estimate_l_from_stl(stl_path: Path) -> float:
+    """Best-effort LOA from STL vertex x-extent; default 120 m."""
+    bb = stl_bbox(stl_path)
+    if bb is None or bb[1] <= bb[0]:
         return 120.0
-    for m in re.finditer(
-        r"vertex\s+([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)", text
-    ):
-        x = float(m.group(1))
-        xmin = x if xmin is None else min(xmin, x)
-        xmax = x if xmax is None else max(xmax, x)
-    if xmin is None or xmax is None or xmax <= xmin:
-        return 120.0
-    return float(xmax - xmin)
+    return float(bb[1] - bb[0])
 
 
 def _rewrite_placeholders(path: Path, mapping: dict[str, str]) -> None:
@@ -202,6 +256,98 @@ def _rewrite_placeholders(path: Path, mapping: dict[str, str]) -> None:
     for key, val in mapping.items():
         text = text.replace(key, val)
     path.write_text(text)
+
+
+def _clamp(n: int, lo: int, hi: int) -> int:
+    return max(lo, min(hi, n))
+
+
+def _domain_from_bbox(
+    bbox: tuple[float, float, float, float, float, float],
+    L_ref: float,
+) -> dict[str, float | int | str]:
+    """Padded blockMesh domain + coarse cell counts + locationInMesh."""
+    xmin, xmax, ymin, ymax, zmin, zmax = bbox
+    L = max(L_ref, xmax - xmin, 1.0)
+    B = max(ymax - ymin, L / 8.0, 0.5)
+    T = max(zmax - zmin, L / 20.0, 0.2)
+    x0 = xmin - 0.8 * L
+    x1 = xmax + 1.6 * L
+    y0 = ymin - 2.0 * B
+    y1 = ymax + 2.0 * B
+    z0 = zmin - 1.5 * T
+    z1 = zmax + 2.5 * T
+    # ~16 cells along L → coarse smoke (snappy level 1 near hull)
+    cell = L / 16.0
+    nx = _clamp(int(round((x1 - x0) / cell)), 12, 36)
+    ny = _clamp(int(round((y1 - y0) / cell)), 8, 18)
+    nz = _clamp(int(round((z1 - z0) / cell)), 8, 16)
+    # locationInMesh: inlet plenum, off cell faces, above deck, outside hull
+    dx = (x1 - x0) / nx
+    dy = (y1 - y0) / ny
+    dz = (z1 - z0) / nz
+    loc_x = xmin - 0.35 * L
+    loc_x = min(max(loc_x, x0 + 0.37 * dx), xmin - 0.05 * L)
+    loc_y = 0.5 * (ymin + ymax) + 0.17 * dy
+    loc_z = zmax + 0.45 * (z1 - zmax) + 0.13 * dz
+    loc_z = min(max(loc_z, zmax + 0.2 * dz), z1 - 0.3 * dz)
+    loc = f"({loc_x:.6g} {loc_y:.6g} {loc_z:.6g})"
+    return {
+        "xmin": x0,
+        "xmax": x1,
+        "ymin": y0,
+        "ymax": y1,
+        "zmin": z0,
+        "zmax": z1,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "location": loc,
+        "n_hex": nx * ny * nz,
+    }
+
+
+
+
+
+def _write_force_coeffs1_dict(
+    case_dir: Path,
+    *,
+    mag_u: str,
+    l_ref: str,
+    a_ref: str,
+) -> None:
+    """Write system/forceCoeffs1 for postProcess / Docker FO."""
+    content = """/*--------------------------------*- C++ -*----------------------------------*/
+/* Yard-Sea-v0 forceCoeffs1 (postProcess / Docker)                          */
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      forceCoeffs1;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+type            forceCoeffs;
+libs            ("libforces.so");
+writeControl    timeStep;
+writeInterval   1;
+log             true;
+patches         (hull);
+rho             rhoInf;
+rhoInf          1025;
+liftDir         (0 0 1);
+dragDir         (1 0 0);
+CofR            (0 0 0);
+pitchAxis       (0 1 0);
+magUInf         MAGU;
+lRef            LREF;
+Aref            AREF;
+
+// ************************************************************************* //
+""".replace("MAGU", mag_u).replace("LREF", l_ref).replace("AREF", a_ref)
+    (case_dir / "system" / "forceCoeffs1").write_text(content)
 
 
 def prepare_case(
@@ -214,7 +360,7 @@ def prepare_case(
     T: float | None = None,
     template_dir: str | Path | None = None,
 ) -> Path:
-    """Copy case template, inject STL + freestream from Fn, return case dir.
+    """Copy case template, inject STL + domain + freestream, return case dir.
 
     Does not require OpenFOAM — only filesystem writes.
     """
@@ -235,26 +381,58 @@ def prepare_case(
     dest_stl = tri / "hull.stl"
     shutil.copy2(stl_path, dest_stl)
 
-    L_ref = float(L) if L is not None else _estimate_l_from_stl(stl_path)
-    B_ref = float(B) if B is not None else max(L_ref / 6.0, 1.0)
-    T_ref = float(T) if T is not None else max(L_ref / 15.0, 0.5)
+    bbox = stl_bbox(stl_path)
+    L_ref = float(L) if L is not None else (
+        float(bbox[1] - bbox[0]) if bbox else _estimate_l_from_stl(stl_path)
+    )
+    B_ref = float(B) if B is not None else (
+        float(bbox[3] - bbox[2]) if bbox else max(L_ref / 6.0, 1.0)
+    )
+    T_ref = float(T) if T is not None else (
+        float(bbox[5] - bbox[4]) if bbox else max(L_ref / 15.0, 0.5)
+    )
     U = float(Fn) * math.sqrt(G * L_ref)
-    A_ref = max(L_ref * T_ref * 0.1, 1.0)  # frontal-ish placeholder
+    A_ref = max(B_ref * T_ref, 1e-3)
+
+    if bbox is None:
+        half_l, half_b, t = L_ref / 2.0, B_ref / 2.0, T_ref
+        bbox = (-half_l, half_l, -half_b, half_b, 0.0, t)
+    domain = _domain_from_bbox(bbox, L_ref)
 
     mapping = {
         "__UX__": f"{U:.6g}",
         "__MAG_U_INF__": f"{U:.6g}",
         "__L_REF__": f"{L_ref:.6g}",
         "__A_REF__": f"{A_ref:.6g}",
+        "__XMIN__": f"{domain['xmin']:.6g}",
+        "__XMAX__": f"{domain['xmax']:.6g}",
+        "__YMIN__": f"{domain['ymin']:.6g}",
+        "__YMAX__": f"{domain['ymax']:.6g}",
+        "__ZMIN__": f"{domain['zmin']:.6g}",
+        "__ZMAX__": f"{domain['zmax']:.6g}",
+        "__NX__": str(int(domain["nx"])),
+        "__NY__": str(int(domain["ny"])),
+        "__NZ__": str(int(domain["nz"])),
+        "__LOCATION_IN_MESH__": str(domain["location"]),
     }
-    for rel in ("0/U", "system/controlDict"):
+    for rel in (
+        "0/U",
+        "system/controlDict",
+        "system/blockMeshDict",
+        "system/snappyHexMeshDict",
+    ):
         p = out_dir / rel
         if p.is_file():
             _rewrite_placeholders(p, mapping)
 
-    meta = out_dir / "yard_sea_prepare.json"
-    import json
+    _write_force_coeffs1_dict(
+        out_dir,
+        mag_u=mapping["__MAG_U_INF__"],
+        l_ref=mapping["__L_REF__"],
+        a_ref=mapping["__A_REF__"],
+    )
 
+    meta = out_dir / "yard_sea_prepare.json"
     meta.write_text(
         json.dumps(
             {
@@ -265,6 +443,8 @@ def prepare_case(
                 "T_ref": T_ref,
                 "U": U,
                 "A_ref": A_ref,
+                "bbox": list(bbox),
+                "domain": {k: domain[k] for k in domain},
                 "fidelity": FIDELITY_PENDING,
                 "template": str(template_dir),
             },
@@ -276,25 +456,26 @@ def prepare_case(
     return out_dir
 
 
-_FORCE_COEFF_LINE = re.compile(
-    r"^\s*([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)"
-    r"(?:\s+([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?))+"
-)
-
-
 def parse_force_coeffs(path: str | Path) -> dict[str, float] | None:
     """Parse OpenFOAM postProcessing forceCoeffs.dat; return last Cd/Cl/Cm row.
 
-    Expected columns (OpenFOAM forceCoeffs):
-    Time Cd Cl Cm ...  (header may vary; we take col1=Cd, col2=Cl when present)
+    Handles both short headers (Time Cd Cl Cm) and v1912+ expanded headers
+    (Time Cd Cd(f) Cd(r) Cl ... CmPitch ...).
     """
     path = Path(path)
     if not path.is_file():
         return None
+    header_cols: list[str] | None = None
     last: list[float] | None = None
     for line in path.read_text(errors="ignore").splitlines():
         s = line.strip()
-        if not s or s.startswith("#"):
+        if not s:
+            continue
+        if s.startswith("#"):
+            body = s.lstrip("#").strip()
+            toks = body.split()
+            if toks and toks[0].lower() in ("time", "cd"):
+                header_cols = [t.lower() for t in toks]
             continue
         parts = s.split()
         try:
@@ -305,24 +486,71 @@ def parse_force_coeffs(path: str | Path) -> dict[str, float] | None:
             last = vals
     if not last:
         return None
-    # Typical: Time Cd Cl CmPitch ...
-    out: dict[str, float] = {"time": last[0]}
-    if len(last) >= 2:
+    out: dict[str, float] = {}
+    if header_cols and len(header_cols) >= 2:
+        for i, name in enumerate(header_cols):
+            if i >= len(last):
+                break
+            if name in ("time", "cd", "cl", "cm", "cs", "cmpitch", "cmyaw", "cmroll"):
+                key = {"cmpitch": "Cm", "cmyaw": "CmYaw", "cmroll": "CmRoll"}.get(
+                    name, name[0].upper() + name[1:] if name != "time" else "time"
+                )
+                if name == "time":
+                    key = "time"
+                elif name == "cd":
+                    key = "Cd"
+                elif name == "cl":
+                    key = "Cl"
+                elif name == "cm":
+                    key = "Cm"
+                elif name == "cs":
+                    key = "Cs"
+                out[key] = last[i]
+        if "Cd" not in out and len(last) >= 2:
+            out.setdefault("time", last[0])
+            out["Cd"] = last[1]
+    else:
+        out["time"] = last[0]
         out["Cd"] = last[1]
-    if len(last) >= 3:
-        out["Cl"] = last[2]
-    if len(last) >= 4:
-        out["Cm"] = last[3]
+        if len(last) >= 3:
+            out["Cl"] = last[2]
+        if len(last) >= 4:
+            out["Cm"] = last[3]
+    if "Cd" not in out:
+        return None
+    out.setdefault("time", last[0])
     return out
 
 
 def find_force_coeffs(case_dir: Path) -> Path | None:
-    """Locate newest forceCoeffs.dat under postProcessing/."""
+    """Locate newest forceCoeffs.dat / coefficient.dat under postProcessing/."""
     root = Path(case_dir) / "postProcessing"
     if not root.is_dir():
         return None
-    candidates = sorted(root.rglob("forceCoeffs.dat"), key=lambda p: p.stat().st_mtime)
-    return candidates[-1] if candidates else None
+    names = ("forceCoeffs.dat", "coefficient.dat")
+    candidates: list[Path] = []
+    for name in names:
+        candidates.extend(root.rglob(name))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda p: p.stat().st_mtime)
+    return candidates[-1]
+
+
+def _has_hull_patch(case_dir: Path) -> bool:
+    boundary = Path(case_dir) / "constant" / "polyMesh" / "boundary"
+    if not boundary.is_file():
+        return False
+    text = boundary.read_text(errors="ignore")
+    return bool(re.search(r"\bhull\b", text))
+
+
+def _disk_free_gb(path: Path) -> float:
+    try:
+        st = os.statvfs(path)
+        return (st.f_bavail * st.f_frsize) / 1e9
+    except OSError:
+        return float("inf")
 
 
 def _pending_result(
@@ -344,7 +572,7 @@ def _pending_result(
         Ct=float("nan"),
         fidelity=FIDELITY_PENDING,
         notes=(
-            "OpenFOAM L3 teacher scaffold; no forceCoeffs yet. "
+            "OpenFOAM L3 teacher; no forceCoeffs yet. "
             f"Skip reason: {reason}. Not ITTC powering."
         ),
     ).to_dict()
@@ -358,6 +586,7 @@ def _pending_result(
             "Cl": None,
             "Cm": None,
             "teacher": "openfoam_l3",
+            "solver": None,
         }
     )
     if extra:
@@ -371,10 +600,11 @@ def _result_from_coeffs(
     *,
     case_dir: Path,
     L: float,
+    fidelity: str,
+    solver: str,
 ) -> dict[str, Any]:
     Cd = float(coeffs.get("Cd", float("nan")))
     U = Fn * math.sqrt(G * L)
-    # Map Cd ~ Ct exploratory; S unknown → leave Rt_N from Cd * dynamic pressure * Aref proxy
     S = L * L * 0.1
     Rt = 0.5 * RHO_SW * U * U * S * Cd if math.isfinite(Cd) else float("nan")
     base = ResistanceResult(
@@ -385,9 +615,9 @@ def _result_from_coeffs(
         Cw=float("nan"),
         Rt_N=Rt,
         Ct=Cd,
-        fidelity=FIDELITY_OPENFOAM,
+        fidelity=fidelity,
         notes=(
-            "Parsed OpenFOAM forceCoeffs Cd as Ct proxy. "
+            f"Parsed OpenFOAM forceCoeffs Cd as Ct proxy via {solver}. "
             "Exploratory L3 — not ITTC powering / not class."
         ),
     ).to_dict()
@@ -402,9 +632,260 @@ def _result_from_coeffs(
             "Cm": coeffs.get("Cm"),
             "teacher": "openfoam_l3",
             "force_coeffs": coeffs,
+            "solver": solver,
         }
     )
     return base
+
+
+def _write_log(case_dir: Path, name: str, stdout: str, stderr: str) -> None:
+    try:
+        (case_dir / f"log.{name}").write_text(
+            (stdout or "") + (stderr or ""),
+            encoding="utf-8",
+            errors="ignore",
+        )
+    except OSError:
+        pass
+
+
+def _run_logged(
+    cmd: list[str],
+    *,
+    cwd: str,
+    env: dict[str, str],
+    timeout_s: float,
+    log_name: str,
+) -> subprocess.CompletedProcess[str]:
+    r = subprocess.run(
+        cmd,
+        cwd=cwd,
+        check=False,
+        timeout=timeout_s,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    _write_log(Path(cwd), log_name, r.stdout or "", r.stderr or "")
+    return r
+
+
+
+def _set_application(case_dir: Path, app: str) -> None:
+    ctrl = case_dir / "system" / "controlDict"
+    if not ctrl.is_file():
+        return
+    txt = ctrl.read_text()
+    txt = re.sub(
+        r"application\s+\w+\s*;",
+        f"application     {app};",
+        txt,
+        count=1,
+    )
+    ctrl.write_text(txt)
+
+
+def _mesh_native(
+    prepared: Path,
+    foam_env: dict[str, str],
+    timeout_s: float,
+) -> str | None:
+    """blockMesh → snappyHexMesh → checkMesh. Return skip_reason or None."""
+    case_cwd = str(prepared.resolve())
+    deadline = time.monotonic() + timeout_s
+
+    def remaining() -> float:
+        return max(8.0, deadline - time.monotonic())
+
+    r = _run_logged(
+        ["blockMesh"],
+        cwd=case_cwd,
+        env=foam_env,
+        timeout_s=remaining(),
+        log_name="blockMesh",
+    )
+    if r.returncode != 0:
+        return "blockMesh_failed"
+    if time.monotonic() >= deadline:
+        return "timeout"
+
+    r = _run_logged(
+        ["snappyHexMesh", "-overwrite"],
+        cwd=case_cwd,
+        env=foam_env,
+        timeout_s=remaining(),
+        log_name="snappyHexMesh",
+    )
+    if r.returncode != 0:
+        return "snappy_failed"
+    if not _has_hull_patch(prepared):
+        return "snappy_no_hull_patch"
+    if time.monotonic() >= deadline:
+        return "timeout"
+
+    _run_logged(
+        ["checkMesh"],
+        cwd=case_cwd,
+        env=foam_env,
+        timeout_s=remaining(),
+        log_name="checkMesh",
+    )
+    # Optional potential init (no functionObjects — Debian 1912 libforces hits sha1 bug).
+    try:
+        _run_logged(
+            ["potentialFoam", "-writep", "-writephi"],
+            cwd=case_cwd,
+            env=foam_env,
+            timeout_s=min(60.0, remaining()),
+            log_name="potentialFoam",
+        )
+    except subprocess.TimeoutExpired:
+        return "timeout"
+    return None
+
+
+def _docker_simplefoam(prepared: Path, timeout_s: float) -> tuple[str | None, str | None]:
+    """Run short laminar simpleFoam in Docker for forceCoeffs (OpenFOAM-2412)."""
+    img = os.environ.get("YARD_SEA_OPENFOAM_IMAGE", "opencfd/openfoam-default:2412")
+    _set_application(prepared, "simpleFoam")
+    inner = (
+        "source /openfoam/profile.rc 2>/dev/null || true; "
+        "cd /case; "
+        "simpleFoam -case /case; "
+        "echo SF_EXIT:$?"
+    )
+    cli = _docker_cli() or ["docker"]
+    try:
+        if cli[:2] == ["sg", "docker"]:
+            docker_argv = (
+                f"docker run --rm -u $(id -u):$(id -g) "
+                f"-v {prepared.resolve()}:/case -w /case {img} "
+                f"bash -lc {inner!r}"
+            )
+            r = subprocess.run(
+                ["sg", "docker", "-c", docker_argv],
+                check=False,
+                timeout=timeout_s,
+                capture_output=True,
+                text=True,
+            )
+        else:
+            r = subprocess.run(
+                [
+                    *cli,
+                    "run",
+                    "--rm",
+                    "-u",
+                    f"{os.getuid()}:{os.getgid()}",
+                    "-v",
+                    f"{prepared.resolve()}:/case",
+                    "-w",
+                    "/case",
+                    img,
+                    "bash",
+                    "-lc",
+                    inner,
+                ],
+                check=False,
+                timeout=timeout_s,
+                capture_output=True,
+                text=True,
+            )
+        _write_log(prepared, "simpleFoam", r.stdout or "", r.stderr or "")
+    except subprocess.TimeoutExpired:
+        return None, "timeout"
+    if find_force_coeffs(prepared) is not None:
+        return "simpleFoam", None
+    return None, "forceCoeffs_missing_after_run"
+
+
+def _docker_full_pipeline(prepared: Path, timeout_s: float) -> tuple[str | None, str | None]:
+    """Mesh + simpleFoam entirely inside Docker."""
+    img = os.environ.get("YARD_SEA_OPENFOAM_IMAGE", "opencfd/openfoam-default:2412")
+    _set_application(prepared, "simpleFoam")
+    inner = (
+        "source /openfoam/profile.rc 2>/dev/null || true; "
+        "cd /case; "
+        "blockMesh -case /case && "
+        "snappyHexMesh -overwrite -case /case && "
+        "checkMesh -case /case; "
+        "simpleFoam -case /case || true; "
+        "find /case/postProcessing -name coefficient.dat -o -name forceCoeffs.dat "
+        "  2>/dev/null | head"
+    )
+    cli = _docker_cli() or ["docker"]
+    try:
+        if cli[:2] == ["sg", "docker"]:
+            docker_argv = (
+                f"docker run --rm -u $(id -u):$(id -g) "
+                f"-v {prepared.resolve()}:/case -w /case {img} "
+                f"bash -lc {inner!r}"
+            )
+            r = subprocess.run(
+                ["sg", "docker", "-c", docker_argv],
+                check=False,
+                timeout=timeout_s,
+                capture_output=True,
+                text=True,
+            )
+        else:
+            r = subprocess.run(
+                [
+                    *cli,
+                    "run",
+                    "--rm",
+                    "-u",
+                    f"{os.getuid()}:{os.getgid()}",
+                    "-v",
+                    f"{prepared.resolve()}:/case",
+                    "-w",
+                    "/case",
+                    img,
+                    "bash",
+                    "-lc",
+                    inner,
+                ],
+                check=False,
+                timeout=timeout_s,
+                capture_output=True,
+                text=True,
+            )
+        _write_log(prepared, "docker_full", r.stdout or "", r.stderr or "")
+    except subprocess.TimeoutExpired:
+        return None, "timeout"
+    if find_force_coeffs(prepared) is not None:
+        return "simpleFoam", None
+    if not _has_hull_patch(prepared):
+        return None, "snappy_no_hull_patch"
+    return None, "forceCoeffs_missing_after_run"
+
+
+def _native_simplefoam(
+    prepared: Path,
+    foam_env: dict[str, str],
+    timeout_s: float,
+) -> tuple[str | None, str | None]:
+    """Last-resort native simpleFoam (may fail on Debian 1912 libforces/sha1)."""
+    _set_application(prepared, "simpleFoam")
+    try:
+        r = _run_logged(
+            ["simpleFoam"],
+            cwd=str(prepared.resolve()),
+            env=foam_env,
+            timeout_s=timeout_s,
+            log_name="simpleFoam",
+        )
+    except subprocess.TimeoutExpired:
+        return None, "timeout"
+    if find_force_coeffs(prepared) is not None:
+        return "simpleFoam", None
+    log = (prepared / "log.simpleFoam").read_text(errors="ignore")
+    if "sha1" in log.lower():
+        return None, "forceCoeffs_sha1_bug"
+    if r.returncode != 0:
+        return None, "simpleFoam_failed"
+    return None, "forceCoeffs_missing_after_run"
+
 
 
 def run_teacher(
@@ -419,6 +900,7 @@ def run_teacher(
     run: bool = True,
     timeout_s: float = 600.0,
     availability: OpenFOAMAvailability | None = None,
+    solver: str = "auto",
 ) -> dict[str, Any]:
     """Prepare (optional) and attempt OpenFOAM L3 teacher.
 
@@ -435,13 +917,21 @@ def run_teacher(
                 reason="missing_stl_or_out_dir",
                 extra={"availability": avail.to_dict()},
             )
-        prepared = prepare_case(
-            stl_path, Fn, out_dir, L=L, B=B, T=T
-        )
+        prepared = prepare_case(stl_path, Fn, out_dir, L=L, B=B, T=T)
 
     L_ref = float(L) if L is not None else _estimate_l_from_stl(
         prepared / "constant" / "triSurface" / "hull.stl"
     )
+
+    skip_env = os.environ.get("YARD_SEA_L3_SKIP_SOLVE", "").strip().lower()
+    if skip_env in ("1", "true", "yes"):
+        run = False
+    env_timeout = os.environ.get("YARD_SEA_L3_TIMEOUT", "").strip()
+    if env_timeout:
+        try:
+            timeout_s = float(env_timeout)
+        except ValueError:
+            pass
 
     if not run:
         return _pending_result(
@@ -459,103 +949,38 @@ def run_teacher(
             extra={"availability": avail.to_dict()},
         )
 
-    # Prefer native foam binaries with Debian-compatible FOAM_ETC env.
-    # Allrun requires WM_PROJECT_DIR/bin/tools (missing on Debian package), so
-    # invoke blockMesh / checkMesh / potentialFoam directly.
+    free_gb = _disk_free_gb(prepared)
+    if free_gb < DISK_SKIP_GB:
+        return _pending_result(
+            Fn,
+            reason="disk_low",
+            case_dir=prepared,
+            extra={"availability": avail.to_dict(), "disk_free_gb": free_gb},
+        )
+
+    solver_used: str | None = None
+    skip_reason: str | None = None
     try:
+        foam_env = _foam_environ()
+        docker_ok = bool(avail.docker) and _docker_usable()
+        # Prefer native mesh (fast) + Docker simpleFoam for forceCoeffs.
+        # Debian OpenFOAM 1912 libforces hits OpenSSL-3 sha1 IOstream bug.
         if avail.foam_bin:
-            foam_env = _foam_environ()
-            # Use cwd=case only (relative -case doubles path under OpenFOAM).
-            case_cwd = str(prepared.resolve())
-            cmds = [
-                ["blockMesh"],
-                ["checkMesh"],
-                ["potentialFoam", "-writephi"],
-            ]
-            for cmd in cmds:
-                # potentialFoam may lack -writephi on some builds — retry plain
-                try:
-                    r = subprocess.run(
-                        cmd,
-                        cwd=case_cwd,
-                        check=False,
-                        timeout=timeout_s,
-                        capture_output=True,
-                        text=True,
-                        env=foam_env,
-                    )
-                except subprocess.TimeoutExpired:
-                    raise
-                if r.returncode != 0 and cmd[0] == "potentialFoam" and "-writephi" in cmd:
-                    r = subprocess.run(
-                        ["potentialFoam"],
-                        cwd=case_cwd,
-                        check=False,
-                        timeout=timeout_s,
-                        capture_output=True,
-                        text=True,
-                        env=foam_env,
-                    )
-                # Write logs for debugging smoke runs
-                log = prepared / f"log.{cmd[0]}"
-                try:
-                    log.write_text(
-                        (r.stdout or "") + (r.stderr or ""),
-                        encoding="utf-8",
-                        errors="ignore",
-                    )
-                except OSError:
-                    pass
-        elif avail.docker:
-            img = os.environ.get(
-                "YARD_SEA_OPENFOAM_IMAGE", "opencfd/openfoam-default:2412"
-            )
-            inner = (
-                "source /openfoam/profile.rc 2>/dev/null || "
-                "source /opt/openfoam*/etc/bashrc 2>/dev/null || true; "
-                "cd /case; "
-                "blockMesh -case /case && "
-                "checkMesh -case /case && "
-                "(potentialFoam -case /case -writephi || potentialFoam -case /case) "
-                "|| true"
-            )
-            cli = _docker_cli() or ["docker"]
-            if cli[:2] == ["sg", "docker"]:
-                # sg docker -c 'docker run ...'
-                docker_argv = (
-                    f"docker run --rm -u $(id -u):$(id -g) "
-                    f"-v {prepared.resolve()}:/case -w /case {img} "
-                    f"bash -lc {inner!r}"
-                )
-                subprocess.run(
-                    ["sg", "docker", "-c", docker_argv],
-                    check=False,
-                    timeout=timeout_s,
-                    capture_output=True,
-                    text=True,
-                )
+            mesh_reason = _mesh_native(prepared, foam_env, timeout_s)
+            if mesh_reason:
+                skip_reason = mesh_reason
+            elif docker_ok:
+                solver_used, skip_reason = _docker_simplefoam(prepared, max(30.0, timeout_s * 0.5))
             else:
-                subprocess.run(
-                    [
-                        *cli,
-                        "run",
-                        "--rm",
-                        "-u",
-                        f"{os.getuid()}:{os.getgid()}",
-                        "-v",
-                        f"{prepared.resolve()}:/case",
-                        "-w",
-                        "/case",
-                        img,
-                        "bash",
-                        "-lc",
-                        inner,
-                    ],
-                    check=False,
-                    timeout=timeout_s,
-                    capture_output=True,
-                    text=True,
+                solver_used, skip_reason = _native_simplefoam(
+                    prepared, foam_env, max(30.0, timeout_s * 0.5)
                 )
+                if skip_reason == "forceCoeffs_sha1_bug" and docker_ok:
+                    solver_used, skip_reason = _docker_simplefoam(
+                        prepared, max(30.0, timeout_s * 0.5)
+                    )
+        elif docker_ok:
+            solver_used, skip_reason = _docker_full_pipeline(prepared, timeout_s)
         else:
             return _pending_result(
                 Fn,
@@ -563,6 +988,13 @@ def run_teacher(
                 case_dir=prepared,
                 extra={"availability": avail.to_dict()},
             )
+    except subprocess.TimeoutExpired:
+        return _pending_result(
+            Fn,
+            reason="timeout",
+            case_dir=prepared,
+            extra={"availability": avail.to_dict()},
+        )
     except (subprocess.SubprocessError, OSError) as exc:
         return _pending_result(
             Fn,
@@ -571,13 +1003,22 @@ def run_teacher(
             extra={"availability": avail.to_dict(), "error": str(exc)},
         )
 
+    if skip_reason and skip_reason not in ("simpleFoam_failed",):
+        # Mesh/timeout failures: do not claim empty-box forceCoeffs.
+        extra: dict[str, Any] = {"availability": avail.to_dict(), "solver": solver_used}
+        coeffs_path = find_force_coeffs(prepared)
+        if coeffs_path is None:
+            return _pending_result(
+                Fn, reason=skip_reason, case_dir=prepared, extra=extra
+            )
+
     coeffs_path = find_force_coeffs(prepared)
     if coeffs_path is None:
         return _pending_result(
             Fn,
-            reason="forceCoeffs_missing_after_run",
+            reason=skip_reason or "forceCoeffs_missing_after_run",
             case_dir=prepared,
-            extra={"availability": avail.to_dict()},
+            extra={"availability": avail.to_dict(), "solver": solver_used},
         )
     coeffs = parse_force_coeffs(coeffs_path)
     if not coeffs or "Cd" not in coeffs:
@@ -585,9 +1026,24 @@ def run_teacher(
             Fn,
             reason="forceCoeffs_unparsed",
             case_dir=prepared,
-            extra={"availability": avail.to_dict(), "coeffs_path": str(coeffs_path)},
+            extra={
+                "availability": avail.to_dict(),
+                "coeffs_path": str(coeffs_path),
+                "solver": solver_used,
+            },
         )
-    return _result_from_coeffs(Fn, coeffs, case_dir=prepared, L=L_ref)
+    if solver_used == "simpleFoam":
+        fidelity = FIDELITY_RANS
+    else:
+        fidelity = FIDELITY_POTENTIAL
+    return _result_from_coeffs(
+        Fn,
+        coeffs,
+        case_dir=prepared,
+        L=L_ref,
+        fidelity=fidelity,
+        solver=solver_used or "potentialFoam",
+    )
 
 
 def maybe_annotate_gallery_child(

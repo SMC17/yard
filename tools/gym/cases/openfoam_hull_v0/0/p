@@ -24,6 +24,14 @@ boundaryField
         type            fixedValue;
         value           uniform 0;
     }
+    yMin
+    {
+        type            zeroGradient;
+    }
+    yMax
+    {
+        type            zeroGradient;
+    }
     bottom
     {
         type            zeroGradient;
@@ -31,14 +39,6 @@ boundaryField
     top
     {
         type            zeroGradient;
-    }
-    front
-    {
-        type            symmetry;
-    }
-    back
-    {
-        type            symmetry;
     }
     hull
     {

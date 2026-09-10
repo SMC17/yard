@@ -1,5 +1,5 @@
 /*--------------------------------*- C++ -*----------------------------------*\
-| Hull STL snap — exploratory L3 scaffold (not production mesh quality)      |
+| Hull STL snap — coarse L3 smoke (not production mesh quality)              |
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
@@ -13,6 +13,7 @@ FoamFile
 castellatedMesh true;
 snap            true;
 addLayers       false;
+keepPatches     true;
 
 geometry
 {
@@ -25,19 +26,22 @@ geometry
 
 castellatedMeshControls
 {
-    maxLocalCells 1000000;
-    maxGlobalCells 2000000;
+    maxLocalCells 80000;
+    maxGlobalCells 80000;
     minRefinementCells 0;
-    nCellsBetweenLevels 2;
-    resolveFeatureAngle 30;
+    nCellsBetweenLevels 1;
+    maxLoadUnbalance 0.10;
+    resolveFeatureAngle 60;
     allowFreeStandingZoneFaces true;
-    locationInMesh (100 0 20);
-    features ();
+    locationInMesh __LOCATION_IN_MESH__;
+    features
+    (
+    );
     refinementSurfaces
     {
         hull
         {
-            level (2 3);
+            level (1 1);
             patchInfo { type wall; }
         }
     }
@@ -50,6 +54,10 @@ snapControls
     tolerance 2.0;
     nSolveIter 30;
     nRelaxIter 5;
+    nFeatureSnapIter 8;
+    implicitFeatureSnap true;
+    explicitFeatureSnap false;
+    multiRegionFeatureSnap false;
 }
 
 addLayersControls
@@ -74,20 +82,7 @@ addLayersControls
 
 meshQualityControls
 {
-    maxNonOrtho 65;
-    maxBoundarySkewness 20;
-    maxInternalSkewness 4;
-    maxConcave 80;
-    minVol 1e-13;
-    minTetQuality 1e-30;
-    minArea -1;
-    minTwist 0.02;
-    minDeterminant 0.001;
-    minFaceWeight 0.02;
-    minVolRatio 0.01;
-    minTriangleTwist -1;
-    nSmoothScale 4;
-    errorReduction 0.75;
+    #include "meshQualityDict"
 }
 
 writeFlags (layerSets layerFields);
