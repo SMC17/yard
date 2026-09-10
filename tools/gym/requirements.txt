@@ -1,0 +1,8 @@
+numpy>=1.24
+gymnasium>=0.29
+pytest>=7.0
+numpy-stl>=3.0
+matplotlib>=3.7
+# Optional Strip aero oracles (pip-light):
+# neuralfoil>=0.3
+# jsbsim>=1.2

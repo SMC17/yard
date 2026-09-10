@@ -1,0 +1,17 @@
+#!/bin/sh
+# Yard-Sea-v0 openfoam_hull_v0 smoke runner.
+# Requires sourced OpenFOAM environment (foamVersion / etc.).
+cd "${0%/*}" || exit 1
+set -e
+. "${WM_PROJECT_DIR:?OpenFOAM not sourced}/bin/tools/RunFunctions" 2>/dev/null || true
+
+runApplication blockMesh
+# snappyHexMesh optional when STL present:
+if [ -f constant/triSurface/hull.stl ]; then
+  runApplication surfaceFeatureExtract 2>/dev/null || true
+  runApplication snappyHexMesh -overwrite 2>/dev/null || true
+fi
+runApplication checkMesh
+# potentialFoam for quick irrotational smoke; swap to simpleFoam for drag coeffs.
+runApplication potentialFoam -writephi 2>/dev/null || runApplication potentialFoam
+# If forceCoeffs exist from a prior simpleFoam setup, leave postProcessing intact.
