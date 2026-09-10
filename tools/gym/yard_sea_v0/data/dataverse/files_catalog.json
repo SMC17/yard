@@ -1,0 +1,2008 @@
+{
+  "doi": "10.7910/DVN/MMGAUS",
+  "n_files": 249,
+  "total_bytes": 317682837,
+  "license": {
+    "name": "CC0 1.0",
+    "uri": "http://creativecommons.org/publicdomain/zero/1.0",
+    "iconUri": "https://licensebuttons.net/p/zero/1.0/88x31.png",
+    "rightsIdentifier": "CC0-1.0",
+    "rightsIdentifierScheme": "SPDX",
+    "schemeUri": "https://spdx.org/licenses/",
+    "languageCode": "en"
+  },
+  "files": [
+    {
+      "id": 10380681,
+      "filename": "Area_WP.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8356494,
+      "contentType": "text/tab-separated-values",
+      "md5": "8e008a6077dc63b498af3a217ed1752b"
+    },
+    {
+      "id": 10380723,
+      "filename": "Area_WP.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1813740,
+      "contentType": "text/tab-separated-values",
+      "md5": "dc02919652b3cd868902c19bf444e125"
+    },
+    {
+      "id": 10380562,
+      "filename": "Area_WP.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2061829,
+      "contentType": "text/tab-separated-values",
+      "md5": "7f6d716032f0ac1f6c9a50dd83f356ac"
+    },
+    {
+      "id": 10380514,
+      "filename": "Area_WP.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1799188,
+      "contentType": "text/tab-separated-values",
+      "md5": "f31dc4d72e80c5801d9d0d8019ae6dc2"
+    },
+    {
+      "id": 10380702,
+      "filename": "Area_WP.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1809039,
+      "contentType": "text/tab-separated-values",
+      "md5": "63e6817f298710efbe43b8c47b1eec7b"
+    },
+    {
+      "id": 10380696,
+      "filename": "Area_WS.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8332568,
+      "contentType": "text/tab-separated-values",
+      "md5": "53b19c5ae280ae2c6d8b02d5d58c23f6"
+    },
+    {
+      "id": 10380709,
+      "filename": "Area_WS.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1821358,
+      "contentType": "text/tab-separated-values",
+      "md5": "406ddb46ecbb43827fbb0b040e24253a"
+    },
+    {
+      "id": 10380546,
+      "filename": "Area_WS.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1793904,
+      "contentType": "text/tab-separated-values",
+      "md5": "2b4ed141e56596cbecd9f396b6b0b656"
+    },
+    {
+      "id": 10380548,
+      "filename": "Area_WS.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1819660,
+      "contentType": "text/tab-separated-values",
+      "md5": "88de21524d58bd9bc729eceb0ccd5354"
+    },
+    {
+      "id": 10380753,
+      "filename": "Area_WS.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2066567,
+      "contentType": "text/tab-separated-values",
+      "md5": "4b08483c362fef301821dadc88ea1d10"
+    },
+    {
+      "id": 10380633,
+      "filename": "Cw.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 6300646,
+      "contentType": "text/tab-separated-values",
+      "md5": "8081dcabe0d6bd4be401fce2c4d8c2dc"
+    },
+    {
+      "id": 10380519,
+      "filename": "Cw.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 29272104,
+      "contentType": "text/tab-separated-values",
+      "md5": "9f6307145e1ee4ad032630c010ec56f1"
+    },
+    {
+      "id": 10380554,
+      "filename": "Cw.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 7218871,
+      "contentType": "text/tab-separated-values",
+      "md5": "b60c24614a2ef8e9d3b06081cd075033"
+    },
+    {
+      "id": 10380614,
+      "filename": "Cw.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 6320266,
+      "contentType": "text/tab-separated-values",
+      "md5": "aed0a6acc017a4c4affc8cdfd6e588df"
+    },
+    {
+      "id": 10380590,
+      "filename": "Cw.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 6246550,
+      "contentType": "text/tab-separated-values",
+      "md5": "aa9ee3a55de6c8b09cb93a048e0577e3"
+    },
+    {
+      "id": 10380612,
+      "filename": "DatasetStats.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 4083,
+      "contentType": "text/tab-separated-values",
+      "md5": "17a8dce79ee2f89021fed158ee4ecc5c"
+    },
+    {
+      "id": 10380700,
+      "filename": "DatasetStats.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 4032,
+      "contentType": "text/tab-separated-values",
+      "md5": "0cea9e8d874f6fa18d29c5fd195fe1a8"
+    },
+    {
+      "id": 10380533,
+      "filename": "DatasetStats.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 4060,
+      "contentType": "text/tab-separated-values",
+      "md5": "587a9231ffdad5592dfb4bd996b3f59f"
+    },
+    {
+      "id": 10380679,
+      "filename": "GaussianCurvature.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 168929,
+      "contentType": "text/tab-separated-values",
+      "md5": "1f0cf04cb5e76584ee4899a2c31bbd97"
+    },
+    {
+      "id": 10380512,
+      "filename": "GaussianCurvature.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 762533,
+      "contentType": "text/tab-separated-values",
+      "md5": "431b085d0eb409e26b8257ef85bc66a5"
+    },
+    {
+      "id": 10380593,
+      "filename": "GaussianCurvature.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 190997,
+      "contentType": "text/tab-separated-values",
+      "md5": "0543bf4ad0059afaa8dee2a4a96ced48"
+    },
+    {
+      "id": 10380655,
+      "filename": "GaussianCurvature.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 168920,
+      "contentType": "text/tab-separated-values",
+      "md5": "f3a67e75c28888f6828948e465e6471e"
+    },
+    {
+      "id": 10380557,
+      "filename": "GaussianCurvature.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 168912,
+      "contentType": "text/tab-separated-values",
+      "md5": "d304da44854d3d2c96fa2f0538c3f27d"
+    },
+    {
+      "id": 10380692,
+      "filename": "Histogram_Abow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 46594,
+      "contentType": "image/png",
+      "md5": "db1299ada4c42849e567d6822574a0b5"
+    },
+    {
+      "id": 10380704,
+      "filename": "Histogram_Abow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 46518,
+      "contentType": "image/png",
+      "md5": "b9ebc49584a3501c9eb13e66c374af5a"
+    },
+    {
+      "id": 10380602,
+      "filename": "Histogram_Abow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 46179,
+      "contentType": "image/png",
+      "md5": "2fac9c8b966e2554681cf9c4b591466a"
+    },
+    {
+      "id": 10380618,
+      "filename": "Histogram_Adel bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 47387,
+      "contentType": "image/png",
+      "md5": "b379664a1dfa205966bebcb880d6bc87"
+    },
+    {
+      "id": 10380565,
+      "filename": "Histogram_Adel bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 47996,
+      "contentType": "image/png",
+      "md5": "12f1b73447ebc7e1595acaedb7bb271d"
+    },
+    {
+      "id": 10380515,
+      "filename": "Histogram_Adel bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 47762,
+      "contentType": "image/png",
+      "md5": "ed4bfbd18b39495d3e9282772fd79a9d"
+    },
+    {
+      "id": 10380727,
+      "filename": "Histogram_Adel stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 47811,
+      "contentType": "image/png",
+      "md5": "23b524afc9d9802f7a85eea7ab3d6416"
+    },
+    {
+      "id": 10380716,
+      "filename": "Histogram_Adel stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 48045,
+      "contentType": "image/png",
+      "md5": "a6a865c726db9c5455f5cb367ab87812"
+    },
+    {
+      "id": 10380739,
+      "filename": "Histogram_Adel stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 47750,
+      "contentType": "image/png",
+      "md5": "2576c4e5c4ad825e32afed6bebd511d0"
+    },
+    {
+      "id": 10380609,
+      "filename": "Histogram_Adrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 47857,
+      "contentType": "image/png",
+      "md5": "c611fe1ef84ed29d115c539bb195869b"
+    },
+    {
+      "id": 10380541,
+      "filename": "Histogram_Adrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 47815,
+      "contentType": "image/png",
+      "md5": "a377aee481f0e3eb292257b935e3329b"
+    },
+    {
+      "id": 10380596,
+      "filename": "Histogram_Adrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 48006,
+      "contentType": "image/png",
+      "md5": "9c3c394864e0571158981581bd7a6d86"
+    },
+    {
+      "id": 10380698,
+      "filename": "Histogram_Area_WP.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 41874,
+      "contentType": "image/png",
+      "md5": "75fda672ceecce86da1dafe512a93d53"
+    },
+    {
+      "id": 10380688,
+      "filename": "Histogram_Area_WP.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 43257,
+      "contentType": "image/png",
+      "md5": "a419e565cf921753688068b9ce52dc32"
+    },
+    {
+      "id": 10380606,
+      "filename": "Histogram_Area_WP.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 42752,
+      "contentType": "image/png",
+      "md5": "cd15862825f32be4872038f9d2ccaebb"
+    },
+    {
+      "id": 10380589,
+      "filename": "Histogram_Atrans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44029,
+      "contentType": "image/png",
+      "md5": "b1c147237e7ad682ef4bd68281a6cc05"
+    },
+    {
+      "id": 10380649,
+      "filename": "Histogram_Atrans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 43283,
+      "contentType": "image/png",
+      "md5": "c6a4a91b3969b256be3d5c57f2e49c80"
+    },
+    {
+      "id": 10380747,
+      "filename": "Histogram_Atrans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 43750,
+      "contentType": "image/png",
+      "md5": "3238ebaa291148c9463bc4b75ddb8165"
+    },
+    {
+      "id": 10380740,
+      "filename": "Histogram_Bbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 43021,
+      "contentType": "image/png",
+      "md5": "30a6cc086c7b4e611adde5509d9997c4"
+    },
+    {
+      "id": 10380647,
+      "filename": "Histogram_Bbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 43266,
+      "contentType": "image/png",
+      "md5": "007c72a026ff1a4a1d7965c83fda187d"
+    },
+    {
+      "id": 10380718,
+      "filename": "Histogram_Bbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 43053,
+      "contentType": "image/png",
+      "md5": "1a3e52c481fdba55821db6879ba15a98"
+    },
+    {
+      "id": 10380663,
+      "filename": "Histogram_Bbow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 46459,
+      "contentType": "image/png",
+      "md5": "abbff2b251c523d37900ec292b6d6226"
+    },
+    {
+      "id": 10380737,
+      "filename": "Histogram_Bbow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 45902,
+      "contentType": "image/png",
+      "md5": "889625beb596168730e02f5adc9a3c30"
+    },
+    {
+      "id": 10380659,
+      "filename": "Histogram_Bbow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 46784,
+      "contentType": "image/png",
+      "md5": "22a3ba3e00cee58fbec33f121dec81c3"
+    },
+    {
+      "id": 10380555,
+      "filename": "Histogram_Bc.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 43067,
+      "contentType": "image/png",
+      "md5": "f3531e01102050cc22106de721fefe52"
+    },
+    {
+      "id": 10380604,
+      "filename": "Histogram_Bc.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42893,
+      "contentType": "image/png",
+      "md5": "14773c55c4693d742693c51480fca6b5"
+    },
+    {
+      "id": 10380625,
+      "filename": "Histogram_Bc.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42225,
+      "contentType": "image/png",
+      "md5": "7ec463513c8f2859ec9623beafa57ec5"
+    },
+    {
+      "id": 10380705,
+      "filename": "Histogram_Bc trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 41806,
+      "contentType": "image/png",
+      "md5": "dda288c7d84af144b944ab32a901de74"
+    },
+    {
+      "id": 10380540,
+      "filename": "Histogram_Bc trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 41709,
+      "contentType": "image/png",
+      "md5": "150752c1131ab2fa0012eefa3eed2866"
+    },
+    {
+      "id": 10380534,
+      "filename": "Histogram_Bc trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 40907,
+      "contentType": "image/png",
+      "md5": "d3306dfda6e3fc90fe157992bf021749"
+    },
+    {
+      "id": 10380530,
+      "filename": "Histogram_Bdel bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 47610,
+      "contentType": "image/png",
+      "md5": "978077d18a687831687be08dccbd1e9f"
+    },
+    {
+      "id": 10380635,
+      "filename": "Histogram_Bdel bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 47731,
+      "contentType": "image/png",
+      "md5": "fc97a86f108a43fd2895a9db6e014b0e"
+    },
+    {
+      "id": 10380615,
+      "filename": "Histogram_Bdel bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 48069,
+      "contentType": "image/png",
+      "md5": "b53595b7587b7e185f780b265e4cc291"
+    },
+    {
+      "id": 10380574,
+      "filename": "Histogram_Bdel stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 47865,
+      "contentType": "image/png",
+      "md5": "187584a71e38f3c3937f99c1b5f6d153"
+    },
+    {
+      "id": 10380748,
+      "filename": "Histogram_Bdel stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 47935,
+      "contentType": "image/png",
+      "md5": "3d3efc3d761f00748ffdc43297d76888"
+    },
+    {
+      "id": 10380510,
+      "filename": "Histogram_Bdel stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 48265,
+      "contentType": "image/png",
+      "md5": "a353c2b648a23ce40b2cadba5fbb3d6f"
+    },
+    {
+      "id": 10380666,
+      "filename": "Histogram_Bd.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 39116,
+      "contentType": "image/png",
+      "md5": "acff32a2d243525add337d03f8b5b331"
+    },
+    {
+      "id": 10380542,
+      "filename": "Histogram_Bd.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 40649,
+      "contentType": "image/png",
+      "md5": "49c8e838204ab83a919eb5f635d2f948"
+    },
+    {
+      "id": 10380674,
+      "filename": "Histogram_Bd.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 40560,
+      "contentType": "image/png",
+      "md5": "9c80199b85ecb303cf5fc812e2687617"
+    },
+    {
+      "id": 10380680,
+      "filename": "Histogram_Bdrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 47707,
+      "contentType": "image/png",
+      "md5": "59580ad03bbaa4588f765599cf0a5700"
+    },
+    {
+      "id": 10380603,
+      "filename": "Histogram_Bdrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 47500,
+      "contentType": "image/png",
+      "md5": "7edb3e88bcdd5255b601f863d891f25b"
+    },
+    {
+      "id": 10380564,
+      "filename": "Histogram_Bdrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 47306,
+      "contentType": "image/png",
+      "md5": "17b057f5533224e8354e4aaca91902ad"
+    },
+    {
+      "id": 10380730,
+      "filename": "Histogram_Beta.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44781,
+      "contentType": "image/png",
+      "md5": "b11167fac3eafc2a3df3dd2256451cfb"
+    },
+    {
+      "id": 10380573,
+      "filename": "Histogram_Beta.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 29264,
+      "contentType": "image/png",
+      "md5": "fb99b365dc712bca01d92a98c900a848"
+    },
+    {
+      "id": 10380731,
+      "filename": "Histogram_Beta.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44970,
+      "contentType": "image/png",
+      "md5": "53ea7b5a3675ce03617c1fa9bc3318f5"
+    },
+    {
+      "id": 10380568,
+      "filename": "Histogram_Beta trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 45815,
+      "contentType": "image/png",
+      "md5": "b26e7ed36caa3a300aefc35a87a6e0f5"
+    },
+    {
+      "id": 10380646,
+      "filename": "Histogram_Beta trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 45271,
+      "contentType": "image/png",
+      "md5": "ec98c9ccd77da16bc9b6e8255f10dfbc"
+    },
+    {
+      "id": 10380516,
+      "filename": "Histogram_Beta trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 45589,
+      "contentType": "image/png",
+      "md5": "2f206c385615645254f9f5e9a83709a1"
+    },
+    {
+      "id": 10380715,
+      "filename": "Histogram_bit_BB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 29062,
+      "contentType": "image/png",
+      "md5": "9955f86c2a0e36979508083312107139"
+    },
+    {
+      "id": 10380622,
+      "filename": "Histogram_bit_BB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 31426,
+      "contentType": "image/png",
+      "md5": "88d023bbed35bd9b6ec05a9916785c5c"
+    },
+    {
+      "id": 10380689,
+      "filename": "Histogram_bit_BB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 31236,
+      "contentType": "image/png",
+      "md5": "1aa80a2b0c13faa4bb3a9fe624d9676b"
+    },
+    {
+      "id": 10380556,
+      "filename": "Histogram_bit_EP_S.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 33761,
+      "contentType": "image/png",
+      "md5": "a4a9831137500f62b8f5b53405a9de6f"
+    },
+    {
+      "id": 10380523,
+      "filename": "Histogram_bit_EP_S.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 34382,
+      "contentType": "image/png",
+      "md5": "e1c85c8ebca305db8a31b23d40c17142"
+    },
+    {
+      "id": 10380676,
+      "filename": "Histogram_bit_EP_S.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 34328,
+      "contentType": "image/png",
+      "md5": "32e65a3d9c347e39e7d415db1c4f9cac"
+    },
+    {
+      "id": 10380536,
+      "filename": "Histogram_bit_EP_T.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 33417,
+      "contentType": "image/png",
+      "md5": "15b2ec49f50a7462bfff0afad5e745d4"
+    },
+    {
+      "id": 10380637,
+      "filename": "Histogram_bit_EP_T.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 33621,
+      "contentType": "image/png",
+      "md5": "0db5d95ac57cb7b08f074153a592b0f5"
+    },
+    {
+      "id": 10380648,
+      "filename": "Histogram_bit_EP_T.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 33690,
+      "contentType": "image/png",
+      "md5": "2e47224689d76ec4c401e32034dd55b1"
+    },
+    {
+      "id": 10380528,
+      "filename": "Histogram_bit_SB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 31930,
+      "contentType": "image/png",
+      "md5": "0c2ba00d6cec5475d96a6efb0cf58549"
+    },
+    {
+      "id": 10380627,
+      "filename": "Histogram_bit_SB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 31815,
+      "contentType": "image/png",
+      "md5": "c7913c25073f9a8665b21c97ba993c52"
+    },
+    {
+      "id": 10380732,
+      "filename": "Histogram_bit_SB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 29875,
+      "contentType": "image/png",
+      "md5": "75feb99f4825415c1ef86327e4c39472"
+    },
+    {
+      "id": 10380527,
+      "filename": "Histogram_BK_z.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 42428,
+      "contentType": "image/png",
+      "md5": "3d4727103c221c1d7b2e9fe46b02e9aa"
+    },
+    {
+      "id": 10380721,
+      "filename": "Histogram_BK_z.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42830,
+      "contentType": "image/png",
+      "md5": "e2bfa41a7d3ba63e76c6be05fd9de3cc"
+    },
+    {
+      "id": 10380610,
+      "filename": "Histogram_BK_z.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42138,
+      "contentType": "image/png",
+      "md5": "e7a87e1040910bd5c39690ff6daef67d"
+    },
+    {
+      "id": 10380544,
+      "filename": "Histogram_Bsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 43271,
+      "contentType": "image/png",
+      "md5": "d80253684d7fed3f0df659894530c273"
+    },
+    {
+      "id": 10380632,
+      "filename": "Histogram_Bsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 43551,
+      "contentType": "image/png",
+      "md5": "97b5dff0ee6e39a361f8d74bec3fc96f"
+    },
+    {
+      "id": 10380520,
+      "filename": "Histogram_Bsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 43013,
+      "contentType": "image/png",
+      "md5": "e6d434a367811bdcebb39235d97a6adc"
+    },
+    {
+      "id": 10380665,
+      "filename": "Histogram_Bs.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 42357,
+      "contentType": "image/png",
+      "md5": "3464418b66f9c4c8f3c7d3a95d7631e7"
+    },
+    {
+      "id": 10380652,
+      "filename": "Histogram_Bs.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42160,
+      "contentType": "image/png",
+      "md5": "10e3df01cba0f507e83e1ae48a51611c"
+    },
+    {
+      "id": 10380686,
+      "filename": "Histogram_Bs.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42243,
+      "contentType": "image/png",
+      "md5": "9deb1a5f9b83c8238c66ac812ac77688"
+    },
+    {
+      "id": 10380668,
+      "filename": "Histogram_Cdrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 44670,
+      "contentType": "image/png",
+      "md5": "c5f36cb541ca3c36d467bb38941dfd49"
+    },
+    {
+      "id": 10380587,
+      "filename": "Histogram_Cdrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44613,
+      "contentType": "image/png",
+      "md5": "c8c694d29233acc581d8dd7a74321fb0"
+    },
+    {
+      "id": 10380697,
+      "filename": "Histogram_Cdrft.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44895,
+      "contentType": "image/png",
+      "md5": "188d528b6c94f46f29f81c638c1baf71"
+    },
+    {
+      "id": 10380518,
+      "filename": "Histogram_Cw.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 52410,
+      "contentType": "image/png",
+      "md5": "2e055357677a183eb21edc6c5525dbdc"
+    },
+    {
+      "id": 10380677,
+      "filename": "Histogram_Cw.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 52595,
+      "contentType": "image/png",
+      "md5": "24b23f74bbe1fff4b555f2cdae08c872"
+    },
+    {
+      "id": 10380506,
+      "filename": "Histogram_Cw.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 52404,
+      "contentType": "image/png",
+      "md5": "e1ba1d777a7d0e63f050cc0328fd5909"
+    },
+    {
+      "id": 10380608,
+      "filename": "Histogram_Dd.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 41279,
+      "contentType": "image/png",
+      "md5": "65283354247e07481d5b85e6e2ee4f48"
+    },
+    {
+      "id": 10380710,
+      "filename": "Histogram_Dd.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 41502,
+      "contentType": "image/png",
+      "md5": "f84860508ad3af9f5c8a50b40433b3b5"
+    },
+    {
+      "id": 10380722,
+      "filename": "Histogram_Dd.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 41231,
+      "contentType": "image/png",
+      "md5": "ffbe6cb734506fb35edf41d2ba59c0ce"
+    },
+    {
+      "id": 10380629,
+      "filename": "Histogram_Hbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 42633,
+      "contentType": "image/png",
+      "md5": "44949d7ba1af9cfef8ba7746c6d4ba71"
+    },
+    {
+      "id": 10380736,
+      "filename": "Histogram_Hbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42684,
+      "contentType": "image/png",
+      "md5": "92515119ec0a9a25acca0e3924c1c0a0"
+    },
+    {
+      "id": 10380712,
+      "filename": "Histogram_Hbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42316,
+      "contentType": "image/png",
+      "md5": "8fa9746c625cf0a5c3d24057d889218c"
+    },
+    {
+      "id": 10380620,
+      "filename": "Histogram_HSBOA.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44710,
+      "contentType": "image/png",
+      "md5": "1da35e3282a55410a24e98bfdf731cf8"
+    },
+    {
+      "id": 10380576,
+      "filename": "Histogram_HSBOA.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 44844,
+      "contentType": "image/png",
+      "md5": "a5bad05dbab98ec0d80629fbd38e7491"
+    },
+    {
+      "id": 10380634,
+      "filename": "Histogram_HSBOA.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44631,
+      "contentType": "image/png",
+      "md5": "1bf84f75dcbe17749f02e67bbc44bdbc"
+    },
+    {
+      "id": 10380595,
+      "filename": "Histogram_Hsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42078,
+      "contentType": "image/png",
+      "md5": "6b5c62539516191f56d026ba36c1af99"
+    },
+    {
+      "id": 10380513,
+      "filename": "Histogram_Hsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42661,
+      "contentType": "image/png",
+      "md5": "6ee6c47d0f9b7b3e6d1782c44be6b648"
+    },
+    {
+      "id": 10380711,
+      "filename": "Histogram_Hsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 41870,
+      "contentType": "image/png",
+      "md5": "9177ce16acc4418e963930b6f8bcaeb8"
+    },
+    {
+      "id": 10380735,
+      "filename": "Histogram_Ixx.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 38486,
+      "contentType": "image/png",
+      "md5": "0a90ad1634d806eb9c93640f68593a2c"
+    },
+    {
+      "id": 10380539,
+      "filename": "Histogram_Ixx.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 41473,
+      "contentType": "image/png",
+      "md5": "1288b5cadc7923435184e25c45a00c77"
+    },
+    {
+      "id": 10380537,
+      "filename": "Histogram_Ixx.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42414,
+      "contentType": "image/png",
+      "md5": "ad1150f06213f6d700a0f7d24201c25b"
+    },
+    {
+      "id": 10380582,
+      "filename": "Histogram_Iyy.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44670,
+      "contentType": "image/png",
+      "md5": "cc7567e6df7a2287bcaf22b97a462bb2"
+    },
+    {
+      "id": 10380658,
+      "filename": "Histogram_Iyy.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44544,
+      "contentType": "image/png",
+      "md5": "cc24ccd92c476d791c5d4197563dc20e"
+    },
+    {
+      "id": 10380639,
+      "filename": "Histogram_Iyy.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 40679,
+      "contentType": "image/png",
+      "md5": "28d80a44c6840775388e9b796844cf48"
+    },
+    {
+      "id": 10380695,
+      "filename": "Histogram_Kappa_bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 46543,
+      "contentType": "image/png",
+      "md5": "793ffa2e3d048fc8196d7ea27a88ef15"
+    },
+    {
+      "id": 10380751,
+      "filename": "Histogram_Kappa_bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 46642,
+      "contentType": "image/png",
+      "md5": "f4a4bf5c23d5fa0aef9362ec195e4ce5"
+    },
+    {
+      "id": 10380664,
+      "filename": "Histogram_Kappa_bow.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 46692,
+      "contentType": "image/png",
+      "md5": "8e51e727c0648dd2574efa64ab519ba5"
+    },
+    {
+      "id": 10380733,
+      "filename": "Histogram_Kappa_SB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 45525,
+      "contentType": "image/png",
+      "md5": "dbe477bb3f533eccbec540a6810df38a"
+    },
+    {
+      "id": 10380517,
+      "filename": "Histogram_Kappa_SB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 45823,
+      "contentType": "image/png",
+      "md5": "95ab0a4e0b5cce265864c05498316817"
+    },
+    {
+      "id": 10380616,
+      "filename": "Histogram_Kappa_SB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 45732,
+      "contentType": "image/png",
+      "md5": "70396142d06a444930981477ec7f1f7d"
+    },
+    {
+      "id": 10380683,
+      "filename": "Histogram_Kappa_stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 46552,
+      "contentType": "image/png",
+      "md5": "576c1efb17b8a123361956cfea6a222d"
+    },
+    {
+      "id": 10380578,
+      "filename": "Histogram_Kappa_stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 46612,
+      "contentType": "image/png",
+      "md5": "4962899cb5b326e52f682d7519404d61"
+    },
+    {
+      "id": 10380749,
+      "filename": "Histogram_Kappa_stern.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 46914,
+      "contentType": "image/png",
+      "md5": "bf1d3c1c2969248ab781fe060d23e45a"
+    },
+    {
+      "id": 10380669,
+      "filename": "Histogram_Lbbm.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44007,
+      "contentType": "image/png",
+      "md5": "c24d43850bcd97e4ad500cc3ced8bbc2"
+    },
+    {
+      "id": 10380744,
+      "filename": "Histogram_Lbbm.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44179,
+      "contentType": "image/png",
+      "md5": "bb95ca0885a91f5e9a964cf785ae270a"
+    },
+    {
+      "id": 10380575,
+      "filename": "Histogram_Lbbm.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 43941,
+      "contentType": "image/png",
+      "md5": "fb6fbc170dd1cd2ebdb3bc02b12e1c06"
+    },
+    {
+      "id": 10380701,
+      "filename": "Histogram_Lbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 41090,
+      "contentType": "image/png",
+      "md5": "dbb0e77483f67d0cecc0c1aec03be41b"
+    },
+    {
+      "id": 10380566,
+      "filename": "Histogram_Lbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 40795,
+      "contentType": "image/png",
+      "md5": "399220720a8d193d0793004b4668f685"
+    },
+    {
+      "id": 10380605,
+      "filename": "Histogram_Lbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 41066,
+      "contentType": "image/png",
+      "md5": "a9d14bd8d64317bca546cd956b6f2caf"
+    },
+    {
+      "id": 10380563,
+      "filename": "Histogram_Lb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 39303,
+      "contentType": "image/png",
+      "md5": "eac1087ee34ecedbca44d71e9b9a8877"
+    },
+    {
+      "id": 10380526,
+      "filename": "Histogram_Lb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 39049,
+      "contentType": "image/png",
+      "md5": "f6fad3ad52d4a5204b2e673ac8ca7b27"
+    },
+    {
+      "id": 10380571,
+      "filename": "Histogram_Lb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 39906,
+      "contentType": "image/png",
+      "md5": "26d21d4e4031682bdb9acb444badc3c9"
+    },
+    {
+      "id": 10380621,
+      "filename": "Histogram_LCB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 46818,
+      "contentType": "image/png",
+      "md5": "1b81a6d64ad34c2c9245242ae3cac227"
+    },
+    {
+      "id": 10380586,
+      "filename": "Histogram_LCB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 46438,
+      "contentType": "image/png",
+      "md5": "04feecd4d006f2acadda97f3a66067ed"
+    },
+    {
+      "id": 10380561,
+      "filename": "Histogram_LCB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 46643,
+      "contentType": "image/png",
+      "md5": "a1089e807c28272b39799440af7d72fa"
+    },
+    {
+      "id": 10380594,
+      "filename": "Histogram_LCF.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 45094,
+      "contentType": "image/png",
+      "md5": "a898a70af8ec4948de856308f5d9ed98"
+    },
+    {
+      "id": 10380685,
+      "filename": "Histogram_LCF.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44670,
+      "contentType": "image/png",
+      "md5": "f668ab57ecc20efc6d3ce63a87482e1e"
+    },
+    {
+      "id": 10380651,
+      "filename": "Histogram_LCF.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44770,
+      "contentType": "image/png",
+      "md5": "35a787f0e16ae3a5a527a7f398de46aa"
+    },
+    {
+      "id": 10380672,
+      "filename": "Histogram_LOA.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 29222,
+      "contentType": "image/png",
+      "md5": "e6e63fadcd20683af224e314c0fdd965"
+    },
+    {
+      "id": 10380745,
+      "filename": "Histogram_LOA.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 28961,
+      "contentType": "image/png",
+      "md5": "59df48b91ff9c0cf9761b26c3f3aff8e"
+    },
+    {
+      "id": 10380581,
+      "filename": "Histogram_LOA.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 29195,
+      "contentType": "image/png",
+      "md5": "0068d19572211e8a1c9efacb228a26c2"
+    },
+    {
+      "id": 10380661,
+      "filename": "Histogram_Lsbm.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 43372,
+      "contentType": "image/png",
+      "md5": "4311ce8cf2f32c7bd92002ebe75dab6e"
+    },
+    {
+      "id": 10380640,
+      "filename": "Histogram_Lsbm.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 43956,
+      "contentType": "image/png",
+      "md5": "b2327b017584d20c5c7ee80272f2cc2c"
+    },
+    {
+      "id": 10380690,
+      "filename": "Histogram_Lsbm.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 43791,
+      "contentType": "image/png",
+      "md5": "38b2d81211f7d19d8aa51e2e3514f3be"
+    },
+    {
+      "id": 10380707,
+      "filename": "Histogram_Lsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 40364,
+      "contentType": "image/png",
+      "md5": "fe97d8abe81ccbf17304d404ebf10c6f"
+    },
+    {
+      "id": 10380567,
+      "filename": "Histogram_Lsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 40424,
+      "contentType": "image/png",
+      "md5": "9f5327610d3ccbc8d36af3d2a688660a"
+    },
+    {
+      "id": 10380728,
+      "filename": "Histogram_Lsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 40304,
+      "contentType": "image/png",
+      "md5": "8583e190f7aa164153f3f8c8e61c30c2"
+    },
+    {
+      "id": 10380579,
+      "filename": "Histogram_Ls.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44542,
+      "contentType": "image/png",
+      "md5": "fb477b3a7f895b12abb3d39ccc725438"
+    },
+    {
+      "id": 10380623,
+      "filename": "Histogram_Ls.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 45248,
+      "contentType": "image/png",
+      "md5": "0a64290d572a80604709cacc84a06d93"
+    },
+    {
+      "id": 10380654,
+      "filename": "Histogram_Ls.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 43907,
+      "contentType": "image/png",
+      "md5": "6e341b3c9ba2f3d20d4e802cd82e09fd"
+    },
+    {
+      "id": 10380693,
+      "filename": "Histogram_Rbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 40327,
+      "contentType": "image/png",
+      "md5": "fa70cac165bf315fa7a3a3f79605df08"
+    },
+    {
+      "id": 10380521,
+      "filename": "Histogram_Rbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 40541,
+      "contentType": "image/png",
+      "md5": "3391d6b141e22a2c0bbe047993bc8009"
+    },
+    {
+      "id": 10380673,
+      "filename": "Histogram_Rbb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 40883,
+      "contentType": "image/png",
+      "md5": "f07c1533c65e89b8f4737ca8d3905943"
+    },
+    {
+      "id": 10380675,
+      "filename": "Histogram_Rc.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 42247,
+      "contentType": "image/png",
+      "md5": "9766f8d03c8199e92e78a38caa310716"
+    },
+    {
+      "id": 10380532,
+      "filename": "Histogram_Rc.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42834,
+      "contentType": "image/png",
+      "md5": "33297168a38a0b9397b897d22f17b623"
+    },
+    {
+      "id": 10380617,
+      "filename": "Histogram_Rc.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42286,
+      "contentType": "image/png",
+      "md5": "bbfe525c972305bfff3bf65a3e456e2f"
+    },
+    {
+      "id": 10380553,
+      "filename": "Histogram_Rc Trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 42572,
+      "contentType": "image/png",
+      "md5": "0d24c2fc70d2d5c03c5e6b8544be0f2a"
+    },
+    {
+      "id": 10380641,
+      "filename": "Histogram_Rc Trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42619,
+      "contentType": "image/png",
+      "md5": "e209be424e4f0d96116d1e95a7cbb6ef"
+    },
+    {
+      "id": 10380551,
+      "filename": "Histogram_Rc Trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 42640,
+      "contentType": "image/png",
+      "md5": "8b3e108305820974b8c7d92a63cd3532"
+    },
+    {
+      "id": 10380585,
+      "filename": "Histogram_Rk.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 43889,
+      "contentType": "image/png",
+      "md5": "546d3eff2408d653818f0ce417dbb914"
+    },
+    {
+      "id": 10380545,
+      "filename": "Histogram_Rk.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 42471,
+      "contentType": "image/png",
+      "md5": "89accc6b46abfb4ae728f7ed4850b341"
+    },
+    {
+      "id": 10380699,
+      "filename": "Histogram_Rk.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 43461,
+      "contentType": "image/png",
+      "md5": "d3741771cff3ed800eaed93b530280bd"
+    },
+    {
+      "id": 10380678,
+      "filename": "Histogram_Rk trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 45375,
+      "contentType": "image/png",
+      "md5": "96ebd03fdfe944b78169c75c2f4a98e3"
+    },
+    {
+      "id": 10380525,
+      "filename": "Histogram_Rk trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 45869,
+      "contentType": "image/png",
+      "md5": "800d4c738d24ec6e58d014120b96b153"
+    },
+    {
+      "id": 10380543,
+      "filename": "Histogram_Rk trans.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 45466,
+      "contentType": "image/png",
+      "md5": "50ab2f13f6a4d608fb0ada53092d4b84"
+    },
+    {
+      "id": 10380694,
+      "filename": "Histogram_Rsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 40346,
+      "contentType": "image/png",
+      "md5": "5ce1f9304f0f3cae4b785f10b1340662"
+    },
+    {
+      "id": 10380642,
+      "filename": "Histogram_Rsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 40632,
+      "contentType": "image/png",
+      "md5": "669f5cda8ae23ce154e4fab22b3d63f8"
+    },
+    {
+      "id": 10380577,
+      "filename": "Histogram_Rsb.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 41047,
+      "contentType": "image/png",
+      "md5": "97e3abbe064d5dd8f617a79bb5f9cfd0"
+    },
+    {
+      "id": 10380662,
+      "filename": "Histogram_SK_z.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 44661,
+      "contentType": "image/png",
+      "md5": "4cd4d313aa1f0d79a85702c60ffd04aa"
+    },
+    {
+      "id": 10380644,
+      "filename": "Histogram_SK_z.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44575,
+      "contentType": "image/png",
+      "md5": "700a1b9bbab74f92add3a294409303bc"
+    },
+    {
+      "id": 10380667,
+      "filename": "Histogram_SK_z.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44863,
+      "contentType": "image/png",
+      "md5": "5986e701048903d636aea2d233960900"
+    },
+    {
+      "id": 10380583,
+      "filename": "Histogram_VCB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 47103,
+      "contentType": "image/png",
+      "md5": "609ca82a2c4d0db74432ef76338b6584"
+    },
+    {
+      "id": 10380687,
+      "filename": "Histogram_VCB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 47197,
+      "contentType": "image/png",
+      "md5": "f0d6b55a1b7f53d82cd74f0199a88e56"
+    },
+    {
+      "id": 10380611,
+      "filename": "Histogram_VCB.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 47423,
+      "contentType": "image/png",
+      "md5": "4072d645bd329d7e7650e3452a379051"
+    },
+    {
+      "id": 10380628,
+      "filename": "Histogram_Volume.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 41904,
+      "contentType": "image/png",
+      "md5": "5aea1d330da81784929ba2d744e608d6"
+    },
+    {
+      "id": 10380613,
+      "filename": "Histogram_Volume.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 41808,
+      "contentType": "image/png",
+      "md5": "5071c0d42f3677c5b21b602ee09349d3"
+    },
+    {
+      "id": 10380720,
+      "filename": "Histogram_Volume.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 41711,
+      "contentType": "image/png",
+      "md5": "320c5e52b927c9e1cf2847db616cab38"
+    },
+    {
+      "id": 10380729,
+      "filename": "Histogram_WL.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/DataSet_Stats",
+      "filesize": 44381,
+      "contentType": "image/png",
+      "md5": "4129570b2cea27ce8d23782c66f8ce06"
+    },
+    {
+      "id": 10380631,
+      "filename": "Histogram_WL.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/DataSet_Stats",
+      "filesize": 45193,
+      "contentType": "image/png",
+      "md5": "8be451c21469aa8e9fd05e191557b8df"
+    },
+    {
+      "id": 10380529,
+      "filename": "Histogram_WL.png",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/DataSet_Stats",
+      "filesize": 44239,
+      "contentType": "image/png",
+      "md5": "e37da868caef1ddd5f581a1d8c65300e"
+    },
+    {
+      "id": 10380509,
+      "filename": "HullParameterization_ConstraintsOverview.pdf",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 129467,
+      "contentType": "application/pdf",
+      "md5": "6789f1d02d44cb7923d0ee8d75e73630"
+    },
+    {
+      "id": 10380511,
+      "filename": "HullParameterizationOverview.pdf",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 133891,
+      "contentType": "application/pdf",
+      "md5": "06d1d2eab8974db78ae837330128e5be"
+    },
+    {
+      "id": 10380752,
+      "filename": "HullParameterization.py",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 87111,
+      "contentType": "text/x-python",
+      "md5": "1e0e86903862aa6bdb4266ceed24eee1"
+    },
+    {
+      "id": 10380598,
+      "filename": "ImageGen_Camera_Lighting_Front.blend",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 877392,
+      "contentType": "application/octet-stream",
+      "md5": "c9fceaca4f2accc2dcdd642e223f1a1a"
+    },
+    {
+      "id": 10380636,
+      "filename": "ImageGen_Camera_Lighting_Plan.blend",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 841192,
+      "contentType": "application/octet-stream",
+      "md5": "6bfc298c757601a0f7392eae8d4f4daf"
+    },
+    {
+      "id": 10380547,
+      "filename": "ImageGen_Camera_Lighting_PortStern.blend",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 839756,
+      "contentType": "application/octet-stream",
+      "md5": "6a0e83c3b142f63e4cf1d92348a8f9e5"
+    },
+    {
+      "id": 10380645,
+      "filename": "ImageGen_Camera_Lighting_Profile.blend",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 841212,
+      "contentType": "application/octet-stream",
+      "md5": "826bd46e8cc526e136c1738e8d1a83dd"
+    },
+    {
+      "id": 10380717,
+      "filename": "ImageGen_Camera_Lighting_StarboardBow.blend",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 851284,
+      "contentType": "application/octet-stream",
+      "md5": "724aeeefe6fcfe5cb8a8686695971178"
+    },
+    {
+      "id": 10380522,
+      "filename": "Input_Vectors.npy",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2",
+      "filesize": 3749888,
+      "contentType": "application/octet-stream",
+      "md5": "33460cb43de2f832469975d4fa76ceab"
+    },
+    {
+      "id": 10380653,
+      "filename": "Input_Vectors_SampleHulls.csv",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 3829,
+      "contentType": "text/csv",
+      "md5": "929d2215bc64cf5d851566da1801ea24"
+    },
+    {
+      "id": 10380569,
+      "filename": "Input_Vectors.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2",
+      "filesize": 7286952,
+      "contentType": "text/tab-separated-values",
+      "md5": "a2d26523dbc1419778f8060e4d0474c2"
+    },
+    {
+      "id": 10380650,
+      "filename": "Input_Vectors.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2",
+      "filesize": 8320414,
+      "contentType": "text/tab-separated-values",
+      "md5": "6996d5e5bdd89a6e50e0abf342ef0634"
+    },
+    {
+      "id": 10380549,
+      "filename": "Input_Vectors.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1",
+      "filesize": 25844085,
+      "contentType": "text/tab-separated-values",
+      "md5": "52e272778080ef661f817cb819c5bab5"
+    },
+    {
+      "id": 10380703,
+      "filename": "Input_Vectors.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3",
+      "filesize": 7133707,
+      "contentType": "text/tab-separated-values",
+      "md5": "aa7684d15a656268f88305364fb53b15"
+    },
+    {
+      "id": 10380591,
+      "filename": "Input_Vectors.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1",
+      "filesize": 7284193,
+      "contentType": "text/tab-separated-values",
+      "md5": "dae25ca31f1ddac78532bdf8f0c5a243"
+    },
+    {
+      "id": 10380558,
+      "filename": "Ixx.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 9300373,
+      "contentType": "text/tab-separated-values",
+      "md5": "c536efe06a4c52d795d8430c53d874f1"
+    },
+    {
+      "id": 10380682,
+      "filename": "Ixx.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 2057440,
+      "contentType": "text/tab-separated-values",
+      "md5": "fdb70e802e62e26b74163cfe32e40b5f"
+    },
+    {
+      "id": 10380726,
+      "filename": "Ixx.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 2059980,
+      "contentType": "text/tab-separated-values",
+      "md5": "4e6bcdcaadf5ec9eceaf8786b1de5cf3"
+    },
+    {
+      "id": 10380738,
+      "filename": "Ixx.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 2051508,
+      "contentType": "text/tab-separated-values",
+      "md5": "d9943ed6082b84b2d14cef2320b20d2f"
+    },
+    {
+      "id": 10380741,
+      "filename": "Ixx.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2311448,
+      "contentType": "text/tab-separated-values",
+      "md5": "d98c7a85b5a69a374fcb280762858304"
+    },
+    {
+      "id": 10380684,
+      "filename": "Iyy.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1956728,
+      "contentType": "text/tab-separated-values",
+      "md5": "67b245b8739b951e3a33c95a0c1f2dd9"
+    },
+    {
+      "id": 10380559,
+      "filename": "Iyy.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1943942,
+      "contentType": "text/tab-separated-values",
+      "md5": "8aa7903365e132b3d45d5f224c96aaf6"
+    },
+    {
+      "id": 10380584,
+      "filename": "Iyy.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1952391,
+      "contentType": "text/tab-separated-values",
+      "md5": "bb175530b77da65f491395eea0575be3"
+    },
+    {
+      "id": 10380507,
+      "filename": "Iyy.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2187391,
+      "contentType": "text/tab-separated-values",
+      "md5": "d10a1340bb9f73489548fe36ad8a3758"
+    },
+    {
+      "id": 10380570,
+      "filename": "Iyy.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8861175,
+      "contentType": "text/tab-separated-values",
+      "md5": "f82783665bb9757c4e9055f62319f4de"
+    },
+    {
+      "id": 10380643,
+      "filename": "LCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2005096,
+      "contentType": "text/tab-separated-values",
+      "md5": "b50240c2cf9b04802554cfc7e129f977"
+    },
+    {
+      "id": 10380743,
+      "filename": "LCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1789075,
+      "contentType": "text/tab-separated-values",
+      "md5": "d305bcbeb9e9cac82b31d7aa0e16cd32"
+    },
+    {
+      "id": 10380719,
+      "filename": "LCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1788928,
+      "contentType": "text/tab-separated-values",
+      "md5": "2ff9ee132f9124d86f9077c7d06c32ad"
+    },
+    {
+      "id": 10380714,
+      "filename": "LCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1789046,
+      "contentType": "text/tab-separated-values",
+      "md5": "5ebab14b9be6a610699827ba69f39453"
+    },
+    {
+      "id": 10380524,
+      "filename": "LCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8050924,
+      "contentType": "text/tab-separated-values",
+      "md5": "502346514e190d9a245b6786d967be02"
+    },
+    {
+      "id": 10380531,
+      "filename": "LCF.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1789050,
+      "contentType": "text/tab-separated-values",
+      "md5": "dc1541408a72c7a892c9c223a0fc9745"
+    },
+    {
+      "id": 10380601,
+      "filename": "LCF.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 1995351,
+      "contentType": "text/tab-separated-values",
+      "md5": "afc324b09d79e0bdc44d3fa289985b8f"
+    },
+    {
+      "id": 10380706,
+      "filename": "LCF.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8014785,
+      "contentType": "text/tab-separated-values",
+      "md5": "52ffe9e3fb12c45978d0ee95c5d478f0"
+    },
+    {
+      "id": 10380656,
+      "filename": "LCF.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1789215,
+      "contentType": "text/tab-separated-values",
+      "md5": "081868c239eb9a347a020cc433ac322d"
+    },
+    {
+      "id": 10380630,
+      "filename": "LCF.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1789195,
+      "contentType": "text/tab-separated-values",
+      "md5": "06f2fe2337c9d57559ce287dad41c609"
+    },
+    {
+      "id": 10380638,
+      "filename": "MaxBox.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 918691,
+      "contentType": "text/tab-separated-values",
+      "md5": "0b4b4ec23cf6140cce67a7efe3ef4072"
+    },
+    {
+      "id": 10380708,
+      "filename": "MaxBox.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 916461,
+      "contentType": "text/tab-separated-values",
+      "md5": "0831d84c46dedffe3acfe11c5cb69c69"
+    },
+    {
+      "id": 10380624,
+      "filename": "MaxBox.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 4192573,
+      "contentType": "text/tab-separated-values",
+      "md5": "7ceef37340a7468b4fa034f58e5ce357"
+    },
+    {
+      "id": 10380580,
+      "filename": "MaxBox.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 920090,
+      "contentType": "text/tab-separated-values",
+      "md5": "0af459f8e61f5db7f31e685cec6849f8"
+    },
+    {
+      "id": 10380750,
+      "filename": "MaxBox.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 1038556,
+      "contentType": "text/tab-separated-values",
+      "md5": "d4144e181828fa7941a8d9f0c69b4981"
+    },
+    {
+      "id": 10380691,
+      "filename": "PCGen.py",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 1187,
+      "contentType": "text/x-python",
+      "md5": "b81437532b6b48bc6e1cb41ab3ee98d3"
+    },
+    {
+      "id": 10380742,
+      "filename": "Rw_Output1.npy",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 2560128,
+      "contentType": "application/octet-stream",
+      "md5": "f933516e0273096d7dd18cbb687ae8d8"
+    },
+    {
+      "id": 10380572,
+      "filename": "Rw_Output2.npy",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 2560128,
+      "contentType": "application/octet-stream",
+      "md5": "ce3189e85365673934d4d9a85764f57c"
+    },
+    {
+      "id": 10380508,
+      "filename": "Rw_Output3.npy",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 2560128,
+      "contentType": "application/octet-stream",
+      "md5": "4864b0581a2e8967626ac1c4abb7e809"
+    },
+    {
+      "id": 10380607,
+      "filename": "Rw_Output.npy",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2666624,
+      "contentType": "application/octet-stream",
+      "md5": "39ecfd269fa7ee65260008033eeced66"
+    },
+    {
+      "id": 10380597,
+      "filename": "Rw_Output.npy",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 10688640,
+      "contentType": "application/octet-stream",
+      "md5": "3fc7c125ddb65f1e5b2ca3745d29500e"
+    },
+    {
+      "id": 10380619,
+      "filename": "STLGen.py",
+      "directoryLabel": "Ship_D_Dataset",
+      "filesize": 1068,
+      "contentType": "text/x-python",
+      "md5": "33b1d7890bc1d5187de96182fb36779b"
+    },
+    {
+      "id": 10380538,
+      "filename": "VCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1789046,
+      "contentType": "text/tab-separated-values",
+      "md5": "db805a4ffa8ba2209896d5345cbfea5c"
+    },
+    {
+      "id": 10380670,
+      "filename": "VCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8050924,
+      "contentType": "text/tab-separated-values",
+      "md5": "116e8c438c51e3c1132627748f8a8a03"
+    },
+    {
+      "id": 10380592,
+      "filename": "VCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1789075,
+      "contentType": "text/tab-separated-values",
+      "md5": "a9e7b9a64339bb7995cf396a04a882e7"
+    },
+    {
+      "id": 10380599,
+      "filename": "VCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1788928,
+      "contentType": "text/tab-separated-values",
+      "md5": "be6afe6f466e89a56bd70cf3570c9536"
+    },
+    {
+      "id": 10380552,
+      "filename": "VCB.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2005096,
+      "contentType": "text/tab-separated-values",
+      "md5": "9c1f96e6ff89e939adb444e67e777272"
+    },
+    {
+      "id": 10380657,
+      "filename": "Volume.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1952378,
+      "contentType": "text/tab-separated-values",
+      "md5": "41a6fff73855db12b1a8133f031856e5"
+    },
+    {
+      "id": 10380660,
+      "filename": "Volume.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8995696,
+      "contentType": "text/tab-separated-values",
+      "md5": "b77aaa1664480ab9df1e43a19a4f948e"
+    },
+    {
+      "id": 10380746,
+      "filename": "Volume.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1935828,
+      "contentType": "text/tab-separated-values",
+      "md5": "738ae94f260833eae600272d68e41939"
+    },
+    {
+      "id": 10380560,
+      "filename": "Volume.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1959168,
+      "contentType": "text/tab-separated-values",
+      "md5": "c99def260f5c011ed3acb56ab20f1732"
+    },
+    {
+      "id": 10380600,
+      "filename": "Volume.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2209921,
+      "contentType": "text/tab-separated-values",
+      "md5": "ee7b6fbc35712cfb11d224da1e4e543e"
+    },
+    {
+      "id": 10380535,
+      "filename": "WL_Length.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 1947049,
+      "contentType": "text/tab-separated-values",
+      "md5": "966e76d2c67a7fa9f0835d36da79aca7"
+    },
+    {
+      "id": 10380671,
+      "filename": "WL_Length.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1757686,
+      "contentType": "text/tab-separated-values",
+      "md5": "86acb5571df483c859fe027a04dc521a"
+    },
+    {
+      "id": 10380588,
+      "filename": "WL_Length.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1761147,
+      "contentType": "text/tab-separated-values",
+      "md5": "b39267c88e4ffeec64de9c6ab44ebacb"
+    },
+    {
+      "id": 10380734,
+      "filename": "WL_Length.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1759078,
+      "contentType": "text/tab-separated-values",
+      "md5": "d81115d353cd596506a475ada8d5a662"
+    },
+    {
+      "id": 10380713,
+      "filename": "WL_Length.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 7811405,
+      "contentType": "text/tab-separated-values",
+      "md5": "ccb72c8be095b97a361ddb0e07b463a6"
+    },
+    {
+      "id": 10380626,
+      "filename": "z.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_3/GeometricMeasures",
+      "filesize": 1854932,
+      "contentType": "text/tab-separated-values",
+      "md5": "acec8be0a471562c6107458411514f4f"
+    },
+    {
+      "id": 10380725,
+      "filename": "z.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_1/GeometricMeasures",
+      "filesize": 1853081,
+      "contentType": "text/tab-separated-values",
+      "md5": "e505548bd6c93ef4bc31d3d767c5cb6d"
+    },
+    {
+      "id": 10380724,
+      "filename": "z.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_1/GeometricMeasures",
+      "filesize": 8449780,
+      "contentType": "text/tab-separated-values",
+      "md5": "bfb0fb4dfea078bbee8c048ad13d238c"
+    },
+    {
+      "id": 10380754,
+      "filename": "z.tab",
+      "directoryLabel": "Ship_D_Dataset/Constrained_Randomized_Set_2/GeometricMeasures",
+      "filesize": 1853791,
+      "contentType": "text/tab-separated-values",
+      "md5": "ccfa931fa5bc6c9a29ca4eff66d7f0db"
+    },
+    {
+      "id": 10380550,
+      "filename": "z.tab",
+      "directoryLabel": "Ship_D_Dataset/Diffusion_Aug_Set_2/GeometricMeasures",
+      "filesize": 2098651,
+      "contentType": "text/tab-separated-values",
+      "md5": "f2bd14f3489ce690975cd76b09c04d17"
+    }
+  ]
+}
