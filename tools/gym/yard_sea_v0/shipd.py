@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
+import numpy as np
+
 from .hull import HullState
 
 _LABELS_PATH = Path(__file__).with_name("shipd_labels.json")
@@ -156,3 +158,60 @@ def is_feasible(vec: ShipDVector | Sequence[float]) -> bool:
     from .shipd_surface import evaluate_constraints
 
     return evaluate_constraints(vec).feasible
+
+
+# --- 45-D action bounds (dataset percentiles) ---------------------------------
+
+_BOUNDS_PATH = Path(__file__).parent / "data" / "shipd_action_bounds.json"
+BIT_LABELS: tuple[str, ...] = ("bit_EP_S", "bit_EP_T", "bit_BB", "bit_SB")
+BIT_INDICES: tuple[int, ...] = tuple(LABELS.index(n) for n in BIT_LABELS)
+
+
+def load_action_bounds(
+    path: Path | None = None,
+    *,
+    p_lo: float = 1.0,
+    p_hi: float = 99.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return (lo, hi) length-45 arrays for clamping Ship-D actions.
+
+    Prefers cached JSON from the 30k corpus; falls back to sample CSV percentiles
+    or recomputes from ``InputVectors_30k.npy`` when present.
+    """
+    import numpy as np
+
+    path = Path(path) if path is not None else _BOUNDS_PATH
+    if path.is_file():
+        data = json.loads(path.read_text())
+        lo = np.asarray(data["lo"], dtype=np.float64)
+        hi = np.asarray(data["hi"], dtype=np.float64)
+        if lo.shape == (45,) and hi.shape == (45,):
+            return lo, hi
+
+    npy = Path(__file__).parent / "data" / "InputVectors_30k.npy"
+    if npy.is_file():
+        arr = np.load(npy)
+        lo = np.percentile(arr, p_lo, axis=0).astype(np.float64)
+        hi = np.percentile(arr, p_hi, axis=0).astype(np.float64)
+        return lo, hi
+
+    samples = load_sample_vectors()
+    arr = np.asarray([list(s.values) for s in samples], dtype=np.float64)
+    lo = np.min(arr, axis=0)
+    hi = np.max(arr, axis=0)
+    return lo, hi
+
+
+def action_scales(
+    lo: np.ndarray | None = None,
+    hi: np.ndarray | None = None,
+    *,
+    delta_frac: float = 0.05,
+) -> np.ndarray:
+    """Per-dim absolute delta scale so action in [-1,1] moves ``delta_frac`` of span."""
+    import numpy as np
+
+    if lo is None or hi is None:
+        lo, hi = load_action_bounds()
+    span = np.maximum(hi - lo, 0.0)
+    return span * float(delta_frac)
