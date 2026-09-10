@@ -1,6 +1,15 @@
 //! CLI for Python ctypes/subprocess bridge: emit JSON for L0/L1.
+//! Modes: l0 | l1 | l1_hm1984 | both | both_hm1984
 const std = @import("std");
 const gym = @import("root.zig");
+
+fn writeL1(stdout: anytype, r: gym.ResistanceResult, fidelity: []const u8) !void {
+    try stdout.writeAll(",\"l1\":{");
+    try stdout.print("\"Fn\":{d:.12},\"Rn\":{d:.12},\"Cf\":{d:.12},\"k1\":{d:.12},\"Cw\":{d:.12},\"Rt_N\":{d:.12},\"Ct\":{d:.12},\"fidelity\":\"{s}\"", .{
+        r.Fn, r.Rn, r.Cf, r.k1, r.Cw, r.Rt_N, r.Ct, fidelity,
+    });
+    try stdout.writeAll("}");
+}
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -16,8 +25,11 @@ pub fn main() !void {
 
     // Optional: mode then 7 floats: L B T Cb lcb_frac kg_frac Fn
     if (args.next()) |m| {
-        if (std.mem.eql(u8, m, "l0") or std.mem.eql(u8, m, "l1") or std.mem.eql(u8, m, "both")) {
-            mode = m;
+        if (std.mem.eql(u8, m, "l0") or std.mem.eql(u8, m, "l1") or std.mem.eql(u8, m, "l1_hm1984") or
+            std.mem.eql(u8, m, "both") or std.mem.eql(u8, m, "both_hm1984") or
+            std.mem.eql(u8, m, "hm1984"))
+        {
+            mode = if (std.mem.eql(u8, m, "hm1984")) "l1_hm1984" else m;
             if (args.next()) |s| h.L = try std.fmt.parseFloat(f64, s);
         } else {
             h.L = try std.fmt.parseFloat(f64, m);
@@ -38,7 +50,11 @@ pub fn main() !void {
         h.L, h.B, h.T, h.Cb, h.lcb_frac, h.kg_frac, h.Fn,
     });
 
-    if (std.mem.eql(u8, mode, "l0") or std.mem.eql(u8, mode, "both")) {
+    const want_l0 = std.mem.eql(u8, mode, "l0") or std.mem.eql(u8, mode, "both") or std.mem.eql(u8, mode, "both_hm1984");
+    const want_l1_simp = std.mem.eql(u8, mode, "l1") or std.mem.eql(u8, mode, "both");
+    const want_l1_hm = std.mem.eql(u8, mode, "l1_hm1984") or std.mem.eql(u8, mode, "both_hm1984");
+
+    if (want_l0) {
         const r = gym.evaluate_l0(h);
         try stdout.writeAll(",\"l0\":{");
         try stdout.print("\"feasible\":{},\"gm0_m\":{d:.12},\"volume_m3\":{d:.12},\"displacement_t\":{d:.12},\"L_B\":{d:.12},\"T_B\":{d:.12},\"Cb\":{d:.12}", .{
@@ -53,13 +69,19 @@ pub fn main() !void {
         try stdout.writeAll("]}");
     }
 
-    if (std.mem.eql(u8, mode, "l1") or std.mem.eql(u8, mode, "both")) {
+    if (want_l1_simp) {
         const r = gym.estimate_resistance(h);
-        try stdout.writeAll(",\"l1\":{");
-        try stdout.print("\"Fn\":{d:.12},\"Rn\":{d:.12},\"Cf\":{d:.12},\"k1\":{d:.12},\"Cw\":{d:.12},\"Rt_N\":{d:.12},\"Ct\":{d:.12},\"fidelity\":\"L1_holtrop_simplified\"", .{
-            r.Fn, r.Rn, r.Cf, r.k1, r.Cw, r.Rt_N, r.Ct,
-        });
-        try stdout.writeAll("}");
+        try writeL1(stdout, r, "L1_holtrop_simplified");
+    }
+
+    if (want_l1_hm) {
+        const r = gym.estimate_resistance_hm1984(h) catch {
+            try stdout.writeAll(",\"l1\":{\"error\":\"hm1984_failed\",\"fidelity\":\"L1_holtrop_hm1984\"}");
+            try stdout.writeAll("}\n");
+            try stdout.flush();
+            return;
+        };
+        try writeL1(stdout, r, "L1_holtrop_hm1984");
     }
 
     try stdout.writeAll("}\n");

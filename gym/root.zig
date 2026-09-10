@@ -1,7 +1,10 @@
 //! L0/L1 mirror for Yard-Sea-v0 (box-like particulars).
 //! Parity target: yard_sea_v0.hull + yard_sea_v0.resistance_l1 (Python).
+//! Also exposes full Holtrop-Mennen 1984 via vendored yard_resistance.
 const std = @import("std");
 const math = std.math;
+const yard_resistance = @import("yard_resistance");
+const holtrop = yard_resistance.holtrop;
 
 pub const RHO_SW: f64 = 1025.0;
 pub const G: f64 = 9.80665;
@@ -16,6 +19,13 @@ pub const LB_MAX: f64 = 12.0;
 pub const GM_MIN: f64 = 0.15;
 pub const LCB_FRAC_MIN: f64 = -0.05;
 pub const LCB_FRAC_MAX: f64 = 0.05;
+
+/// Default midship-section coefficient when HullState has no Cm.
+/// Documented missing-field assumption for HM1984 mapping.
+pub const CM_DEFAULT: f64 = 0.98;
+/// Default stern-shape parameter (Holtrop: 0 = normal).
+/// Note: Python Holtrop-simplified uses c_stern≈10; HM1984 path uses 0.
+pub const C_STERN_DEFAULT: f64 = 0.0;
 
 pub const Hull = struct {
     L: f64 = 120,
@@ -187,6 +197,72 @@ pub fn estimate_resistance(h: Hull) ResistanceResult {
     };
 }
 
+/// Map Yard-Sea Hull → holtrop.HullParticulars (best-effort).
+///
+/// Present on HullState / Hull:
+///   L, B, T, Cb→C_B, volume→displacement_vol, wetted→S,
+///   lcb_frac→lcb_pct (= lcb_frac * 100, Holtrop %L from amidships, fwd+).
+///
+/// Missing on HullState (filled with documented defaults):
+///   C_M  ← CM_DEFAULT (0.98)
+///   C_P  ← C_B / C_M (clamped)
+///   C_WP ← Denny (1 + 2 C_B) / 3
+///   c_stern ← C_STERN_DEFAULT (0 = normal); no bulb / transom geometry
+pub fn toHoltropParticulars(h: Hull) holtrop.HullParticulars {
+    const cm = CM_DEFAULT;
+    var cp = h.Cb / cm;
+    cp = @max(0.55, @min(0.95, cp));
+    const cwp = (1.0 + 2.0 * h.Cb) / 3.0;
+    return .{
+        .L = h.L,
+        .B = h.B,
+        .T = h.T,
+        .displacement_vol = volume(h),
+        .S = wetted_approx(h),
+        .C_B = h.Cb,
+        .C_M = cm,
+        .C_P = cp,
+        .C_WP = @max(0.55, @min(0.99, cwp)),
+        .lcb_pct = h.lcb_frac * 100.0,
+        .c_stern = C_STERN_DEFAULT,
+        .bulb = null,
+        .transom = null,
+    };
+}
+
+pub const Hm1984Error = error{
+    IttcFailure,
+    NonFinite,
+};
+
+/// Full Holtrop-Mennen 1984 L1 via vendored yard holtrop.totalResistance.
+/// Returns ResistanceResult with k1 = (1+k)−1 and Cw = R_W/(½ρU²S).
+pub fn estimate_resistance_hm1984(h: Hull) Hm1984Error!ResistanceResult {
+    const hp = toHoltropParticulars(h);
+    const env: holtrop.Environment = .{
+        .rho = RHO_SW,
+        .g = G,
+        .nu = NU,
+    };
+    const U = h.Fn * @sqrt(G * h.L);
+    const br = holtrop.totalResistance(hp, U, env) catch return error.IttcFailure;
+    const q = 0.5 * RHO_SW * U * U * hp.S;
+    if (!(q > 0.0) or !math.isFinite(br.r_total)) return error.NonFinite;
+    const Ct = br.r_total / q;
+    const Cw = br.r_w / q;
+    const k1 = br.one_plus_k - 1.0;
+    if (!math.isFinite(Ct)) return error.NonFinite;
+    return .{
+        .Fn = br.fn_val,
+        .Rn = br.rn,
+        .Cf = br.c_f,
+        .k1 = k1,
+        .Cw = Cw,
+        .Rt_N = br.r_total,
+        .Ct = Ct,
+    };
+}
+
 test "default hull feasible" {
     try std.testing.expect(l0_feasible(.{}));
 }
@@ -205,4 +281,21 @@ test "default Ct finite positive" {
     const r = estimate_resistance(.{});
     try std.testing.expect(r.Ct > 0 and r.Ct < 0.1);
     try std.testing.expect(r.Rt_N > 0);
+}
+
+test "hm1984 default Ct finite positive" {
+    const r = try estimate_resistance_hm1984(.{});
+    try std.testing.expect(math.isFinite(r.Ct));
+    try std.testing.expect(r.Ct > 0);
+    try std.testing.expect(r.Rt_N > 0);
+    try std.testing.expect(math.isFinite(r.Rn));
+}
+
+test "hm1984 particulars mapping fills defaults" {
+    const hp = toHoltropParticulars(.{});
+    try std.testing.expectApproxEqAbs(hp.C_M, CM_DEFAULT, 1e-15);
+    try std.testing.expect(hp.C_P > 0 and hp.C_P < 1);
+    try std.testing.expect(hp.C_WP > 0 and hp.C_WP < 1);
+    try std.testing.expect(hp.bulb == null);
+    try std.testing.expect(hp.transom == null);
 }

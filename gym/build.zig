@@ -4,10 +4,20 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Vendored yard Holtrop HM1984 + ITTC-57 (read-only snippets).
+    const yard_resistance = b.createModule(.{
+        .root_source_file = b.path("../vendor/yard_zig/resistance/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const lib_mod = b.createModule(.{
         .root_source_file = b.path("root.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{
+            .{ .name = "yard_resistance", .module = yard_resistance },
+        },
     });
 
     const exe_mod = b.createModule(.{
