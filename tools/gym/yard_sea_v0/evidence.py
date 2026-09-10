@@ -12,6 +12,7 @@ from typing import Any
 from . import __version__
 from .hull import HullState, L0Report
 from .resistance_l1 import ResistanceResult
+from .strip_assurance import strip_overlay
 
 
 def build_evidence(
@@ -58,7 +59,10 @@ def build_evidence(
         claims.append(
             {
                 "id": "gm0_floor",
-                "statement": f"GM0={hull.gm0():.3f} m meets exploratory floor 0.15 m under box hydrostatics.",
+                "statement": (
+                    f"GM0={hull.gm0():.3f} m meets exploratory floor 0.15 m "
+                    "under box hydrostatics."
+                ),
                 "status": "supported_at_l0",
                 "evidence": ["l0_report"],
             }
@@ -74,13 +78,16 @@ def build_evidence(
         )
 
     gsn_stub = {
-        "top_goal": "Produce a hydrostatically feasible hull with improved L1 resistance rank vs parent",
+        "top_goal": (
+            "Produce a hydrostatically feasible hull with improved L1 "
+            "resistance rank vs parent"
+        ),
         "strategies": ["L0_monitor", "L1_resistance_rank", "offline_search_only"],
         "solutions": ["yard_sea_v0"],
         "context": ["public_osint_gym", "not_certification"],
     }
 
-    return {
+    pack: dict[str, Any] = {
         "evidence_id": str(uuid.uuid4()),
         "schema": "yard_sea_v0.evidence.v1",
         "created_unix": time.time(),
@@ -104,6 +111,8 @@ def build_evidence(
         "claims": claims,
         "gsn_stub": gsn_stub,
     }
+    pack["strip_assurance"] = strip_overlay(pack)
+    return pack
 
 
 def write_evidence(pack: dict[str, Any], directory: Path) -> Path:
