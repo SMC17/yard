@@ -7,7 +7,8 @@ Ship-D bits are rounded to {0,1}.
 Each step:
   1. apply delta → clamp
   2. evaluate_constraints (49) — reject (monitor) before L1 if infeasible
-  3. project_to_hull (or HP calc_volumes when use_hp_hydro=True)
+  3. HP geometry/hydro primary (calc_volumes) when use_hp_geometry;
+     project_to_hull fallback only
   4. L0 gate — reject before L1 if exploratory hydrostatics fail
   5. L1 resistance reward + evidence pack
 
@@ -22,6 +23,7 @@ import numpy as np
 
 from .env import DesignSearchEnv, _HAS_GYM, _reward
 from .evidence import build_evidence, write_evidence
+from .hp_rank import GEOMETRY_FALLBACK, GEOMETRY_HP, hp_geometry_default, hull_from_shipd_primary
 from .hull import evaluate_l0
 from .resistance_l1 import estimate_resistance
 from .shipd import (
@@ -73,12 +75,32 @@ def hull_from_shipd(
     vec: ShipDVector | np.ndarray | list[float],
     *,
     use_hp_hydro: bool = False,
+    use_hp_geometry: bool | None = None,
     volumes_report=None,
     **hydro_kwargs,
 ):
-    """Project Ship-D → HullState; optionally refine Cb/LCB via HP calc_volumes."""
-    if use_hp_hydro:
-        return hull_from_volumes(vec, report=volumes_report, **hydro_kwargs)
+    """Ship-D → HullState.
+
+    Prefer HP calc_volumes when ``use_hp_geometry`` or ``use_hp_hydro`` is True.
+    ``project_to_hull`` is fallback only.
+    """
+    prefer = bool(use_hp_hydro) if use_hp_geometry is None else bool(use_hp_geometry)
+    if prefer or use_hp_hydro:
+        hull, source, _vol, _reason = hull_from_shipd_primary(
+            vec,
+            prefer_hp=True,
+            volumes_report=volumes_report,
+            **{k: v for k, v in hydro_kwargs.items() if k in ("num_wl", "points_per_wl", "fn", "kg_frac")},
+        )
+        if source == GEOMETRY_HP:
+            return hull
+        if volumes_report is not None:
+            return hull_from_volumes(vec, report=volumes_report, **hydro_kwargs)
+        # soft: still try direct volumes once more, else project
+        try:
+            return hull_from_volumes(vec, report=None, **hydro_kwargs)
+        except Exception:  # noqa: BLE001
+            return project_to_hull(vec)
     return project_to_hull(vec)
 
 
@@ -94,8 +116,9 @@ class DesignSearchEnv45(DesignSearchEnv):
         seed: int = 0,
         evidence_dir: str | None = None,
         delta_frac: float = 0.05,
-        use_hp_hydro: bool = False,
-        hp_hydro_every_n: int = 0,
+        use_hp_geometry: bool | None = None,
+        use_hp_hydro: bool | None = None,
+        hp_hydro_every_n: int | None = None,
         hp_num_wl: int = DEFAULT_NUM_WL,
         hp_points_per_wl: int = DEFAULT_POINTS_PER_WL,
         **kwargs: Any,
@@ -109,26 +132,46 @@ class DesignSearchEnv45(DesignSearchEnv):
         self._seed_vector = samples[sample_index]
         self.shipd_vector = self._seed_vector
         self.delta_frac = float(delta_frac)
-        # HP Calc_Volumes: default off. When on, run on reset/info; every N
-        # accepted steps if hp_hydro_every_n > 0 (0 = reset only).
+
+        # HP primary geometry/hydro: default True when vendored Ship-D present.
+        if use_hp_geometry is None:
+            use_hp_geometry = hp_geometry_default()
+        self.use_hp_geometry = bool(use_hp_geometry)
+
+        # use_hp_hydro follows use_hp_geometry unless explicitly set.
+        if use_hp_hydro is None:
+            use_hp_hydro = self.use_hp_geometry
         self.use_hp_hydro = bool(use_hp_hydro)
+
+        # When HP geometry is on, refresh volumes every accepted step by default.
+        if hp_hydro_every_n is None:
+            hp_hydro_every_n = 1 if self.use_hp_geometry else 0
         self.hp_hydro_every_n = int(hp_hydro_every_n)
         self.hp_num_wl = int(hp_num_wl)
         self.hp_points_per_wl = int(hp_points_per_wl)
         self._volumes_report = None
+        self._geometry_source = GEOMETRY_FALLBACK
         self._lo, self._hi = load_action_bounds()
         self._scales = action_scales(self._lo, self._hi, delta_frac=self.delta_frac)
         self._constraint_report = evaluate_constraints(self.shipd_vector)
-        if self.use_hp_hydro:
-            self._volumes_report = calc_volumes(
-                self.shipd_vector,
-                num_wl=self.hp_num_wl,
-                points_per_wl=self.hp_points_per_wl,
-            )
+        if self.use_hp_hydro or self.use_hp_geometry:
+            try:
+                self._volumes_report = calc_volumes(
+                    self.shipd_vector,
+                    num_wl=self.hp_num_wl,
+                    points_per_wl=self.hp_points_per_wl,
+                )
+                self._geometry_source = GEOMETRY_HP
+            except Exception:  # noqa: BLE001
+                self._volumes_report = None
+                self._geometry_source = GEOMETRY_FALLBACK
         parent = hull_from_shipd(
             self.shipd_vector,
             use_hp_hydro=self.use_hp_hydro,
+            use_hp_geometry=self.use_hp_geometry,
             volumes_report=self._volumes_report,
+            num_wl=self.hp_num_wl,
+            points_per_wl=self.hp_points_per_wl,
         )
         # Parent 7-D env for shared obs/evidence plumbing; action_space overridden.
         super().__init__(
@@ -154,18 +197,27 @@ class DesignSearchEnv45(DesignSearchEnv):
         else:
             self.shipd_vector = self._seed_vector
         self._constraint_report = evaluate_constraints(self.shipd_vector)
-        if self.use_hp_hydro:
-            self._volumes_report = calc_volumes(
-                self.shipd_vector,
-                num_wl=self.hp_num_wl,
-                points_per_wl=self.hp_points_per_wl,
-            )
+        if self.use_hp_hydro or self.use_hp_geometry:
+            try:
+                self._volumes_report = calc_volumes(
+                    self.shipd_vector,
+                    num_wl=self.hp_num_wl,
+                    points_per_wl=self.hp_points_per_wl,
+                )
+                self._geometry_source = GEOMETRY_HP
+            except Exception:  # noqa: BLE001
+                self._volumes_report = None
+                self._geometry_source = GEOMETRY_FALLBACK
         else:
             self._volumes_report = None
+            self._geometry_source = GEOMETRY_FALLBACK
         self.parent = hull_from_shipd(
             self.shipd_vector,
             use_hp_hydro=self.use_hp_hydro,
+            use_hp_geometry=self.use_hp_geometry,
             volumes_report=self._volumes_report,
+            num_wl=self.hp_num_wl,
+            points_per_wl=self.hp_points_per_wl,
         )
         if options is None:
             options = {}
@@ -177,7 +229,9 @@ class DesignSearchEnv45(DesignSearchEnv):
         info["shipd_constraints"] = self._constraint_report.to_dict()
         info["shipd_feasible"] = self._constraint_report.feasible
         info["action_dim"] = ACTION_DIM
+        info["use_hp_geometry"] = self.use_hp_geometry
         info["use_hp_hydro"] = self.use_hp_hydro
+        info["geometry_source"] = self._geometry_source
         if self._volumes_report is not None:
             info["hp_hydro"] = self._volumes_report.to_dict()
         return obs, info
@@ -222,6 +276,8 @@ class DesignSearchEnv45(DesignSearchEnv):
                 "shipd_infeasible": True,
                 "shipd_constraints": report.to_dict(),
                 "shipd_vector": list(self.shipd_vector.values),
+                "use_hp_geometry": self.use_hp_geometry,
+                "geometry_source": self._geometry_source,
                 "monitor": {
                     "allow": False,
                     "reason_codes": ["shipd_algebraic_constraints"],
@@ -231,24 +287,44 @@ class DesignSearchEnv45(DesignSearchEnv):
             return self._obs(), reward, terminated, truncated, info
 
         candidate_vec = ShipDVector(tuple(float(x) for x in proposed))
-        # Cheap projection for L0 unless this step is an HP hydro refresh tick.
+        # HP primary: refresh volumes every N accepted-path steps (default N=1).
         refresh_hp = (
-            self.use_hp_hydro
+            (self.use_hp_geometry or self.use_hp_hydro)
             and self.hp_hydro_every_n > 0
             and (self.step_count % self.hp_hydro_every_n == 0)
         )
+        step_source = GEOMETRY_FALLBACK
         if refresh_hp:
-            step_vol = calc_volumes(
-                candidate_vec,
-                num_wl=self.hp_num_wl,
-                points_per_wl=self.hp_points_per_wl,
-            )
-            projected = hull_from_shipd(
-                candidate_vec, use_hp_hydro=True, volumes_report=step_vol
-            )
-            self._volumes_report = step_vol
+            try:
+                step_vol = calc_volumes(
+                    candidate_vec,
+                    num_wl=self.hp_num_wl,
+                    points_per_wl=self.hp_points_per_wl,
+                )
+                projected = hull_from_shipd(
+                    candidate_vec,
+                    use_hp_hydro=True,
+                    use_hp_geometry=True,
+                    volumes_report=step_vol,
+                    num_wl=self.hp_num_wl,
+                    points_per_wl=self.hp_points_per_wl,
+                )
+                self._volumes_report = step_vol
+                step_source = GEOMETRY_HP
+                self._geometry_source = GEOMETRY_HP
+            except Exception:  # noqa: BLE001
+                projected = project_to_hull(candidate_vec)
+                step_source = GEOMETRY_FALLBACK
+                self._geometry_source = GEOMETRY_FALLBACK
+        elif self.use_hp_geometry and self._volumes_report is not None:
+            # Reuse last HP report only if every_n disabled mid-episode — still prefer HP hull
+            # via cheap project only when HP refresh is off.
+            projected = hull_from_shipd(candidate_vec, use_hp_hydro=False, use_hp_geometry=False)
+            step_source = GEOMETRY_FALLBACK
         else:
-            projected = hull_from_shipd(candidate_vec, use_hp_hydro=False)
+            projected = hull_from_shipd(candidate_vec, use_hp_hydro=False, use_hp_geometry=False)
+            step_source = GEOMETRY_FALLBACK
+
         l0 = evaluate_l0(projected)
         if not l0.feasible:
             reward = -1.0
@@ -275,6 +351,8 @@ class DesignSearchEnv45(DesignSearchEnv):
                 "shipd_constraints": report.to_dict(),
                 "shipd_vector": list(candidate_vec.values),
                 "l0": l0.to_dict(),
+                "use_hp_geometry": self.use_hp_geometry,
+                "geometry_source": step_source,
                 "monitor": {
                     "allow": False,
                     "reason_codes": list(l0.violations),
@@ -314,7 +392,9 @@ class DesignSearchEnv45(DesignSearchEnv):
             "shipd_infeasible": False,
             "shipd_constraints": report.to_dict(),
             "shipd_vector": list(self.shipd_vector.values),
+            "use_hp_geometry": self.use_hp_geometry,
             "use_hp_hydro": self.use_hp_hydro,
+            "geometry_source": step_source,
             "monitor": {
                 "allow": True,
                 "reason_codes": [],
