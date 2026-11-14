@@ -66,8 +66,13 @@ def _holdout_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     claimed = [h for h in rows if h["seen"] > 0]
     drifts = [r["drift"] for r in results if isinstance(r.get("drift"), dict)]
     finals = [d["final_error"] for d in drifts if d.get("final_error") is not None]
+    indep = {h.get("independent_of_reward") for h in rows}
     return {
+        "oracle": rows[0]["oracle"] if rows else None,
+        "available": all(h.get("available", True) for h in rows) if rows else None,
+        "independent_of_reward": indep.pop() if len(indep) == 1 else None,
         "n": len(rows),
+        "n_blind": sum(1 for h in rows if h.get("blind")),
         "n_claimed": len(claimed),
         "n_confirmed": sum(1 for h in claimed if h["confirmed"]),
         "n_exploit": sum(1 for h in claimed if h["exploit"]),
@@ -92,6 +97,7 @@ def write_gallery(
     reward_mode: str = "single_fn",
     wave_oracle: str = "auto",
     holdout: bool = False,
+    holdout_oracle: str = "michell",
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
     children_dir = out_dir / "children"
@@ -181,6 +187,7 @@ def write_gallery(
         results = run_search(
             parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch,
             reward_mode=reward_mode, wave_oracle=wave_oracle, holdout=holdout,
+            holdout_oracle=holdout_oracle,
         )
         l3_dir = out_dir / "l3_openfoam"
         avail = detect_openfoam() if l3_openfoam else None

@@ -12,12 +12,28 @@ exploit quirks of the cheap oracle.
   improvement estimate with the held-out oracle's at every step, so error is
   judged on the long horizon, not just the first step.
 
-The held-out oracle is *another model*, not ground truth. Swap in L2/L3 teachers
-(``holdout_fn=``) when available; results are exploratory, not ITTC / class.
+Selectable held-out oracles (``make_holdout_fn(oracle=...)``, CLI ``--holdout-oracle``):
+
+* ``michell``       — L1 viscous + Michell L1.5 thin-ship wave, Froude grid (default).
+* ``hm1984``        — Zig Holtrop-Mennen 1984 L1 on the Froude grid. Unavailable
+                      (NaN rows, ``available=False``) when ``zig_gym`` is not built;
+                      never silently falls back to the Python L1.
+* ``capytaine_l2``  — Capytaine linear BEM on an L×B×T parallelepiped at design Fn
+                      (radiation-damping wave proxy). It cannot see Cb / lcb / kg:
+                      designs that differ from the parent only there are marked
+                      ``blind`` instead of being scored 0.
+
+Every oracle carries ``wave_model`` and ``sensitive_to``. ``holdout_check``
+reports ``independent_of_seen`` = the held-out wave model differs from the one
+that produced the seen improvement; an oracle that shares it is not held out.
+
+The held-out oracle is *another model*, not ground truth. Results are
+exploratory, not ITTC / class.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import math
 from typing import Any, Callable, Sequence
 
@@ -30,19 +46,129 @@ from .resistance_l1 import estimate_resistance
 ScoreFn = Callable[[HullState, HullState], float]  # (child, parent) -> relative improvement
 
 
+HULL_KEYS = ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")
+HOLDOUT_ORACLES = ("michell", "hm1984", "capytaine_l2")
+
+
 def seen_improvement(child: HullState, parent: HullState) -> float:
     """What the default policy reward saw: relative L1 Ct improvement at design Fn."""
     pc = estimate_resistance(parent).Ct
     return (pc - estimate_resistance(child).Ct) / pc
 
 
-def make_holdout_fn(fn_grid: Sequence[float] | None = None, wave_oracle: str = "michell") -> ScoreFn:
+def seen_wave_model(parent: HullState) -> str:
+    """Wave model behind ``seen_improvement`` (the L1 fidelity tag, e.g. hm1984_zig)."""
+    return str(estimate_resistance(parent).fidelity)
+
+
+seen_improvement.wave_model_for = seen_wave_model  # type: ignore[attr-defined]
+
+
+def _rel(pc: float, cc: float) -> float:
+    if not (math.isfinite(pc) and math.isfinite(cc)) or pc <= 0:
+        return float("nan")
+    return (pc - cc) / pc
+
+
+def _hm1984_fn(fn_grid: Sequence[float] | None) -> ScoreFn:
+    from .multi_froude import fn_grid_for
+    from .zig_bridge import estimate_resistance_zig, zig_available
+
+    avail = zig_available()
+
+    def ct(h: HullState) -> float:
+        return float(estimate_resistance_zig(h, fidelity="hm1984").Ct)
+
+    def f(child: HullState, parent: HullState) -> float:
+        if not avail:
+            return float("nan")
+        grid = tuple(fn_grid) if fn_grid else fn_grid_for(parent)
+        vals = []
+        for fn in grid:
+            try:
+                vals.append(_rel(ct(dataclasses.replace(parent, Fn=fn)), ct(dataclasses.replace(child, Fn=fn))))
+            except Exception:
+                vals.append(float("nan"))
+        ok = [v for v in vals if math.isfinite(v)]
+        return float(np.mean(ok)) if ok and len(ok) == len(vals) else float("nan")
+
+    f.available = avail  # type: ignore[attr-defined]
+    f.unavailable_reason = None if avail else "zig_gym binary not built"  # type: ignore[attr-defined]
+    return f
+
+
+def _capytaine_fn() -> ScoreFn:
+    from .teachers import panel_l2
+
+    av = panel_l2.detect()
+
+    def ct(h: HullState) -> float:
+        r = panel_l2.run(h, availability=av)
+        return float("nan") if r.get("skipped") else float(r["Ct"])
+
+    def f(child: HullState, parent: HullState) -> float:
+        if not av.available:
+            return float("nan")
+        # Compare at the parent's design speed so only geometry differs.
+        return _rel(ct(parent), ct(dataclasses.replace(child, Fn=parent.Fn)))
+
+    f.available = av.available  # type: ignore[attr-defined]
+    f.unavailable_reason = None if av.available else (av.error or "capytaine missing")  # type: ignore[attr-defined]
+    return f
+
+
+def make_holdout_fn(
+    fn_grid: Sequence[float] | None = None,
+    wave_oracle: str = "michell",
+    *,
+    oracle: str | None = None,
+) -> ScoreFn:
+    """Build a held-out score fn. ``oracle`` (one of ``HOLDOUT_ORACLES``) wins over ``wave_oracle``."""
+    name = oracle or ("michell" if wave_oracle == "michell" else None)
+    if oracle is not None and oracle not in HOLDOUT_ORACLES:
+        raise ValueError(f"holdout oracle must be one of {HOLDOUT_ORACLES}")
+    if name == "hm1984":
+        f = _hm1984_fn(fn_grid)
+        f.__name__ = "holdout_multi_froude_hm1984_zig"
+        f.wave_model = "hm1984_zig"  # type: ignore[attr-defined]
+        f.sensitive_to = HULL_KEYS  # type: ignore[attr-defined]
+        return f
+    if name == "capytaine_l2":
+        f = _capytaine_fn()
+        f.__name__ = "holdout_capytaine_l2_box"
+        f.wave_model = "capytaine_l2_box"  # type: ignore[attr-defined]
+        f.sensitive_to = ("L", "B", "T")  # type: ignore[attr-defined]
+        return f
+
     def f(child: HullState, parent: HullState) -> float:
         out = multi_froude_score(child, parent, fn_grid, wave_oracle=wave_oracle, worst_case_weight=0.0)
         return float("nan") if out["score"] is None else float(out["mean_d_total"])
 
     f.__name__ = f"holdout_multi_froude_{wave_oracle}"
+    f.wave_model = "michell_l15" if wave_oracle == "michell" else None  # type: ignore[attr-defined]
+    f.sensitive_to = HULL_KEYS  # type: ignore[attr-defined]
+    f.available = True  # type: ignore[attr-defined]
     return f
+
+
+def is_blind(holdout_fn: ScoreFn, child: HullState, parent: HullState, rtol: float = 1e-9) -> bool:
+    """True when ``child`` differs from ``parent`` only in parameters the oracle cannot see."""
+    sens = getattr(holdout_fn, "sensitive_to", None)
+    if sens is None:
+        return False
+    changed = [
+        k for k in HULL_KEYS
+        if not math.isclose(float(getattr(child, k)), float(getattr(parent, k)), rel_tol=rtol, abs_tol=1e-12)
+    ]
+    return bool(changed) and all(k not in sens for k in changed)
+
+
+def oracle_independence(seen_fn: ScoreFn, holdout_fn: ScoreFn, parent: HullState) -> dict[str, Any]:
+    wm = getattr(seen_fn, "wave_model_for", None)
+    seen_wm = wm(parent) if callable(wm) else getattr(seen_fn, "wave_model", None)
+    hold_wm = getattr(holdout_fn, "wave_model", None)
+    indep = None if seen_wm is None or hold_wm is None else seen_wm != hold_wm
+    return {"seen_wave_model": seen_wm, "holdout_wave_model": hold_wm, "independent_of_seen": indep}
 
 
 def _rank(x: np.ndarray) -> np.ndarray:
@@ -80,7 +206,9 @@ def holdout_check(
     holdout_fn = holdout_fn or make_holdout_fn()
     rows = []
     for i, d in enumerate(designs):
-        s, h = float(seen_fn(d, parent)), float(holdout_fn(d, parent))
+        blind = is_blind(holdout_fn, d, parent)
+        s = float(seen_fn(d, parent))
+        h = float("nan") if blind else float(holdout_fn(d, parent))
         rows.append(
             {
                 "index": i,
@@ -89,6 +217,7 @@ def holdout_check(
                 "gap": s - h if math.isfinite(h) else None,
                 "confirmed": s > 0 and math.isfinite(h) and h > 0,
                 "exploit": s > 0 and math.isfinite(h) and h < -exploit_tol,
+                "blind": blind,
                 "hull": d.to_dict(),
             }
         )
@@ -97,10 +226,15 @@ def holdout_check(
     finite = [r for r in rows if math.isfinite(r["holdout"])]
     claimed = [r for r in finite if r["seen"] > 0]
     return {
-        "schema": "yard_sea_v0.holdout.v1",
+        "schema": "yard_sea_v0.holdout.v2",
         "holdout_oracle": getattr(holdout_fn, "__name__", "holdout"),
         "seen_oracle": getattr(seen_fn, "__name__", "seen"),
+        "holdout_available": bool(getattr(holdout_fn, "available", True)),
+        "holdout_unavailable_reason": getattr(holdout_fn, "unavailable_reason", None),
+        "holdout_sensitive_to": list(getattr(holdout_fn, "sensitive_to", HULL_KEYS)),
+        **oracle_independence(seen_fn, holdout_fn, parent),
         "n": len(rows),
+        "n_blind": sum(r["blind"] for r in rows),
         "spearman": spearman(seen, hold),
         "sign_agreement": (
             sum((r["seen"] > 0) == (r["holdout"] > 0) for r in finite) / len(finite) if finite else None
@@ -110,7 +244,10 @@ def holdout_check(
         "n_exploit": sum(r["exploit"] for r in rows),
         "exploit_rate": (sum(r["exploit"] for r in claimed) / len(claimed)) if claimed else None,
         "rows": rows,
-        "notes": "Held-out oracle never enters the reward. It is a second model, not ground truth.",
+        "notes": (
+            "Held-out oracle never enters the reward. It is a second model, not ground truth. "
+            "blind rows (only unseen parameters changed) and NaN rows are excluded from agreement stats."
+        ),
     }
 
 
@@ -125,7 +262,8 @@ def trajectory_drift(
     holdout_fn = holdout_fn or make_holdout_fn()
     errs, seen, hold = [], [], []
     for st in states:
-        s, h = float(seen_fn(st, parent)), float(holdout_fn(st, parent))
+        s = float(seen_fn(st, parent))
+        h = float("nan") if is_blind(holdout_fn, st, parent) else float(holdout_fn(st, parent))
         seen.append(s)
         hold.append(h)
         errs.append(abs(s - h) if math.isfinite(h) else float("nan"))

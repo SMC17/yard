@@ -69,3 +69,77 @@ def test_states_from_evidence_skips_claims_and_rejections():
         {"type": "claim", "hull": HullState().to_dict()},
     ]
     assert len(states_from_evidence(packs)) == 1
+
+
+# --- selectable held-out oracles (michell / hm1984 / capytaine_l2) ---------------------------
+
+import dataclasses  # noqa: E402
+
+from yard_sea_v0 import zig_bridge  # noqa: E402
+from yard_sea_v0.holdout import HOLDOUT_ORACLES, is_blind, seen_wave_model  # noqa: E402
+
+
+def test_unknown_holdout_oracle_rejected():
+    with pytest.raises(ValueError):
+        make_holdout_fn(oracle="ittc")
+    assert HOLDOUT_ORACLES == ("michell", "hm1984", "capytaine_l2")
+
+
+def test_default_holdout_reports_independence_from_seen():
+    parent = HullState()
+    out = holdout_check([HullState(Cb=0.72)], parent)
+    assert out["schema"] == "yard_sea_v0.holdout.v2"
+    assert out["holdout_wave_model"] == "michell_l15"
+    assert out["seen_wave_model"] == seen_wave_model(parent)
+    assert out["independent_of_seen"] is True
+    assert out["n_blind"] == 0 and out["holdout_available"] is True
+
+
+@pytest.mark.skipif(not zig_bridge.zig_available(), reason="zig_gym not built")
+def test_hm1984_holdout_is_not_independent_of_hm1984_seen():
+    parent = HullState()
+    f = make_holdout_fn(oracle="hm1984")
+    assert f.available and f(parent, parent) == pytest.approx(0.0, abs=1e-12)
+    out = holdout_check([HullState(Cb=0.72), HullState(B=21.0)], parent, holdout_fn=f)
+    assert out["holdout_wave_model"] == "hm1984_zig"
+    # Default L1 is HM1984 when zig_gym is built, so this oracle shares the seen wave model.
+    assert seen_wave_model(parent) == "hm1984_zig"
+    assert out["independent_of_seen"] is False
+    assert all(isinstance(r["holdout"], float) and r["holdout"] == r["holdout"] for r in out["rows"])
+
+
+def test_hm1984_holdout_unavailable_is_nan_not_fallback(monkeypatch):
+    monkeypatch.setattr(zig_bridge, "zig_available", lambda *a, **k: False)
+    f = make_holdout_fn(oracle="hm1984")
+    out = holdout_check([HullState(Cb=0.72)], HullState(), holdout_fn=f)
+    assert out["holdout_available"] is False and out["holdout_unavailable_reason"]
+    r = out["rows"][0]
+    assert r["holdout"] != r["holdout"]  # NaN: never silently replaced by the Python L1
+    assert r["confirmed"] is False and r["exploit"] is False
+
+
+def test_capytaine_holdout_is_blind_to_hull_form_coefficients():
+    pytest.importorskip("capytaine")
+    parent = HullState()
+    f = make_holdout_fn(oracle="capytaine_l2")
+    assert f.sensitive_to == ("L", "B", "T")
+    cb_only = dataclasses.replace(parent, Cb=0.70, lcb_frac=0.01)
+    wider = dataclasses.replace(parent, B=parent.B * 1.05)
+    assert is_blind(f, cb_only, parent) and not is_blind(f, wider, parent)
+    out = holdout_check([cb_only, wider], parent, holdout_fn=f)
+    assert out["n_blind"] == 1 and out["rows"][0]["blind"] is True
+    assert out["rows"][0]["holdout"] != out["rows"][0]["holdout"]  # NaN, not a fake 0
+    h = out["rows"][1]["holdout"]
+    assert h == h and h < 0  # wider box -> more radiation damping -> worse on this proxy
+    assert out["independent_of_seen"] is True
+
+
+@pytest.mark.skipif(not zig_bridge.zig_available(), reason="zig_gym not built")
+def test_run_search_flags_shared_wave_model_as_not_held_out():
+    rows = run_search([HullState()], steps=4, seed=0, holdout=True, holdout_oracle="hm1984")
+    for r in rows:
+        assert r["holdout"]["holdout_wave_model"] == "hm1984_zig"
+        assert r["holdout"]["reward_wave_model"] == "hm1984_zig"
+        assert r["holdout"]["independent_of_reward"] is False
+    rows = run_search([HullState()], steps=4, seed=0, holdout=True)
+    assert all(r["holdout"]["independent_of_reward"] is True for r in rows)
