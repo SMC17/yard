@@ -381,6 +381,8 @@ def _botorch_stage_a_cost_aware(
     parent: HullState,
     steps: int,
     seed: int,
+    *,
+    evidence_dir: Path | None = None,
 ) -> dict[str, Any] | None:
     """Stage-A BoTorch with InverseCostWeightedUtility (constant L1 cost).
 
@@ -400,7 +402,7 @@ def _botorch_stage_a_cost_aware(
         # Fall back to standard L1 BoTorch path.
         from .search import _botorch_child
 
-        row = _botorch_child(parent, steps=steps, seed=seed)
+        row = _botorch_child(parent, steps=steps, seed=seed, evidence_dir=evidence_dir)
         if row is not None:
             row["cost_aware"] = False
             row["cost_aware_notes"] = "botorch cost-aware imports missing; used standard EI"
@@ -409,7 +411,26 @@ def _botorch_stage_a_cost_aware(
     from .env import _reward
     from .monitors import monitor_action
 
+    from .provenance import OptimizerRecord
+    from .search import botorch_versions, finalize_optimizer_row
+
     torch.manual_seed(seed)
+    n_init_req = max(5, min(12, max(3, steps // 2)))
+    n_bo_req = max(1, int(steps))
+    opt = OptimizerRecord(
+        implementation="botorch.SingleTaskGP+qLogExpectedImprovement(stage_a_cost_aware)",
+        version=json.dumps(botorch_versions(), sort_keys=True),
+        settings={
+            "n_init": n_init_req,
+            "n_bo_steps": n_bo_req,
+            "acquisition": "qLogExpectedImprovement",
+            "mc_samples": 64,
+            "cost_model": f"constant L1 cost {COST_L1}",
+            "objective": "single_fn L1 reward, L0-gated",
+            "torch_seed": int(seed),
+        },
+        max_evals=n_init_req + n_bo_req,
+    ).start()
     parent_ct = estimate_resistance(parent).Ct
     parent_vol = parent.volume()
     train_x: list[np.ndarray] = []
@@ -419,10 +440,11 @@ def _botorch_stage_a_cost_aware(
     best_ct = parent_ct
 
     rng = np.random.default_rng(seed)
-    n_init = max(5, min(12, max(3, steps // 2)))
+    n_init = n_init_req
     for _ in range(n_init):
         a = rng.uniform(-1.0, 1.0, size=7)
         d = monitor_action(parent, a)
+        opt.tick()
         if d.allow and d.projected is not None:
             y = float(_reward(d.projected, parent_ct, parent_vol))
             train_x.append(np.asarray(a, dtype=np.float64))
@@ -439,6 +461,7 @@ def _botorch_stage_a_cost_aware(
             "reason": "insufficient feasible samples",
             "parent_ct": parent_ct,
             "cost_aware": True,
+            "optimizer": opt.to_dict(),
         }
 
     X = torch.tensor(np.asarray(train_x, dtype=np.float64), dtype=torch.double)
@@ -447,7 +470,7 @@ def _botorch_stage_a_cost_aware(
     y_std = Y.std().clamp_min(1e-6)
     Yn = (Y - y_mean) / y_std
     bounds = torch.tensor([[-1.0] * 7, [1.0] * 7], dtype=torch.double)
-    n_bo = max(1, int(steps))
+    n_bo = n_bo_req
     n_restarts = 2 if n_bo <= 5 else 4
     raw_samples = 16 if n_bo <= 5 else 32
 
@@ -456,6 +479,7 @@ def _botorch_stage_a_cost_aware(
         lambda XX: torch.full(XX.shape[:-1] + (1,), COST_L1, dtype=XX.dtype, device=XX.device)
     )
     cost_aware_utility = InverseCostWeightedUtility(cost_model=cost_model)
+    cost_utility_applied = False
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -474,6 +498,7 @@ def _botorch_stage_a_cost_aware(
             # Prefer attaching cost utility when the acq exposes the hook.
             if hasattr(acq, "cost_aware_utility"):
                 acq.cost_aware_utility = cost_aware_utility
+                cost_utility_applied = True
             cand, _ = optimize_acqf(
                 acq,
                 bounds=bounds,
@@ -483,6 +508,7 @@ def _botorch_stage_a_cost_aware(
             )
             a = cand.detach().cpu().numpy().reshape(-1)
             d = monitor_action(parent, a)
+            opt.tick()
             if not d.allow or d.projected is None:
                 y = -1.0
             else:
@@ -496,7 +522,13 @@ def _botorch_stage_a_cost_aware(
             Yn = (Y - y_mean) / y_std
 
     ct = float(best_ct)
-    return {
+    # Honest record: with a constant cost the utility cannot change the argmax,
+    # and qLogEI exposes no cost hook, so this is plain qLogEI in practice.
+    opt.settings.update(
+        {"num_restarts": n_restarts, "raw_samples": raw_samples,
+         "cost_utility_applied": cost_utility_applied}
+    )
+    row = {
         "method": "botorch_mf",
         "ct": ct,
         "reward_sum": float(best_y),
@@ -513,7 +545,9 @@ def _botorch_stage_a_cost_aware(
         "cost_aware_notes": COST_AWARE_NOTES,
         "cost_l1": COST_L1,
         "cost_l3_gate": COST_L3,
+        "cost_utility_applied": cost_utility_applied,
     }
+    return finalize_optimizer_row(row, parent, opt, seed=seed, evidence_dir=evidence_dir)
 
 
 def run_multifidelity_search(
@@ -553,7 +587,16 @@ def run_multifidelity_search(
         for i, parent in enumerate(parents):
             try:
                 bo_steps = max(3, min(int(steps), 25))
-                child_bo = _botorch_stage_a_cost_aware(parent, steps=bo_steps, seed=seed + 200 + i)
+                child_bo = _botorch_stage_a_cost_aware(
+                    parent,
+                    steps=bo_steps,
+                    seed=seed + 200 + i,
+                    evidence_dir=(
+                        Path(evidence_root) / f"parent_{i:02d}" / "botorch_mf"
+                        if evidence_root is not None
+                        else None
+                    ),
+                )
                 if child_bo is not None:
                     child_bo["parent_index"] = i
                     if "parent_ct" not in child_bo:
