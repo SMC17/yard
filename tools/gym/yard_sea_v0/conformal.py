@@ -11,14 +11,19 @@ Assumptions — recorded verbatim in every evidence record:
 
 * Calibration and test pairs are **exchangeable** (e.g. i.i.d. from the same
   sampler). Then coverage ≥ 1-α holds **marginally** (on average over draws),
-  not conditionally on any particular hull, Froude number or region.
-* It says nothing under distribution shift (new hull families, new speeds).
+  not conditionally on any particular design, operating condition or region.
+* It says nothing under distribution shift (new design families, new
+  operating conditions).
   ``group_cv`` reports leave-one-group-out coverage so the effect of shift is
   measured rather than assumed away.
 * Reference values are taken as ground truth; their own uncertainty is not
   propagated.
 
-Pure numpy; mirrored conceptually in SMC17/strip.
+Pure numpy, domain-neutral. **Canonical copy**: SMC17/yard
+``tools/gym/yard_sea_v0/conformal.py``. SMC17/strip vendors it byte-for-byte as
+``tools/gym/strip_uas_v0/conformal.py``. ``tests/test_conformal_sync.py`` in both
+repos pins the file's SHA-256 (and compares against a sibling checkout when one
+is found) — change both files and both pins together.
 """
 
 from __future__ import annotations
@@ -32,7 +37,7 @@ import numpy as np
 LABEL = "conformal_split_v0"
 ASSUMPTIONS = (
     "Split conformal: marginal coverage >= 1-alpha only if calibration and test pairs are "
-    "exchangeable; not conditional on hull/condition; no guarantee under distribution shift; "
+    "exchangeable; not conditional on design/condition; no guarantee under distribution shift; "
     "reference treated as exact."
 )
 SCORES = ("abs", "rel")
@@ -138,7 +143,7 @@ def group_cv(pred: Sequence[float], ref: Sequence[float], groups: Sequence[Any],
     """Leave-one-group-out: calibrate on the other groups, test on the held-out group.
 
     Exposes what happens when the exchangeability assumption fails across groups
-    (e.g. calibrating on some hulls and predicting a new one).
+    (e.g. calibrating on some designs or conditions and predicting a new one).
     """
     p, y = np.asarray(pred, dtype=float), np.asarray(ref, dtype=float)
     g = np.asarray(groups, dtype=object)
