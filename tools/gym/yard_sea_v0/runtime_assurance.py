@@ -21,6 +21,10 @@ Provided:
 * ``Simplex`` — generic decision module + log.
 * ``CpaMonitor`` / ``ColregRTA`` — navigation: wraps any heading policy in the
   COLREG suite (``simulate(..., wrapper=ColregRTA(...))``).
+* ``GnssIntegrityMonitor`` — dead-reckoning (gyro + speed-log) vs GNSS
+  innovation test (per-fix χ² and a windowed-mean test for slow pull-offs);
+  once GNSS is judged inconsistent the RTA navigates on dead reckoning and
+  forces the fallback (``ColregRTA(gnss_monitor=...)``).
 * ``HoldCoursePolicy`` / ``JitterPolicy`` — labelled *stand-ins* for an
   untrusted learned policy (no trained agent ships in this repo).
 * ``DesignSimplex`` — design-search: wraps ``DesignSearchEnv``; an action the
@@ -130,6 +134,91 @@ class CpaMonitor:
         return Verdict(not reasons, reasons, None if margin == math.inf else margin)
 
 
+CHI2_2DOF = {0.01: 9.210, 0.001: 13.816, 0.0001: 18.421}
+
+
+@dataclass
+class GnssIntegrityMonitor:
+    """Innovation test between the GNSS fix and an independently propagated DR state.
+
+    Propagation uses only the perceived heading and speed (gyro / log, which carry
+    their own bias in the suite); GNSS fixes update the DR state with a scalar
+    Kalman gain while they are consistent. Two tests, both χ²(2) at ``alpha``:
+
+    * per-fix   ``|ν|² / (P + R)``
+    * windowed  ``|mean ν over window|² / ((P + R) / n)`` — catches slow ramps a
+      per-fix test misses (the filter partly follows them).
+
+    The first failure latches ``suspect`` for the rest of the run (no
+    re-admission logic in v0); the DR state then coasts and its variance grows.
+    ``sigma_gnss_m``, ``sigma_v_mps`` and ``init_sigma_m`` are conventions, not a
+    receiver / IMU specification. This is an integrity *heuristic* in the
+    innovation-monitoring family, not RAIM, not a certified integrity monitor.
+    """
+
+    sigma_gnss_m: float = 25.0
+    sigma_v_mps: float = 0.15
+    init_sigma_m: float = 10.0
+    alpha: float = 0.001
+    window: int = 12
+    margin_sigma: float = 2.0  # extra CPA allowance while coasting = margin_sigma * DR sigma
+    x: Any = None
+    P: float = 0.0
+    suspect: bool = False
+    t_detect: float | None = None
+    max_stat: float = 0.0
+    _t: float | None = None
+    _hist: list = field(default_factory=list)
+
+    def reset(self, own0: Vessel | None = None) -> None:
+        """``own0`` = trusted pre-run fix (convention); ``None`` = initialise from the first GNSS fix."""
+        self.x = None if own0 is None else np.array([own0.x, own0.y], dtype=float)
+        self.P = self.init_sigma_m**2
+        self.suspect, self.t_detect, self._t, self._hist, self.max_stat = False, None, None, [], 0.0
+
+    @property
+    def sigma_m(self) -> float:
+        return math.sqrt(self.P)
+
+    def update(self, t: float, own_p: Vessel) -> Vessel:
+        """Return the own-ship state the RTA should trust at time ``t``."""
+        z = np.array([own_p.x, own_p.y], dtype=float)
+        if self.x is None:
+            self.x, self.P, self._t = z.copy(), self.sigma_gnss_m**2, t
+            return own_p
+        dt = 0.0 if self._t is None else t - self._t
+        self._t = t
+        if dt > 0:
+            c = math.radians(own_p.course_deg)
+            self.x = self.x + own_p.speed * dt * np.array([math.sin(c), math.cos(c)])
+            self.P += (self.sigma_v_mps * dt) ** 2
+        if not self.suspect:
+            R = self.sigma_gnss_m**2
+            nu = z - self.x
+            thr = CHI2_2DOF[self.alpha]
+            stat = float(nu @ nu) / (self.P + R)
+            self._hist = (self._hist + [nu])[-self.window:]
+            m = np.mean(self._hist, axis=0)
+            wstat = (float(m @ m) / ((self.P + R) / len(self._hist))
+                     if len(self._hist) == self.window else 0.0)
+            self.max_stat = max(self.max_stat, stat, wstat)
+            if stat > thr or wstat > thr:
+                self.suspect, self.t_detect = True, t
+            else:
+                K = self.P / (self.P + R)
+                self.x = self.x + K * nu
+                self.P = (1.0 - K) * self.P
+        if self.suspect:
+            return replace(own_p, x=float(self.x[0]), y=float(self.x[1]))
+        return own_p
+
+    def summary(self) -> dict[str, Any]:
+        return {"type": "gnss_dr_innovation_v0", "suspect": self.suspect, "t_detect": self.t_detect,
+                "max_test_stat": self.max_stat, "threshold": CHI2_2DOF[self.alpha], "alpha": self.alpha,
+                "window": self.window, "sigma_gnss_m": self.sigma_gnss_m, "sigma_v_mps": self.sigma_v_mps,
+                "dr_sigma_m_final": self.sigma_m}
+
+
 @dataclass
 class ColregRTA:
     """Wrapper for ``colreg_suite.simulate``: advanced policy → monitor → baseline fallback."""
@@ -137,15 +226,36 @@ class ColregRTA:
     monitor: CpaMonitor = field(default_factory=CpaMonitor)
     fallback: Any = None
     recovery_steps: int = 6
+    gnss_monitor: GnssIntegrityMonitor | None = None
 
     def __post_init__(self) -> None:
         if self.fallback is None:
             from .colreg_suite import BaselineColregController
 
             self.fallback = BaselineColregController(th=self.monitor.th)
-        self.simplex = Simplex(self.monitor, recovery_steps=self.recovery_steps, name="colreg_rta")
+        self.simplex = Simplex(self._judge, recovery_steps=self.recovery_steps, name="colreg_rta")
+        self._reset_called = False
+
+    def reset(self, own0: Vessel) -> None:
+        self._reset_called = True
+        if self.gnss_monitor is not None:
+            self.gnss_monitor.reset(own0)
+
+    def _judge(self, ctx: tuple[Vessel, list[Vessel], float], course: float) -> Verdict:
+        g = self.gnss_monitor
+        if g is None or not g.suspect:
+            return self.monitor(ctx, course)
+        # Coasting on DR: widen the CPA allowance by the DR uncertainty, and never hand
+        # control back to an advanced policy that perceives the inconsistent GNSS fix.
+        mon = replace(self.monitor, uncertainty_m=self.monitor.uncertainty_m + g.margin_sigma * g.sigma_m)
+        v = mon(ctx, course)
+        return Verdict(False, ["gnss_integrity_suspect"] + v.reasons, v.margin)
 
     def filter(self, t: float, own: Vessel, targets: list[Vessel], route: float, proposed: float) -> float:
+        if self.gnss_monitor is not None:
+            if not self._reset_called:
+                self.reset(None)  # type: ignore[arg-type]
+            own = self.gnss_monitor.update(t, own)
         fb = self.fallback(t, own, targets, route)  # shadow mode: always running
         out, _ = self.simplex.decide(t, (own, targets, route), proposed, fb)
         return out
@@ -155,7 +265,8 @@ class ColregRTA:
         s.update({"monitor": {"type": "cpa_straight_line", "horizon_s": self.monitor.horizon_s,
                               "uncertainty_m": self.monitor.uncertainty_m,
                               "dcpa_min_m": self.monitor.th.dcpa_min_m},
-                  "fallback": getattr(self.fallback, "name", type(self.fallback).__name__)})
+                  "fallback": getattr(self.fallback, "name", type(self.fallback).__name__),
+                  "gnss_integrity": self.gnss_monitor.summary() if self.gnss_monitor else None})
         return s
 
 
