@@ -290,11 +290,50 @@ def trajectory_drift(
     }
 
 
-# Convention, not a validated threshold: flag an episode when the reward oracle's
-# cumulative improvement estimate is off from the held-out oracle's by more than
-# 10% of parent Ct at any step within the horizon. Chosen to be conservative
-# (cheap-oracle improvements here are typically a few %); tune per study.
+# Fallback convention only (no measured backing): used when the oracle pair has no
+# empirical threshold in the tank-validation report (e.g. Capytaine box proxy, or a
+# held-out oracle that shares the reward's wave model).
 DEFAULT_DRIFT_THRESHOLD = 0.10
+
+# Validation-report names for the wave model tags used by seen / held-out oracles.
+_DRIFT_ALIASES = {"hm1984_zig": "hm1984_gym", "simplified_py": "simplified_py", "michell_l15": "michell_l15"}
+
+
+def resolve_drift_threshold(
+    seen_fn: ScoreFn,
+    holdout_fn: ScoreFn | None,
+    parent: HullState,
+    *,
+    report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Default drift threshold for an oracle pair, derived from measured tank data.
+
+    Looks up ``drift_thresholds`` in ``reports/validation/oracle_tank_validation.json``
+    (95th percentile of the two oracles' first-order improvement disagreement over
+    pairs of measured reference points; see ``validation.drift_threshold_from_validation``).
+    Falls back to ``DEFAULT_DRIFT_THRESHOLD`` with ``source="default_convention_not_validated"``
+    when the pair is not covered.
+    """
+    from .applicability import load_report
+
+    ind = oracle_independence(seen_fn, holdout_fn or make_holdout_fn(), parent)
+    a = _DRIFT_ALIASES.get(str(ind["seen_wave_model"]))
+    b = _DRIFT_ALIASES.get(str(ind["holdout_wave_model"]))
+    rep = report if report is not None else load_report()
+    fallback = {"threshold": DEFAULT_DRIFT_THRESHOLD, "source": "default_convention_not_validated",
+                "pair": [ind["seen_wave_model"], ind["holdout_wave_model"]], "derivation": None}
+    if not (a and b and rep) or a == b:
+        return fallback
+    for d in rep.get("drift_thresholds", []):
+        if {d.get("seen"), d.get("holdout")} == {a, b} and d.get("threshold"):
+            return {
+                "threshold": float(d["threshold"]),
+                "source": "empirical_tank_validation",
+                "pair": [a, b],
+                "derivation": {k: d.get(k) for k in ("quantile", "max_dFn", "n_points", "n_pairs", "median", "max", "method")}
+                | {"report_schema": rep.get("schema"), "report": "tools/gym/reports/validation/oracle_tank_validation.json"},
+            }
+    return fallback
 
 
 def long_horizon_drift_check(
@@ -302,7 +341,7 @@ def long_horizon_drift_check(
     parent: HullState,
     *,
     horizon: int | None = None,
-    threshold: float = DEFAULT_DRIFT_THRESHOLD,
+    threshold: float | None = None,
     seen_fn: ScoreFn = seen_improvement,
     holdout_fn: ScoreFn | None = None,
     episode_id: str | None = None,
@@ -315,7 +354,14 @@ def long_horizon_drift_check(
     number of accepted steps checked (default: all of them, i.e. the full
     episode). ``exceeded`` is True when the max error within the horizon is
     above ``threshold``; None when no step had a finite reference value.
+
+    ``threshold=None`` (default) resolves the per-oracle-pair empirical default from
+    the tank-validation report (``resolve_drift_threshold``); pass a float to override.
     """
+    resolved = None
+    if threshold is None:
+        resolved = resolve_drift_threshold(seen_fn, holdout_fn, parent)
+        threshold = resolved["threshold"]
     if threshold <= 0 or not math.isfinite(threshold):
         raise ValueError("threshold must be a positive finite fraction")
     if horizon is not None and horizon < 1:
@@ -335,9 +381,8 @@ def long_horizon_drift_check(
         "n_available": len(states),
         "n_finite": len(errs),
         "threshold": float(threshold),
-        "threshold_source": (
-            "default_convention_not_validated" if threshold == DEFAULT_DRIFT_THRESHOLD else "user"
-        ),
+        "threshold_source": "user" if resolved is None else resolved["source"],
+        "threshold_derivation": None if resolved is None else resolved["derivation"],
         "metric": "max_abs_cumulative_rel_ct_error",
         "max_error": max(errs) if errs else None,
         "final_error": dr["final_error"],
@@ -348,8 +393,10 @@ def long_horizon_drift_check(
         "affects_reward": False,
         "notes": (
             "Flag only: recorded in evidence, never fed to the reward or the policy. "
-            "Error is measured against a second model, not ground truth; the default "
-            "threshold is a convention, not a validated limit."
+            "Error is measured against a second model, not ground truth. The default "
+            "threshold is the 95th percentile of the two oracles' improvement disagreement "
+            "implied by their measured errors on public tank data (small sample) when the "
+            "pair was validated, else a 10% convention."
         ),
     }
 
