@@ -119,6 +119,8 @@ def run_search(
     wave_oracle: str = "auto",
     holdout: bool = False,
     holdout_oracle: str = "michell",
+    drift_horizon: int | None = None,
+    drift_threshold: float | None = None,
 ) -> list[dict[str, Any]]:
     """Run random + hill-climb (and optional BoTorch) per parent.
 
@@ -156,7 +158,9 @@ def run_search(
             if holdout:
                 # Post-hoc only: the held-out oracle never feeds the reward or the policy.
                 from .holdout import (
+                    DEFAULT_DRIFT_THRESHOLD,
                     holdout_check,
+                    long_horizon_drift_check,
                     make_holdout_fn,
                     seen_wave_model,
                     states_from_evidence,
@@ -188,10 +192,21 @@ def run_search(
                 row["holdout"]["reward_wave_model"] = reward_wm
                 row["holdout"]["holdout_wave_model"] = hold_wm
                 row["holdout"]["independent_of_reward"] = None if hold_wm is None else hold_wm != reward_wm
-                dr = trajectory_drift(states_from_evidence(env.evidence_packs), parent, holdout_fn=hfn)
+                ep_states = states_from_evidence(env.evidence_packs)
+                dr = trajectory_drift(ep_states, parent, holdout_fn=hfn)
+                lh = long_horizon_drift_check(
+                    ep_states, parent, horizon=drift_horizon,
+                    threshold=DEFAULT_DRIFT_THRESHOLD if drift_threshold is None else drift_threshold,
+                    holdout_fn=hfn, episode_id=env.episode_id,
+                )
+                env.record_evidence(lh)  # evidence flag only; the reward is already final
                 row["drift"] = {k: dr[k] for k in (
                     "n_steps", "first_step_error", "final_error", "max_error",
                     "error_slope_per_step", "growth_ratio",
+                )}
+                row["drift"]["long_horizon"] = {k: lh[k] for k in (
+                    "horizon", "threshold", "threshold_source", "max_error",
+                    "first_exceeding_step", "exceeded",
                 )}
             row["delta_ct_vs_parent"] = parent_ct - child.ct
             row["parent_ct"] = parent_ct
