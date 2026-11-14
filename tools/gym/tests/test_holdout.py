@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from yard_sea_v0.holdout import (
@@ -143,3 +144,77 @@ def test_run_search_flags_shared_wave_model_as_not_held_out():
         assert r["holdout"]["independent_of_reward"] is False
     rows = run_search([HullState()], steps=4, seed=0, holdout=True)
     assert all(r["holdout"]["independent_of_reward"] is True for r in rows)
+
+
+# --- long-horizon drift check (flag only) ----------------------------------------------------
+
+import json  # noqa: E402
+
+from yard_sea_v0.env import DesignSearchEnv  # noqa: E402
+from yard_sea_v0.holdout import DEFAULT_DRIFT_THRESHOLD, long_horizon_drift_check  # noqa: E402
+
+
+def _ramp(n):
+    parent = HullState()
+    states = [HullState(Cb=0.75 - 0.01 * k) for k in range(n)]
+    seen = lambda d, p: (0.75 - d.Cb) * 4.0  # noqa: E731  cheap oracle over-claims, error grows
+    hold = lambda d, p: (0.75 - d.Cb) * 1.0  # noqa: E731
+    return states, parent, seen, hold
+
+
+def test_drift_check_default_is_full_episode_and_documented_convention():
+    states, parent, seen, hold = _ramp(8)
+    c = long_horizon_drift_check(states, parent, seen_fn=seen, holdout_fn=hold)
+    assert DEFAULT_DRIFT_THRESHOLD == 0.10
+    assert c["horizon"] == 8 and c["horizon_requested"] is None
+    assert c["threshold_source"] == "default_convention_not_validated"
+    assert c["affects_reward"] is False and c["type"] == "drift_check"
+    # error at step k = 3 * 0.01 * k -> 0.21 at k=7; first > 0.10 at k=4 (0.12)
+    assert c["max_error"] == pytest.approx(0.21)
+    assert c["exceeded"] is True and c["first_exceeding_step"] == 4
+
+
+def test_drift_check_short_horizon_misses_late_drift():
+    states, parent, seen, hold = _ramp(8)
+    short = long_horizon_drift_check(states, parent, horizon=3, seen_fn=seen, holdout_fn=hold)
+    assert short["horizon"] == 3 and short["exceeded"] is False  # why the default is the full episode
+    loose = long_horizon_drift_check(states, parent, threshold=0.5, seen_fn=seen, holdout_fn=hold)
+    assert loose["exceeded"] is False and loose["threshold_source"] == "user"
+
+
+def test_drift_check_no_reference_and_bad_args():
+    states, parent, seen, _ = _ramp(4)
+    c = long_horizon_drift_check(states, parent, seen_fn=seen, holdout_fn=lambda d, p: float("nan"))
+    assert c["exceeded"] is None and c["n_finite"] == 0
+    with pytest.raises(ValueError):
+        long_horizon_drift_check(states, parent, threshold=0.0)
+    with pytest.raises(ValueError):
+        long_horizon_drift_check(states, parent, horizon=0)
+
+
+def test_record_evidence_does_not_touch_state_or_steps(tmp_path):
+    env = DesignSearchEnv(parent=HullState(), max_steps=4, seed=0, evidence_dir=str(tmp_path))
+    env.reset(seed=0)
+    env.step(np.zeros(7, dtype=np.float32))
+    before = (env.state, env.step_count, len(states_from_evidence(env.evidence_packs)))
+    rec = env.record_evidence({"type": "drift_check", "exceeded": True})
+    assert (env.state, env.step_count, len(states_from_evidence(env.evidence_packs))) == before
+    on_disk = json.loads((tmp_path / f"{rec['evidence_id']}.json").read_text())
+    assert on_disk["type"] == "drift_check" and on_disk["episode_id"] == env.episode_id
+
+
+def test_run_search_records_drift_flag_without_changing_reward(tmp_path):
+    base = run_search([HullState()], steps=6, seed=0)
+    flagged = run_search(
+        [HullState()], steps=6, seed=0, holdout=True, drift_threshold=1e-9, evidence_root=tmp_path
+    )
+    for a, b in zip(base, flagged):
+        assert a["reward_sum"] == b["reward_sum"]
+        lh = b["drift"]["long_horizon"]
+        assert lh["threshold"] == 1e-9 and lh["threshold_source"] == "user"
+        assert lh["exceeded"] in (True, None)
+    recs = [json.loads(p.read_text()) for p in tmp_path.rglob("*.json")]
+    checks = [r for r in recs if r.get("type") == "drift_check"]
+    assert len(checks) == len(flagged) and all(c["affects_reward"] is False for c in checks)
+    default = run_search([HullState()], steps=6, seed=0, holdout=True)
+    assert all(r["drift"]["long_horizon"]["threshold"] == 0.10 for r in default)
