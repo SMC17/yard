@@ -10,8 +10,10 @@ from typing import Any
 
 import numpy as np
 
+from . import __version__
 from .env import DesignSearchEnv
 from .hull import HullState
+from .provenance import OptimizerRecord
 from .resistance_l1 import estimate_resistance
 
 
@@ -45,8 +47,10 @@ def botorch_available() -> bool:
     return True
 
 
-def _run_episode(env: DesignSearchEnv, policy, steps: int) -> ChildResult:
-    obs, info = env.reset()
+def _run_episode(
+    env: DesignSearchEnv, policy, steps: int, options: dict[str, Any] | None = None
+) -> ChildResult:
+    obs, info = env.reset(options=options)
     total_r = 0.0
     for _ in range(steps):
         action = policy(obs, env)
@@ -128,8 +132,19 @@ def run_search(
         )
         for factory in (random_policy_factory, hillclimb_policy_factory):
             policy = factory(rng)
-            child = _run_episode(env, policy, steps)
+            name = getattr(policy, "name", "policy")
+            opt = OptimizerRecord(
+                implementation=f"yard_sea_v0.search.{name}",
+                version=__version__,
+                settings={"candidates_per_step": 8} if name == "hillclimb" else {"dist": "uniform[-1,1]^7"},
+                max_evals=int(steps),
+            ).start()
+            # Same episode_index for every policy => shared env randomness (CRN).
+            child = _run_episode(env, policy, steps, options={"episode_index": 0, "optimizer": opt})
             row = child.to_dict()
+            row["optimizer"] = opt.to_dict()
+            row["seeds"] = dict(env.seeds)
+            row["episode_id"] = env.episode_id
             row["delta_ct_vs_parent"] = parent_ct - child.ct
             row["parent_ct"] = parent_ct
             row["parent_index"] = i
