@@ -168,6 +168,16 @@ def assess(h: HullState, oracle: str | None, *, report_path: str | Path | None =
         "max_abs_E_pct": ov.get("max_abs_E_pct"),
         "nearest_reference": nearest,
     }
+    ml = (rep or {}).get("per_oracle", {}).get("michell_lines")
+    if name == "michell_l15" and ml and ml.get("overall", {}).get("n"):
+        # Same Michell integral on the real hull lines: the synthetic-offset agreement does not carry over.
+        out["validation"]["real_hull_lines"] = {
+            "oracle": "michell_lines",
+            "mean_E_pct": ml["overall"].get("mean_E_pct"),
+            "mean_abs_E_pct": ml["overall"].get("mean_abs_E_pct"),
+            "n_validated": ml["envelope"].get("n_validated"),
+            "n": ml["overall"].get("n"),
+        }
     return out
 
 
