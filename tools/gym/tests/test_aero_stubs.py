@@ -151,3 +151,12 @@ def test_teacher_protocol_exports():
     assert hasattr(teachers, "michell_l15")
     assert hasattr(teachers, "vspaero_l1")
     assert "Teacher protocol" in (teachers.__doc__ or "")
+
+
+def test_jsbsim_run_writes_nothing_to_cwd(tmp_path, monkeypatch):
+    if not jsbsim_stub.detect().available:
+        pytest.skip("jsbsim not installed")
+    monkeypatch.chdir(tmp_path)
+    r = jsbsim_stub.run()
+    assert r["skipped"] is False
+    assert list(tmp_path.iterdir()) == []  # model <output> directives must not land in cwd
