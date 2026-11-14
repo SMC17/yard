@@ -60,3 +60,20 @@ grid-convergence studies, or class acceptance.
 sha256 over its deterministic fields, and the footer chains them. `provenance.verify_log` detects
 any edit, and two replays with the same seeds produce the same `log_digest`. This is bookkeeping
 for later audit tools, not a certification artefact.
+
+## Multi-Froude reward (`reward_mode="multi_froude"`)
+
+`DesignSearchEnv(reward_mode="multi_froude", fn_grid=..., wave_oracle="l1"|"michell")` scores each
+candidate against the parent on a Froude grid (default: design Fn × 0.85 / 1.0 / 1.25). At each Fn
+the resistance is split into **friction** (ITTC-57 Cf), **viscous pressure** (k·Cf) and **wave** (Cw),
+and the change in each is reported as a fraction of the parent's total. Score = weighted mean ΔCt/Ct
++ `worst_case_weight` × min(0, worst ΔCt/Ct), so a hull that wins at design speed but loses
+off-design is penalised. Fn points that fail acceptance are not credited, and `claim_done` in this
+mode requires a positive grid score. Hill-climb look-ahead uses the same objective
+(`env.candidate_reward`).
+
+**Measured caveat:** the L1 Holtrop-style Cw here is heavily damped (about 1% of Ct at Fn 0.20), so
+`wave_oracle="l1"` is close to friction-only. `wave_oracle="michell"` swaps in the vendored L1.5
+Michell thin-ship Cw (about 10 ms per point), and with it the test suite shows a hull that edges the
+parent at Fn 0.195 but is about 3% worse at Fn 0.25. Published RANS work on KCS reports 45–50%; this
+checks the mechanism, not that magnitude.
