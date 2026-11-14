@@ -5,6 +5,7 @@ __version__ = "0.2.0"
 from .env import DesignSearchEnv
 from .env45 import ACTION_DIM, DesignSearchEnv45
 from .hull import HullState, evaluate_l0
+from .hp_rank import rank_shipd
 
 __all__ = [
     "ACTION_DIM",
@@ -12,5 +13,6 @@ __all__ = [
     "DesignSearchEnv45",
     "HullState",
     "evaluate_l0",
+    "rank_shipd",
     "__version__",
 ]
