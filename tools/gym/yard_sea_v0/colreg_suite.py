@@ -272,6 +272,27 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
     state — modelling a trusted navigation fix taken before the run (convention).
     """
     policy = policy if policy is not None else BaselineColregController(th=th, conv=conv)
+    gen = simulate_iter(sc, th=th, conv=conv, wrapper=wrapper, reciprocal=reciprocal, meta=policy)
+    try:
+        obs = next(gen)
+        while True:
+            obs = gen.send(policy(*obs))
+    except StopIteration as stop:
+        return stop.value
+
+
+def simulate_iter(sc: Scenario, *, th: Thresholds = Thresholds(), conv: SuiteConventions = SuiteConventions(),
+                  wrapper: Any = None, reciprocal: bool = False, meta: Any = None,
+                  expose_truth: bool = False):
+    """Generator form of ``simulate`` for step-wise (e.g. RL) control.
+
+    Yields ``(t, own_perceived, targets_perceived, route)`` every ``dt_s``; send the
+    proposed course back. ``StopIteration.value`` is the same result dict as
+    ``simulate``. ``meta`` supplies ``name`` / ``log`` for the result (optional).
+    ``expose_truth=True`` appends ``(own_true, targets_true)`` to each yield — for
+    training-time reward shaping only; a deployed policy must not see it.
+    """
+    policy = meta
     inj = FaultInjector(list(sc.faults), seed=sc.seed)
     own, route = sc.own, sc.own.course_deg
     tgts = list(sc.targets)
@@ -316,7 +337,8 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
                 continue
             t_rx, v = known[i]
             perceived.append(v.at(t - t_rx))
-        cmd = policy(t, own_est, perceived, route)
+        obs = (t, own_est, perceived, route) + (((own, list(tgts)),) if expose_truth else ())
+        cmd = float((yield obs))
         if wrapper is not None:
             cmd = wrapper.filter(t, own_est, perceived, route, cmd)
         if first_alt is None and abs(_ang(cmd, route)) > 1.0:
