@@ -96,3 +96,53 @@ def test_claim_in_multi_froude_mode_requires_grid_improvement():
     assert v["accepted"] is False
     assert "no_improvement_vs_parent" in v["reasons"]
     assert v["multi_froude"]["worst_Fn"] == 0.25
+
+
+# --- wave_oracle="auto" resolution -------------------------------------------------
+
+from yard_sea_v0 import resistance_l1 as _r1
+from yard_sea_v0.multi_froude import resolve_wave_oracle
+
+
+def test_auto_prefers_michell_when_l1_is_damped(monkeypatch):
+    real = _r1.estimate_resistance
+    monkeypatch.setattr(
+        "yard_sea_v0.multi_froude.estimate_resistance",
+        lambda h, **kw: real(h, prefer_zig_hm1984=False),
+    )
+    w = resolve_wave_oracle("auto", HullState())
+    assert w["l1_fidelity"] == "simplified_py"
+    assert w["resolved"] == "michell"
+    assert w["wave_term_damped"] is False
+
+
+def test_auto_keeps_l1_when_hm1984(monkeypatch):
+    class _R:
+        fidelity = "hm1984_zig"
+
+    monkeypatch.setattr("yard_sea_v0.multi_froude.estimate_resistance", lambda h, **kw: _R())
+    w = resolve_wave_oracle("auto", HullState())
+    assert w["resolved"] == "l1" and w["reason"] == "l1_is_hm1984_zig"
+
+
+def test_explicit_damped_l1_is_flagged(monkeypatch):
+    real = _r1.estimate_resistance
+    monkeypatch.setattr(
+        "yard_sea_v0.multi_froude.estimate_resistance",
+        lambda h, **kw: real(h, prefer_zig_hm1984=False),
+    )
+    w = resolve_wave_oracle("l1", HullState())
+    assert w["resolved"] == "l1" and w["wave_term_damped"] is True
+
+
+def test_score_records_resolution():
+    parent = HullState()
+    child = HullState(L=112.0, Cb=0.8)
+    out = multi_froude_score(child, parent)
+    assert out["wave_resolution"]["requested"] == "auto"
+    assert out["wave_oracle"] == out["wave_resolution"]["resolved"]
+
+
+def test_bad_wave_oracle_rejected():
+    with pytest.raises(ValueError):
+        resolve_wave_oracle("bogus", HullState())
