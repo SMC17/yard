@@ -21,6 +21,10 @@ machine-readable twin is [`catalog.yaml`](catalog.yaml).
 | `g2010_kvlcc2_moeri` | KVLCC2 C_T at Fn 0.142 | cited value | ingested | validation, full-form tanker |
 | `ittc_5415_cssrc` | DTMB 5415 C_T at Fn 0.10/0.28/0.41 + uncertainty | cited values (ITTC) | ingested | validation incl. high Fn |
 | `simman_particulars` | KCS / KVLCC2 / 5415 particulars, IGES lines | unspecified | ingested (particulars) | model-scale particulars |
+| `t2015_kcs_hull_sva` | KCS hull NURBS (IGES), full scale | unspecified | fetch-script | real-hull Michell, HM bulb/transom inputs |
+| `g2000_kvlcc2_offsets` | KVLCC2 body-plan offsets | unspecified | fetch-script | real-hull Michell, HM bulb inputs |
+| `g2000_dtmb5415_surface_grid` | 5415 structured surface grid | unspecified (IGES says copyrighted) | fetch-script | real-hull Michell, transom A_T |
+| `t2015_jbc_iges` | JBC hull IGES (trimmed surfaces) | unspecified | catalogued | needs trimmed-surface support |
 | `korkmaz2021_kvlcc2_ballast` | KVLCC2 ballast C_T curve | CC BY 4.0 | not-usable | trimmed ballast not representable by HullState |
 | `ittc_5415_facility_bias` | tank-to-tank scatter | ITTC | catalogued | envelope tolerance floor |
 | `dsyhs_4tu` | DSYHS full measurement set | CC0 | fetch-script | yacht / planing envelope (needs hydrostatics) |
@@ -35,8 +39,12 @@ machine-readable twin is [`catalog.yaml`](catalog.yaml).
 | `capytaine_wamit_benchmarks` | BEM radiation/diffraction | GPL-3.0 | catalogued | L2 self-verification |
 | `dtc_duisburg` | DTC geometry + resistance | open access | catalogued | extra container ship |
 
-Count: 18 entries — 5 ingested (11 measured C_T points + particulars), 1 vendored,
-2 fetch-script-only (DSYHS), 1 not-usable, 9 catalogued.
+Count: 22 entries — 5 ingested (11 measured C_T points + particulars), 1 vendored,
+5 fetch-script-only (2 DSYHS; KCS, KVLCC2 and 5415 hull lines), 1 not-usable, 10 catalogued.
+
+Hull lines are read by `tools/gym/yard_sea_v0/hull_lines.py`; its derived volume, C_B,
+LCB and wetted surface are checked against the published particulars in
+`tools/gym/tests/test_hull_lines.py` (volume within 1 %, S within 4 %).
 
 ## How the data are used
 
