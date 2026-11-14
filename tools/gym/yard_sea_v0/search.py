@@ -186,7 +186,14 @@ def run_search(
             try:
                 # Small budgets still get a few BO iterations after init design.
                 bo_steps = max(3, min(int(steps), 25))
-                child_bo = _botorch_child(parent, steps=bo_steps, seed=seed + 100 + i)
+                child_bo = _botorch_child(
+                    parent,
+                    steps=bo_steps,
+                    seed=seed + 100 + i,
+                    evidence_dir=(ed / "botorch") if ed else None,
+                    reward_mode=reward_mode,
+                    wave_oracle=wave_oracle,
+                )
                 if child_bo is not None:
                     child_bo["parent_index"] = i
                     if "parent_ct" not in child_bo:
@@ -205,8 +212,89 @@ def run_search(
     return results
 
 
-def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] | None:
-    """Bayesian optimization over 7-D relative morph actions (L0-gated reward)."""
+def botorch_versions() -> dict[str, str | None]:
+    """Package versions behind a BoTorch run (recorded in OptimizerRecord.version)."""
+    out: dict[str, str | None] = {}
+    for mod in ("botorch", "gpytorch", "torch"):
+        try:
+            out[mod] = __import__(mod).__version__
+        except Exception:  # noqa: BLE001
+            out[mod] = None
+    return out
+
+
+def finalize_optimizer_row(
+    row: dict[str, Any],
+    parent: HullState,
+    opt: OptimizerRecord,
+    *,
+    seed: int,
+    evidence_dir: Path | None = None,
+    reward_mode: str = "single_fn",
+    wave_oracle: str = "l1",
+) -> dict[str, Any]:
+    """Give an off-env optimizer result (BoTorch, cost-aware MF) the same evidence as env episodes.
+
+    The optimizer's best hull is re-measured from its parameter vector by
+    ``DesignSearchEnv.claim_done`` (fresh L0 + L1 + acceptance gate), so
+    ``improved`` is the measured verdict, not the optimizer's own report. The
+    optimizer record (implementation, package versions, settings, budget vs
+    evals actually spent, wall time) and seeds ride on the row, on the claim
+    record, and in a digest-chained JSONL log when ``evidence_dir`` is set.
+    """
+    if row.get("skipped") or not row.get("hull"):
+        row["optimizer"] = opt.to_dict()
+        return row
+    env = DesignSearchEnv(
+        parent=parent,
+        max_steps=int(opt.max_evals or 1),
+        seed=int(seed),
+        evidence_dir=str(evidence_dir) if evidence_dir else None,
+        optimizer=opt,
+        reward_mode=reward_mode,
+        wave_oracle=wave_oracle,
+    )
+    env.reset(options={"episode_index": 0, "optimizer": opt})
+    env.state = HullState(**{k: row["hull"][k] for k in ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")})
+    env.step_count = int(opt.evals)
+    verdict = env.claim_done({"Ct": float(row["ct"])})
+    row["optimizer_claimed_improved"] = bool(row.get("improved"))
+    row["improved"] = bool(verdict["accepted"])
+    row["claim"] = {
+        "accepted": verdict["accepted"],
+        "reasons": verdict["reasons"],
+        "measured_ct": verdict["measured"]["Ct"],
+    }
+    row["optimizer"] = opt.to_dict()
+    row["seeds"] = dict(env.seeds)
+    row["episode_id"] = env.episode_id
+    row["evidence_count"] = len(env.evidence_packs)
+    if evidence_dir is not None:
+        Path(evidence_dir).mkdir(parents=True, exist_ok=True)
+        log_path = Path(evidence_dir) / f"{row.get('method', 'optimizer')}_log.jsonl"
+        footer = env.export_log(str(log_path))
+        row["evidence_log"] = {
+            "path": str(log_path),
+            "n_records": footer["n_records"],
+            "log_digest": footer["log_digest"],
+        }
+    return row
+
+
+def _botorch_child(
+    parent: HullState,
+    steps: int,
+    seed: int,
+    *,
+    evidence_dir: Path | None = None,
+    reward_mode: str = "single_fn",
+    wave_oracle: str = "l1",
+) -> dict[str, Any] | None:
+    """Bayesian optimization over 7-D relative morph actions (L0-gated reward).
+
+    Note: the BO objective is the single-Fn L1 reward; ``reward_mode`` /
+    ``wave_oracle`` only affect the final re-measured claim.
+    """
     try:
         import torch
         from botorch.fit import fit_gpytorch_mll
@@ -230,6 +318,22 @@ def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] |
     from .monitors import monitor_action
 
     torch.manual_seed(seed)
+    n_init_req = max(5, min(12, max(3, steps // 2)))
+    n_bo_req = max(1, int(steps))
+    opt = OptimizerRecord(
+        implementation="botorch.SingleTaskGP+LogExpectedImprovement",
+        version=json.dumps(botorch_versions(), sort_keys=True),
+        settings={
+            "n_init_sobol_like": "uniform[-1,1]^7",
+            "n_init": n_init_req,
+            "n_bo_steps": n_bo_req,
+            "acquisition": _Acq.__name__,
+            "outcome_transform": "manual standardize (init mean/std)",
+            "objective": "single_fn L1 reward, L0-gated",
+            "torch_seed": int(seed),
+        },
+        max_evals=n_init_req + n_bo_req,
+    ).start()
     parent_ct = estimate_resistance(parent).Ct
     parent_vol = parent.volume()
     train_x: list[np.ndarray] = []
@@ -239,10 +343,11 @@ def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] |
     best_ct = parent_ct
 
     rng = np.random.default_rng(seed)
-    n_init = max(5, min(12, max(3, steps // 2)))
+    n_init = n_init_req
     for _ in range(n_init):
         a = rng.uniform(-1.0, 1.0, size=7)
         d = monitor_action(parent, a)
+        opt.tick()
         if d.allow and d.projected is not None:
             y = float(_reward(d.projected, parent_ct, parent_vol))
             train_x.append(np.asarray(a, dtype=np.float64))
@@ -258,6 +363,7 @@ def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] |
             "skipped": True,
             "reason": "insufficient feasible samples",
             "parent_ct": parent_ct,
+            "optimizer": opt.to_dict(),
         }
 
     X = torch.tensor(np.asarray(train_x, dtype=np.float64), dtype=torch.double)
@@ -268,10 +374,11 @@ def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] |
     Yn = (Y - y_mean) / y_std
 
     bounds = torch.tensor([[-1.0] * 7, [1.0] * 7], dtype=torch.double)
-    n_bo = max(1, int(steps))
+    n_bo = n_bo_req
     # Keep restarts cheap so small budgets finish quickly.
     n_restarts = 2 if n_bo <= 5 else 4
     raw_samples = 16 if n_bo <= 5 else 32
+    opt.settings.update({"num_restarts": n_restarts, "raw_samples": raw_samples})
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -289,6 +396,7 @@ def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] |
             )
             a = cand.detach().cpu().numpy().reshape(-1)
             d = monitor_action(parent, a)
+            opt.tick()
             if not d.allow or d.projected is None:
                 y = -1.0
             else:
@@ -303,7 +411,7 @@ def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] |
             Yn = (Y - y_mean) / y_std
 
     ct = float(best_ct)
-    return {
+    row = {
         "method": "botorch",
         "ct": ct,
         "reward_sum": float(best_y),
@@ -317,6 +425,10 @@ def _botorch_child(parent: HullState, steps: int, seed: int) -> dict[str, Any] |
         "n_bo_steps": n_bo,
         "botorch_available": True,
     }
+    return finalize_optimizer_row(
+        row, parent, opt, seed=seed, evidence_dir=evidence_dir,
+        reward_mode=reward_mode, wave_oracle=wave_oracle,
+    )
 
 
 def run_env45_search(
