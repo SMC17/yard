@@ -60,7 +60,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         optimizer: OptimizerRecord | None = None,
         reward_mode: str = "single_fn",
         fn_grid: tuple[float, ...] | None = None,
-        wave_oracle: str = "l1",
+        wave_oracle: str = "auto",
         worst_case_weight: float = 1.0,
     ) -> None:
         if reward_mode not in ("single_fn", "multi_froude"):
