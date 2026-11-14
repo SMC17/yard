@@ -87,3 +87,14 @@ def test_long_horizon_check_records_empirical_threshold_and_derivation():
     assert c["threshold_derivation"]["quantile"] == 0.95
     u = long_horizon_drift_check(states, p, threshold=0.2, holdout_fn=make_holdout_fn(oracle="michell"))
     assert u["threshold_source"] == "user" and u["threshold_derivation"] is None
+
+
+def test_michell_record_carries_real_lines_result():
+    from yard_sea_v0.applicability import assess, load_report
+
+    rep = load_report()
+    if not rep or "michell_lines" not in rep["per_oracle"]:
+        pytest.skip("report without michell_lines")
+    a = assess(HullState(), "michell")
+    rl = a["validation"]["real_hull_lines"]
+    assert rl["oracle"] == "michell_lines" and rl["mean_abs_E_pct"] > 20

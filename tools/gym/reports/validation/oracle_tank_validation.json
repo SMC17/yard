@@ -942,6 +942,116 @@
         "rms_E_pct": 16.790501652605634
       }
     },
+    "michell_lines": {
+      "by_Fn": {
+        "0.00-0.15": {
+          "max_abs_E_pct": 111.61715509729271,
+          "mean_E_pct": -75.02263708790902,
+          "mean_abs_E_pct": 75.02263708790902,
+          "n": 3,
+          "rms_E_pct": 89.34297192022319
+        },
+        "0.15-0.22": {
+          "max_abs_E_pct": 45.51519824633888,
+          "mean_E_pct": -32.01684756622805,
+          "mean_abs_E_pct": 32.01684756622805,
+          "n": 2,
+          "rms_E_pct": 34.745992562629894
+        },
+        "0.22-0.30": {
+          "max_abs_E_pct": 128.67641006904807,
+          "mean_E_pct": -79.11546390653444,
+          "mean_abs_E_pct": 79.11546390653444,
+          "n": 4,
+          "rms_E_pct": 87.57420349586059
+        },
+        "0.30-0.50": {
+          "max_abs_E_pct": 25.77401216090753,
+          "mean_E_pct": -25.77401216090753,
+          "mean_abs_E_pct": 25.77401216090753,
+          "n": 1,
+          "rms_E_pct": 25.77401216090753
+        }
+      },
+      "by_hull": {
+        "DTMB5415": {
+          "max_abs_E_pct": 106.98755842406791,
+          "mean_E_pct": -52.09290826794074,
+          "mean_abs_E_pct": 52.09290826794074,
+          "n": 3,
+          "rms_E_pct": 64.97100353995613
+        },
+        "JBC": {
+          "n": 0
+        },
+        "KCS": {
+          "max_abs_E_pct": 128.67641006904807,
+          "mean_E_pct": -60.573599047018924,
+          "mean_abs_E_pct": 60.573599047018924,
+          "n": 6,
+          "rms_E_pct": 73.68881513111536
+        },
+        "KVLCC2": {
+          "max_abs_E_pct": 111.61715509729271,
+          "mean_E_pct": -111.61715509729271,
+          "mean_abs_E_pct": 111.61715509729271,
+          "n": 1,
+          "rms_E_pct": 111.61715509729271
+        }
+      },
+      "envelope": {
+        "box": {
+          "B_T": [
+            2.9812755997659446,
+            2.9812755997659446
+          ],
+          "Cb": [
+            0.6505,
+            0.6505
+          ],
+          "Cp": [
+            0.6604731444816733,
+            0.6604731444816733
+          ],
+          "Fn": [
+            0.108,
+            0.108
+          ],
+          "L_B": [
+            7.1428851815505405,
+            7.1428851815505405
+          ],
+          "lcb_frac": [
+            -0.0148,
+            -0.0148
+          ]
+        },
+        "failed_points": [
+          "KCS@Fn=0.152",
+          "KCS@Fn=0.195",
+          "KCS@Fn=0.227",
+          "KCS@Fn=0.260",
+          "KCS@Fn=0.282",
+          "KVLCC2@Fn=0.142",
+          "DTMB5415@Fn=0.100",
+          "DTMB5415@Fn=0.280",
+          "DTMB5415@Fn=0.410"
+        ],
+        "n_failed": 9,
+        "n_validated": 1,
+        "tol_pct": 10.0,
+        "validated_points": [
+          "KCS@Fn=0.108"
+        ]
+      },
+      "overall": {
+        "max_abs_E_pct": 128.67641006904807,
+        "mean_E_pct": -63.133747418322855,
+        "mean_abs_E_pct": 63.133747418322855,
+        "n": 10,
+        "rms_E_pct": 75.96205109628507
+      }
+    },
     "simplified_py": {
       "by_Fn": {
         "0.00-0.15": {
@@ -1245,6 +1355,20 @@
           "available": true,
           "basis_ratio_S0_over_L2": 0.18029742085126507
         },
+        "michell_lines": {
+          "CT": 0.004041342986300231,
+          "Cw_S0": 0.00010597760301555701,
+          "E_pct": -6.463197742366457,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
         "simplified_py": {
           "CT": 0.003955199521545292,
           "Cw_S0": 2.354944487222035e-05,
@@ -1342,6 +1466,20 @@
           "E_pct": -4.375990111260432,
           "available": true,
           "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "michell_lines": {
+          "CT": 0.004315258471623528,
+          "Cw_S0": 0.0006162549707496715,
+          "E_pct": -18.518496886117223,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
         },
         "simplified_py": {
           "CT": 0.0037324971460413257,
@@ -1441,6 +1579,20 @@
           "available": true,
           "basis_ratio_S0_over_L2": 0.18029742085126507
         },
+        "michell_lines": {
+          "CT": 0.005056653139060276,
+          "Cw_S0": 0.0015167799411799226,
+          "E_pct": -45.51519824633888,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
         "simplified_py": {
           "CT": 0.0036122735459774274,
           "Cw_S0": 7.574227775681499e-05,
@@ -1538,6 +1690,20 @@
           "E_pct": -5.044273314968111,
           "available": true,
           "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "michell_lines": {
+          "CT": 0.00610334032767358,
+          "Cw_S0": 0.002655538444102861,
+          "E_pct": -76.04096705144447,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
         },
         "simplified_py": {
           "CT": 0.0035709267216630577,
@@ -1637,6 +1803,20 @@
           "available": true,
           "basis_ratio_S0_over_L2": 0.18029742085126507
         },
+        "michell_lines": {
+          "CT": 0.006985116004283091,
+          "Cw_S0": 0.003616554013348927,
+          "E_pct": -88.22732428679846,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
         "simplified_py": {
           "CT": 0.0035642796734576166,
           "Cw_S0": 0.00019889788040029172,
@@ -1734,6 +1914,20 @@
           "E_pct": 19.46187104371138,
           "available": true,
           "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "michell_lines": {
+          "CT": 0.010292725217207853,
+          "Cw_S0": 0.006970282933126909,
+          "E_pct": -128.67641006904807,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
         },
         "simplified_py": {
           "CT": 0.0035776622718509737,
@@ -1833,6 +2027,10 @@
           "available": true,
           "basis_ratio_S0_over_L2": 0.24939999999999998
         },
+        "michell_lines": {
+          "available": false,
+          "reason": "no hull lines for this hull (fetch or not supported)"
+        },
         "simplified_py": {
           "CT": 0.00425799963810798,
           "Cw_S0": 3.6190515974291444e-06,
@@ -1930,6 +2128,20 @@
           "E_pct": -16.785637704118177,
           "available": true,
           "basis_ratio_S0_over_L2": 0.2681976088865472
+        },
+        "michell_lines": {
+          "CT": 0.00869746507449873,
+          "Cw_S0": 0.004057251656988692,
+          "E_pct": -111.61715509729271,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.345124281947,
+          "viscous_from": "hm1984_zig"
         },
         "simplified_py": {
           "CT": 0.004771950358845629,
@@ -2029,6 +2241,20 @@
           "available": true,
           "basis_ratio_S0_over_L2": 0.1474399726147978
         },
+        "michell_lines": {
+          "CT": 0.00813461104606587,
+          "Cw_S0": 0.004109756152277837,
+          "E_pct": -106.98755842406791,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.131723940049,
+          "viscous_from": "hm1984_zig"
+        },
         "simplified_py": {
           "CT": 0.003994342319269367,
           "Cw_S0": 8.231021807059938e-05,
@@ -2127,6 +2353,20 @@
           "available": true,
           "basis_ratio_S0_over_L2": 0.1474399726147978
         },
+        "michell_lines": {
+          "CT": 0.005179074276396245,
+          "Cw_S0": 0.001836798591912399,
+          "E_pct": -23.517154218846777,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.131723940049,
+          "viscous_from": "hm1984_zig"
+        },
         "simplified_py": {
           "CT": 0.0037470856642737036,
           "Cw_S0": 0.0004984990409554319,
@@ -2224,6 +2464,20 @@
           "E_pct": 45.335754127338596,
           "available": true,
           "basis_ratio_S0_over_L2": 0.1474399726147978
+        },
+        "michell_lines": {
+          "CT": 0.008125001185594626,
+          "Cw_S0": 0.004992045776125503,
+          "E_pct": -25.77401216090753,
+          "available": true,
+          "grid": {
+            "n_theta": 60,
+            "nx": 121,
+            "nz": 31
+          },
+          "offsets": "real hull lines",
+          "one_plus_k": 1.131723940049,
+          "viscous_from": "hm1984_zig"
         },
         "simplified_py": {
           "CT": 0.004500600730817269,

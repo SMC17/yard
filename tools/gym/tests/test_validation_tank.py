@@ -66,6 +66,10 @@ def test_hm1984_full_runs_on_every_tank_point():
 
 @pytest.mark.skipif(not zig_available(), reason="zig_gym binary not built")
 def test_committed_report_is_reproducible():
+    from yard_sea_v0 import hull_lines
+
+    if not all(hull_lines.available(h) for h in hull_lines.HULLS):
+        pytest.skip("report was generated with the hull lines fetched (python data/fetch/fetch_yard_data.py)")
     committed = json.loads(REPORT.read_text())
     fresh = V.validate()
     for o, s in fresh["per_oracle"].items():
@@ -81,3 +85,15 @@ def test_committed_report_has_envelopes_and_drift_thresholds():
         assert "box" in rep["per_oracle"][o]["envelope"]
     pairs = {(d["seen"], d["holdout"]): d for d in rep["drift_thresholds"]}
     assert pairs[("hm1984_gym", "michell_l15")]["threshold"] > 0
+
+
+def test_michell_on_real_lines_reported():
+    from yard_sea_v0 import hull_lines
+
+    if not all(hull_lines.available(h) for h in hull_lines.HULLS):
+        pytest.skip("hull lines not fetched")
+    rep = json.loads((Path(__file__).resolve().parents[1] / "reports" / "validation" / "oracle_tank_validation.json").read_text())
+    ml = rep["per_oracle"]["michell_lines"]
+    assert ml["overall"]["n"] == 10  # every point except JBC (no lines)
+    # Thin-ship on real full-form lines over-predicts: documented, not hidden.
+    assert ml["overall"]["mean_E_pct"] < -20.0
