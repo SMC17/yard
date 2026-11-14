@@ -60,6 +60,20 @@ def shipd_parents(n: int = 5) -> list[HullState]:
     return out[:n]
 
 
+def _holdout_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
+    rows = [r["holdout"] for r in results if isinstance(r.get("holdout"), dict)]
+    claimed = [h for h in rows if h["seen"] > 0]
+    drifts = [r["drift"] for r in results if isinstance(r.get("drift"), dict)]
+    finals = [d["final_error"] for d in drifts if d.get("final_error") is not None]
+    return {
+        "n": len(rows),
+        "n_claimed": len(claimed),
+        "n_confirmed": sum(1 for h in claimed if h["confirmed"]),
+        "n_exploit": sum(1 for h in claimed if h["exploit"]),
+        "max_final_drift": max(finals) if finals else None,
+    }
+
+
 def write_gallery(
     out_dir: Path,
     n_parents: int = 5,
@@ -73,6 +87,9 @@ def write_gallery(
     multifidelity: bool = False,
     l3_top: int = 3,
     cost_aware: bool = True,
+    reward_mode: str = "single_fn",
+    wave_oracle: str = "l1",
+    holdout: bool = False,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
     children_dir = out_dir / "children"
@@ -158,7 +175,8 @@ def write_gallery(
                 )
     else:
         results = run_search(
-            parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch
+            parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch,
+            reward_mode=reward_mode, wave_oracle=wave_oracle, holdout=holdout,
         )
         l3_dir = out_dir / "l3_openfoam"
         avail = detect_openfoam() if l3_openfoam else None
@@ -255,6 +273,9 @@ def write_gallery(
         "l15_availability": michell_avail.to_dict() if michell_avail else None,
         "l15_summaries": l15_summaries,
         "multifidelity_summary": mf_summary,
+        "reward_mode": reward_mode,
+        "wave_oracle": wave_oracle,
+        "holdout": _holdout_summary(results) if holdout else None,
         "n_results": len(results),
         "n_improved": len(improved),
         "parents": parent_meta,

@@ -114,6 +114,7 @@ def run_search(
     use_botorch: bool = False,
     reward_mode: str = "single_fn",
     wave_oracle: str = "l1",
+    holdout: bool = False,
 ) -> list[dict[str, Any]]:
     """Run random + hill-climb (and optional BoTorch) per parent.
 
@@ -148,6 +149,24 @@ def run_search(
             row["optimizer"] = opt.to_dict()
             row["seeds"] = dict(env.seeds)
             row["episode_id"] = env.episode_id
+            if holdout:
+                # Post-hoc only: the held-out oracle never feeds the reward or the policy.
+                from .holdout import holdout_check, states_from_evidence, trajectory_drift
+
+                hc = holdout_check([child.hull], parent)
+                r0 = hc["rows"][0]
+                row["holdout"] = {
+                    "oracle": hc["holdout_oracle"],
+                    "seen": r0["seen"],
+                    "holdout": r0["holdout"],
+                    "exploit": r0["exploit"],
+                    "confirmed": r0["confirmed"],
+                }
+                dr = trajectory_drift(states_from_evidence(env.evidence_packs), parent)
+                row["drift"] = {k: dr[k] for k in (
+                    "n_steps", "first_step_error", "final_error", "max_error",
+                    "error_slope_per_step", "growth_ratio",
+                )}
             row["delta_ct_vs_parent"] = parent_ct - child.ct
             row["parent_ct"] = parent_ct
             row["parent_index"] = i
