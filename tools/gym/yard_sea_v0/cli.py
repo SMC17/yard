@@ -72,9 +72,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument(
         "--wave-oracle",
-        choices=("l1", "michell"),
-        default="l1",
-        help="Wave term for --reward multi_froude (michell = L1.5 thin-ship Cw)",
+        choices=("auto", "l1", "michell"),
+        default="auto",
+        help=(
+            "Wave term for --reward multi_froude. auto = L1 when it is Zig HM1984, "
+            "else Michell L1.5 (the Python L1 wave term is damped); resolved choice is recorded"
+        ),
     )
     run.add_argument(
         "--holdout",

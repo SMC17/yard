@@ -116,7 +116,7 @@ def run_search(
     *,
     use_botorch: bool = False,
     reward_mode: str = "single_fn",
-    wave_oracle: str = "l1",
+    wave_oracle: str = "auto",
     holdout: bool = False,
 ) -> list[dict[str, Any]]:
     """Run random + hill-climb (and optional BoTorch) per parent.
@@ -165,6 +165,14 @@ def run_search(
                     "exploit": r0["exploit"],
                     "confirmed": r0["confirmed"],
                 }
+                # The held-out oracle uses Michell wave; if the reward did too it is not held out.
+                if reward_mode == "multi_froude":
+                    from .multi_froude import resolve_wave_oracle
+
+                    used = resolve_wave_oracle(wave_oracle, parent)["resolved"]
+                    row["holdout"]["independent_of_reward"] = used != "michell"
+                else:
+                    row["holdout"]["independent_of_reward"] = True
                 dr = trajectory_drift(states_from_evidence(env.evidence_packs), parent)
                 row["drift"] = {k: dr[k] for k in (
                     "n_steps", "first_step_error", "final_error", "max_error",
@@ -231,7 +239,7 @@ def finalize_optimizer_row(
     seed: int,
     evidence_dir: Path | None = None,
     reward_mode: str = "single_fn",
-    wave_oracle: str = "l1",
+    wave_oracle: str = "auto",
 ) -> dict[str, Any]:
     """Give an off-env optimizer result (BoTorch, cost-aware MF) the same evidence as env episodes.
 
@@ -288,7 +296,7 @@ def _botorch_child(
     *,
     evidence_dir: Path | None = None,
     reward_mode: str = "single_fn",
-    wave_oracle: str = "l1",
+    wave_oracle: str = "auto",
 ) -> dict[str, Any] | None:
     """Bayesian optimization over 7-D relative morph actions (L0-gated reward).
 

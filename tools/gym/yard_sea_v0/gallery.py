@@ -90,7 +90,7 @@ def write_gallery(
     l3_top: int = 3,
     cost_aware: bool = True,
     reward_mode: str = "single_fn",
-    wave_oracle: str = "l1",
+    wave_oracle: str = "auto",
     holdout: bool = False,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
