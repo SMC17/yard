@@ -315,11 +315,15 @@ def run(
         fidelity=FIDELITY,
         notes=notes,
     ).to_dict()
+    cw_s = rw / (0.5 * float(rho) * sa * U**2) if sa > 0 and U > 0 else float("nan")
     base.update(
         {
             "skipped": False,
             "skip_reason": None,
             "teacher": TEACHER,
+            "Cw_basis": "L^2 (Ship-D convention: Rw / (0.5 rho L^2 U^2))",
+            "Cw_S": cw_s,
+            "Cw_S_basis": "wetted surface (Rw / (0.5 rho S U^2)), same basis as Cf",
             "Rw_N": rw,
             "Rf_N": rf,
             "U": U,

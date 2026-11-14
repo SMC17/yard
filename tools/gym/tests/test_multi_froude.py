@@ -44,11 +44,13 @@ def test_out_of_envelope_fn_not_credited():
 def test_off_design_penalty_catches_point_optimised_hull():
     """A hull that edges the parent at design Fn but loses off-design must score below zero.
 
-    Composite oracle (L1 viscous + L1.5 Michell wave). The magnitude here (~3%) is far
-    smaller than published KCS RANS results; this checks the mechanism, not the physics.
+    Composite oracle (L1 viscous + L1.5 Michell wave, wave term on the wetted-surface
+    basis). The magnitude here (~3%) is far smaller than published KCS RANS results;
+    this checks the mechanism, not the physics. Child re-picked when the Michell term
+    moved from Ship-D's L^2 basis to the S basis (the old child lost at design Fn too).
     """
     parent = HullState(Fn=0.195)
-    child = HullState(L=130.0, B=24.0, T=10.0, Cb=0.65, Fn=0.195)
+    child = HullState(L=130.0, B=24.0, T=9.0, Cb=0.60, Fn=0.195)
     assert evaluate_l0(child).feasible
     single = multi_froude_score(child, parent, [0.195], wave_oracle="michell")
     assert single["score"] > 0  # single-Fn scoring would credit it
