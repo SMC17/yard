@@ -25,6 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import binprobe
+
 FIDELITY_PENDING = "aero_vspaero_pending"
 FIDELITY = "aero_vspaero_l1"
 TEACHER = "vspaero_l1"
@@ -153,16 +155,22 @@ class VSPAEROAvailability:
     vspscript: str | None = None
     vspaero: str | None = None
     version: str | None = None
+    # None = not probed (hand-built availability, e.g. tests); False = found
+    # on disk but the loader could not start it (missing .so etc.).
+    loads: bool | None = None
+    load_error: str | None = None
 
     @property
     def available(self) -> bool:
-        return bool(self.vspscript and self.vspaero)
+        return bool(self.vspscript and self.vspaero) and self.loads is not False
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "vspscript": self.vspscript,
             "vspaero": self.vspaero,
             "version": self.version,
+            "loads": self.loads,
+            "load_error": self.load_error,
             "available": self.available,
             "install_hint": (
                 "Prefer vendor/openvsp from Ubuntu .deb extract "
@@ -180,14 +188,27 @@ def _find_exe(name: str) -> Path | None:
 
 
 def detect() -> VSPAEROAvailability:
-    """Probe vendor/PATH for vspscript + vspaero (no side effects)."""
+    """Probe vendor/PATH for vspscript + vspaero and check both binaries load."""
     vspscript = _find_exe("vspscript")
     vspaero = _find_exe("vspaero")
     version = "cli" if vspscript else None
+    loads: bool | None = None
+    load_error: str | None = None
+    if vspscript and vspaero:
+        # Existence is not availability: both binaries must actually load.
+        errs = []
+        for name, path in (("vspscript", vspscript), ("vspaero", vspaero)):
+            pr = binprobe.probe(path)
+            if not pr.ok:
+                errs.append(f"{name}:{pr.reason}")
+        loads = not errs
+        load_error = "; ".join(errs) or None
     return VSPAEROAvailability(
         vspscript=str(vspscript) if vspscript else None,
         vspaero=str(vspaero) if vspaero else None,
         version=version,
+        loads=loads,
+        load_error=load_error,
     )
 
 
@@ -336,7 +357,9 @@ def run(
         return {
             "teacher": TEACHER,
             "skipped": True,
-            "skip_reason": "vspaero_unavailable",
+            "skip_reason": (
+                "vspaero_binary_load_failed" if avail.loads is False else "vspaero_unavailable"
+            ),
             "fidelity": FIDELITY_PENDING,
             "CL": None,
             "CD": None,

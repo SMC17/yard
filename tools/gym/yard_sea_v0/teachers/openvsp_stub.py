@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import binprobe
+
 FIDELITY_PENDING = "aero_openvsp_pending"
 FIDELITY = "aero_openvsp"
 TEACHER = "openvsp_stub"
@@ -57,6 +59,7 @@ class OpenVSPAvailability:
     vspaero: str | None = None
     python_mod: bool = False
     version: str | None = None
+    load_error: str | None = None
 
     @property
     def available(self) -> bool:
@@ -68,6 +71,7 @@ class OpenVSPAvailability:
             "vspaero": self.vspaero,
             "python_mod": self.python_mod,
             "version": self.version,
+            "load_error": self.load_error,
             "available": self.available,
             "install_hint": (
                 "Prefer vendor/openvsp from Ubuntu .deb extract "
@@ -108,7 +112,7 @@ def _find_vspaero() -> str | None:
 
 
 def detect() -> OpenVSPAvailability:
-    """Probe PATH / vendor / import for OpenVSP (no side effects)."""
+    """Probe PATH / vendor / import for OpenVSP; binaries must actually load."""
     vsp_bin: str | None = None
     for cand in _candidate_bins():
         # Prefer vspscript for headless scripting
@@ -135,14 +139,30 @@ def detect() -> OpenVSPAvailability:
     except Exception:
         python_mod = False
 
+    # Existence is not availability: drop binaries the loader cannot start
+    # (e.g. vendored .deb extract missing libcminpack.so.1).
+    errs: list[str] = []
+    if vsp_bin:
+        pr = binprobe.probe(vsp_bin)
+        if not pr.ok:
+            errs.append(f"{Path(vsp_bin).name}:{pr.reason}")
+            vsp_bin = None
+    vspaero = _find_vspaero()
+    if vspaero:
+        pr = binprobe.probe(vspaero)
+        if not pr.ok:
+            errs.append(f"vspaero:{pr.reason}")
+            vspaero = None
+
     if version is None and vsp_bin:
         version = "cli"
 
     return OpenVSPAvailability(
         vsp_bin=vsp_bin,
-        vspaero=_find_vspaero(),
+        vspaero=vspaero,
         python_mod=python_mod,
         version=version,
+        load_error="; ".join(errs) or None,
     )
 
 
