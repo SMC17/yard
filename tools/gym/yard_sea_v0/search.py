@@ -10,8 +10,10 @@ from typing import Any
 
 import numpy as np
 
+from . import __version__
 from .env import DesignSearchEnv
 from .hull import HullState
+from .provenance import OptimizerRecord
 from .resistance_l1 import estimate_resistance
 
 
@@ -45,8 +47,10 @@ def botorch_available() -> bool:
     return True
 
 
-def _run_episode(env: DesignSearchEnv, policy, steps: int) -> ChildResult:
-    obs, info = env.reset()
+def _run_episode(
+    env: DesignSearchEnv, policy, steps: int, options: dict[str, Any] | None = None
+) -> ChildResult:
+    obs, info = env.reset(options=options)
     total_r = 0.0
     for _ in range(steps):
         action = policy(obs, env)
@@ -81,7 +85,6 @@ def hillclimb_policy_factory(rng: np.random.Generator):
         nonlocal best_action
         candidates = [rng.uniform(-1.0, 1.0, size=7) for _ in range(8)]
         candidates.append(best_action)
-        from .env import _reward
         from .monitors import monitor_action
 
         best_a = candidates[0]
@@ -91,7 +94,7 @@ def hillclimb_policy_factory(rng: np.random.Generator):
             if not d.allow or d.projected is None:
                 score = -1.0
             else:
-                score = _reward(d.projected, env.parent_ct, env.parent_vol)
+                score = env.candidate_reward(d.projected)
             if score > best_score:
                 best_score = score
                 best_a = a
@@ -109,6 +112,9 @@ def run_search(
     evidence_root: Path | None = None,
     *,
     use_botorch: bool = False,
+    reward_mode: str = "single_fn",
+    wave_oracle: str = "l1",
+    holdout: bool = False,
 ) -> list[dict[str, Any]]:
     """Run random + hill-climb (and optional BoTorch) per parent.
 
@@ -125,15 +131,53 @@ def run_search(
             max_steps=steps,
             seed=seed + i,
             evidence_dir=str(ed) if ed else None,
+            reward_mode=reward_mode,
+            wave_oracle=wave_oracle,
         )
         for factory in (random_policy_factory, hillclimb_policy_factory):
             policy = factory(rng)
-            child = _run_episode(env, policy, steps)
+            name = getattr(policy, "name", "policy")
+            opt = OptimizerRecord(
+                implementation=f"yard_sea_v0.search.{name}",
+                version=__version__,
+                settings={"candidates_per_step": 8} if name == "hillclimb" else {"dist": "uniform[-1,1]^7"},
+                max_evals=int(steps),
+            ).start()
+            # Same episode_index for every policy => shared env randomness (CRN).
+            child = _run_episode(env, policy, steps, options={"episode_index": 0, "optimizer": opt})
             row = child.to_dict()
+            row["optimizer"] = opt.to_dict()
+            row["seeds"] = dict(env.seeds)
+            row["episode_id"] = env.episode_id
+            if holdout:
+                # Post-hoc only: the held-out oracle never feeds the reward or the policy.
+                from .holdout import holdout_check, states_from_evidence, trajectory_drift
+
+                hc = holdout_check([child.hull], parent)
+                r0 = hc["rows"][0]
+                row["holdout"] = {
+                    "oracle": hc["holdout_oracle"],
+                    "seen": r0["seen"],
+                    "holdout": r0["holdout"],
+                    "exploit": r0["exploit"],
+                    "confirmed": r0["confirmed"],
+                }
+                dr = trajectory_drift(states_from_evidence(env.evidence_packs), parent)
+                row["drift"] = {k: dr[k] for k in (
+                    "n_steps", "first_step_error", "final_error", "max_error",
+                    "error_slope_per_step", "growth_ratio",
+                )}
             row["delta_ct_vs_parent"] = parent_ct - child.ct
             row["parent_ct"] = parent_ct
             row["parent_index"] = i
-            row["improved"] = child.ct < parent_ct and estimate_resistance(child.hull).Ct > 0
+            # Measure-then-claim: "improved" is the env's fresh re-measurement verdict.
+            verdict = env.claim_done({"Ct": child.ct})
+            row["improved"] = bool(verdict["accepted"])
+            row["claim"] = {
+                "accepted": verdict["accepted"],
+                "reasons": verdict["reasons"],
+                "measured_ct": verdict["measured"]["Ct"],
+            }
             results.append(row)
         if use_botorch:
             try:

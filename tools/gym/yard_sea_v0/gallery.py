@@ -61,6 +61,20 @@ def shipd_parents(n: int = 5) -> list[HullState]:
     return out[:n]
 
 
+def _holdout_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
+    rows = [r["holdout"] for r in results if isinstance(r.get("holdout"), dict)]
+    claimed = [h for h in rows if h["seen"] > 0]
+    drifts = [r["drift"] for r in results if isinstance(r.get("drift"), dict)]
+    finals = [d["final_error"] for d in drifts if d.get("final_error") is not None]
+    return {
+        "n": len(rows),
+        "n_claimed": len(claimed),
+        "n_confirmed": sum(1 for h in claimed if h["confirmed"]),
+        "n_exploit": sum(1 for h in claimed if h["exploit"]),
+        "max_final_drift": max(finals) if finals else None,
+    }
+
+
 def write_gallery(
     out_dir: Path,
     n_parents: int = 5,
@@ -72,6 +86,12 @@ def write_gallery(
     l15_michell: bool = False,
     l2_panel: bool = False,
     use_botorch: bool = False,
+    multifidelity: bool = False,
+    l3_top: int = 3,
+    cost_aware: bool = True,
+    reward_mode: str = "single_fn",
+    wave_oracle: str = "l1",
+    holdout: bool = False,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
     children_dir = out_dir / "children"
@@ -89,81 +109,174 @@ def write_gallery(
     for i, p in enumerate(parents):
         r = estimate_resistance(p)
         parent_meta.append({"index": i, "ct": r.Ct, "hull": p.to_dict()})
-    results = run_search(parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch)
-    improved = [r for r in results if r.get("improved")]
-    l3_dir = out_dir / "l3_openfoam"
+    mf_summary: dict[str, Any] | None = None
     l3_summaries: list[dict[str, Any]] = []
     l15_summaries: list[dict[str, Any]] = []
+    avail = None
+    michell_avail = None
+
+    if multifidelity:
+        from .multifidelity import run_multifidelity_search
+
+        mf = run_multifidelity_search(
+            parents,
+            steps=steps,
+            seed=seed,
+            evidence_root=evidence_dir,
+            use_botorch=use_botorch,
+            use_l15=l15_michell,
+            l3_top=int(l3_top),
+            cost_aware=cost_aware,
+            out_dir=out_dir,
+            skip_l3=False,
+        )
+        results = mf["results"]
+        mf_summary = mf["summary"]
+        avail = detect_openfoam()
+        michell_avail = detect_michell() if l15_michell else None
+        for j, r in enumerate(results):
+            if r.get("l15_michell"):
+                l15 = r["l15_michell"]
+                l15_summaries.append(
+                    {
+                        "child": j,
+                        "fidelity": l15.get("fidelity"),
+                        "skipped": l15.get("skipped"),
+                        "Cw": l15.get("Cw"),
+                        "Ct": l15.get("Ct"),
+                    }
+                )
+            if r.get("l3_elite") and r.get("l3_openfoam"):
+                l3 = r["l3_openfoam"]
+                l3_summaries.append(
+                    {
+                        "child": j,
+                        "fidelity": l3.get("fidelity"),
+                        "skipped": l3.get("skipped"),
+                        "skip_reason": l3.get("skip_reason"),
+                        "Cd": l3.get("Cd"),
+                        "Ct": l3.get("Ct"),
+                        "solver": l3.get("solver"),
+                        "elite": True,
+                    }
+                )
+            (children_dir / f"child_{j:03d}.json").write_text(
+                json.dumps(r, indent=2, sort_keys=True)
+            )
+            if r.get("hull"):
+                stl_path = children_dir / f"child_{j:03d}.stl"
+                export_hull_stl(
+                    HullState(
+                        **{
+                            k: r["hull"][k]
+                            for k in ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")
+                            if k in r["hull"]
+                        }
+                    ),
+                    stl_path,
+                )
+    else:
+        results = run_search(
+            parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch,
+            reward_mode=reward_mode, wave_oracle=wave_oracle, holdout=holdout,
+        )
+        l3_dir = out_dir / "l3_openfoam"
+        avail = detect_openfoam() if l3_openfoam else None
+        michell_avail = detect_michell() if l15_michell else None
+        for j, r in enumerate(results):
+            (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
+            stl_path = None
+            if r.get("hull"):
+                stl_path = children_dir / f"child_{j:03d}.stl"
+                stl_path, _mesh_backend = export_hull_stl(
+                    HullState(
+                        **{
+                            k: r["hull"][k]
+                            for k in ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")
+                            if k in r["hull"]
+                        }
+                    ),
+                    stl_path,
+                )
+            if l3_openfoam and stl_path is not None:
+                hull = r["hull"]
+                l3 = run_teacher(
+                    stl_path,
+                    float(hull.get("Fn", 0.2)),
+                    l3_dir / f"child_{j:03d}",
+                    L=hull.get("L"),
+                    B=hull.get("B"),
+                    T=hull.get("T"),
+                    availability=avail,
+                    timeout_s=float(os.environ.get("YARD_SEA_L3_TIMEOUT", "180")),
+                )
+                r["l3_openfoam"] = l3
+                r["Cd"] = l3.get("Cd")
+                r["l3_fidelity"] = l3.get("fidelity")
+                r["l3_Ct"] = l3.get("Ct")
+                r["l3_solver"] = l3.get("solver")
+                (children_dir / f"child_{j:03d}.json").write_text(
+                    json.dumps(r, indent=2, sort_keys=True)
+                )
+                l3_summaries.append(
+                    {
+                        "child": j,
+                        "fidelity": l3.get("fidelity"),
+                        "skipped": l3.get("skipped"),
+                        "skip_reason": l3.get("skip_reason"),
+                        "Cd": l3.get("Cd"),
+                        "Ct": l3.get("Ct"),
+                        "solver": l3.get("solver"),
+                    }
+                )
+
+            if l15_michell and r.get("hull"):
+                from .hull import HullState as _HS
+
+                hh = r["hull"]
+                hull_obj = _HS(
+                    **{
+                        k: hh[k]
+                        for k in ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")
+                        if k in hh
+                    }
+                )
+                l15 = run_michell(hull_obj, availability=michell_avail)
+                r["l15_michell"] = l15
+                (children_dir / f"child_{j:03d}.json").write_text(
+                    json.dumps(r, indent=2, sort_keys=True)
+                )
+                l15_summaries.append(
+                    {
+                        "child": j,
+                        "fidelity": l15.get("fidelity"),
+                        "skipped": l15.get("skipped"),
+                        "Cw": l15.get("Cw"),
+                        "Ct": l15.get("Ct"),
+                    }
+                )
+
+    # Optional L2 panel/BEM teacher (Capytaine) over every child, either search path.
     l2_summaries: list[dict[str, Any]] = []
-    avail = detect_openfoam() if l3_openfoam else None
-    michell_avail = detect_michell() if l15_michell else None
     panel_avail = detect_panel() if l2_panel else None
-    for j, r in enumerate(results):
-        (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
-        stl_path = None
-        if r.get("hull"):
-            from .hull import HullState
-            stl_path = children_dir / f"child_{j:03d}.stl"
-            stl_path, _mesh_backend = export_hull_stl(HullState(**{k: r["hull"][k] for k in ("L","B","T","Cb","lcb_frac","kg_frac","Fn") if k in r["hull"]}), stl_path)
-        if l3_openfoam and stl_path is not None:
-            hull = r["hull"]
-            l3 = run_teacher(
-                stl_path,
-                float(hull.get("Fn", 0.2)),
-                l3_dir / f"child_{j:03d}",
-                L=hull.get("L"),
-                B=hull.get("B"),
-                T=hull.get("T"),
-                availability=avail,
-                timeout_s=float(os.environ.get("YARD_SEA_L3_TIMEOUT", "180")),
-            )
-            r["l3_openfoam"] = l3
-            # Surface Cd / fidelity for gallery consumers (L3_rans forceCoeffs teacher).
-            r["Cd"] = l3.get("Cd")
-            r["l3_fidelity"] = l3.get("fidelity")
-            r["l3_Ct"] = l3.get("Ct")
-            r["l3_solver"] = l3.get("solver")
-            (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
-            l3_summaries.append(
-                {
-                    "child": j,
-                    "fidelity": l3.get("fidelity"),
-                    "skipped": l3.get("skipped"),
-                    "skip_reason": l3.get("skip_reason"),
-                    "Cd": l3.get("Cd"),
-                    "Ct": l3.get("Ct"),
-                    "solver": l3.get("solver"),
-                }
-            )
-
-        if l15_michell and r.get("hull"):
-            from .hull import HullState as _HS
-            hh = r["hull"]
-            hull_obj = _HS(**{k: hh[k] for k in ("L","B","T","Cb","lcb_frac","kg_frac","Fn") if k in hh})
-            l15 = run_michell(hull_obj, availability=michell_avail)
-            r["l15_michell"] = l15
-            (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
-            l15_summaries.append(
-                {
-                    "child": j,
-                    "fidelity": l15.get("fidelity"),
-                    "skipped": l15.get("skipped"),
-                    "Cw": l15.get("Cw"),
-                    "Ct": l15.get("Ct"),
-                }
-            )
-
-        if l2_panel and r.get("hull"):
-            from .hull import HullState as _HS2
+    if l2_panel:
+        for j, r in enumerate(results):
+            if not r.get("hull"):
+                continue
             hh2 = r["hull"]
-            hull_obj2 = _HS2(**{k: hh2[k] for k in ("L","B","T","Cb","lcb_frac","kg_frac","Fn") if k in hh2})
+            hull_obj2 = HullState(
+                **{k: hh2[k] for k in ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn") if k in hh2}
+            )
+            stl2 = children_dir / f"child_{j:03d}.stl"
             l2 = run_panel(
                 hull_obj2,
-                stl_path=stl_path,
+                stl_path=stl2 if stl2.is_file() else None,
                 availability=panel_avail,
             )
             r["l2_panel"] = l2
-            (children_dir / f"child_{j:03d}.json").write_text(json.dumps(r, indent=2, sort_keys=True))
+            (children_dir / f"child_{j:03d}.json").write_text(
+                json.dumps(r, indent=2, sort_keys=True)
+            )
             l2_summaries.append(
                 {
                     "child": j,
@@ -176,6 +289,9 @@ def write_gallery(
                     "backend": l2.get("backend"),
                 }
             )
+
+    improved = [r for r in results if r.get("improved")]
+    deltas = [r.get("delta_ct_vs_parent") or -1e9 for r in results if "delta_ct_vs_parent" in r]
     manifest = {
         "n_parents": n_parents,
         "steps": steps,
@@ -183,7 +299,10 @@ def write_gallery(
         "use_shipd": use_shipd,
         "use_corpus": use_corpus,
         "use_botorch": use_botorch,
-        "l3_openfoam": l3_openfoam,
+        "multifidelity": multifidelity,
+        "l3_top": int(l3_top) if multifidelity else None,
+        "cost_aware": bool(cost_aware) if multifidelity else None,
+        "l3_openfoam": l3_openfoam or multifidelity,
         "l3_availability": avail.to_dict() if avail else None,
         "l3_summaries": l3_summaries,
         "l15_michell": l15_michell,
@@ -192,10 +311,14 @@ def write_gallery(
         "l2_panel": l2_panel,
         "l2_availability": panel_avail.to_dict() if panel_avail else None,
         "l2_summaries": l2_summaries,
+        "multifidelity_summary": mf_summary,
+        "reward_mode": reward_mode,
+        "wave_oracle": wave_oracle,
+        "holdout": _holdout_summary(results) if holdout else None,
         "n_results": len(results),
         "n_improved": len(improved),
         "parents": parent_meta,
-        "best_delta_ct": max((r.get("delta_ct_vs_parent") or -1e9) for r in results if "delta_ct_vs_parent" in r),
+        "best_delta_ct": max(deltas) if deltas else -1e9,
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
     lines = [
@@ -208,7 +331,9 @@ def write_gallery(
         "",
         "Fidelity: L0 monitors + L1 Holtrop-simplified. Not ITTC powering / not class.",
         f"- BoTorch: {'on' if use_botorch else 'off'}",
-        f"- L3 OpenFOAM: {'on' if l3_openfoam else 'off'}"
+        f"- Multifidelity: {'on' if multifidelity else 'off'}"
+        + (f" (l3_top={l3_top}, cost_aware={cost_aware})" if multifidelity else ""),
+        f"- L3 OpenFOAM: {'on' if (l3_openfoam or multifidelity) else 'off'}"
         + (
             f" (available={avail.available})" if avail else ""
         ),
@@ -217,9 +342,7 @@ def write_gallery(
             f" (available={michell_avail.available})" if michell_avail else ""
         ),
         f"- L2 panel/BEM: {'on' if l2_panel else 'off'}"
-        + (
-            f" (available={panel_avail.available})" if panel_avail else ""
-        ),
+        + (f" (available={panel_avail.available})" if panel_avail else ""),
         "",
     ]
     for r in sorted(
