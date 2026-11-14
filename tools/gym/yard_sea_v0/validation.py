@@ -59,7 +59,7 @@ from .resistance_l1 import estimate_resistance, ittc57_cf
 VALIDATION_SCHEMA = "yard_sea_v0.validation.tank.v1"
 
 ORACLES = ("hm1984_full", "hm1984_full_bare", "hm1984_gym", "hm1984_gym_bare", "simplified_py",
-           "simplified_py_bare", "michell_l15", "michell_l15_L2basis")
+           "simplified_py_bare", "michell_l15", "michell_l15_L2basis", "michell_lines")
 
 # Geometry-file Lpp of each hull in ``hull_lines`` (to scale bulb / transom to the model).
 _LINES_LPP = {"KCS": 230.0, "KVLCC2": 320.0, "DTMB5415": 5.72}
@@ -266,6 +266,31 @@ def michell_l15(c: TankCase) -> dict[str, Any]:
             "Cw_S0": rwq / c.S0, "viscous_from": r.fidelity}
 
 
+MICHELL_LINES_GRID = {"nx": 121, "nz": 31, "n_theta": 60}  # Rw within ~1 % of 161x41x90 (KCS, 5415)
+
+
+def michell_lines(c: TankCase) -> dict[str, Any]:
+    """Michell thin-ship wave resistance on the *real* hull lines (``hull_lines``), scaled to
+    the model; viscous part as in ``michell_l15`` (gym HM1984 form factor, ITTC-57 at tank Re)."""
+    from . import hull_lines
+    from .teachers import michell_l15 as mich
+
+    if c.hull not in _LINES_LPP or not hull_lines.available(c.hull):
+        return {"available": False, "reason": "no hull lines for this hull (fetch or not supported)"}
+    gym, r = _gym_l1(c, prefer_zig=True, appendages=False)
+    if not gym.get("available"):
+        gym, r = _gym_l1(c, prefer_zig=False, appendages=False)
+    g = MICHELL_LINES_GRID
+    Y, X, Z = hull_lines.michell_offsets(c.hull, scale_to_L=c.L, nx=g["nx"], nz=g["nz"])
+    m = mich.run(c.hull_state(appendages=False), Y=Y, X=X, Z=Z, n_theta=g["n_theta"])
+    if m.get("skipped") or m.get("Rw_N") is None:
+        return {"available": False, "reason": str(m.get("skip_reason") or "michell_failed")}
+    U = float(m["U"])
+    rwq = float(m["Rw_N"]) / (0.5 * 1025.0 * U * U)
+    return {"available": True, "CT": _assemble(c, float(r.k1), rwq), "one_plus_k": 1.0 + float(r.k1),
+            "Cw_S0": rwq / c.S0, "viscous_from": r.fidelity, "offsets": "real hull lines", "grid": dict(g)}
+
+
 def michell_l15_L2basis(c: TankCase) -> dict[str, Any]:
     """Legacy composition: Michell C_W (Rw / (q L^2)) added as if it were S-based."""
     gym, r = _gym_l1(c, prefer_zig=True)
@@ -288,6 +313,7 @@ PREDICTORS: dict[str, Callable[[TankCase], dict[str, Any]]] = {
     "simplified_py_bare": simplified_py_bare,
     "michell_l15": michell_l15,
     "michell_l15_L2basis": michell_l15_L2basis,
+    "michell_lines": michell_lines,
 }
 
 
@@ -539,7 +565,15 @@ def render_markdown(report: dict[str, Any], drift: Sequence[dict[str, Any]] = ()
     lines += ["", "## Caveats", "", report["notes"],
               "- Bulb / transom / C_WP come from the real hull lines (KCS, KVLCC2, 5415); JBC has no lines here, "
               "so its `hm1984_full` uses the Schneekluth C_WP and no bulb.",
-              "- `michell_l15` uses the gym's synthetic Wigley-like offsets, not the real hull lines.",
+              "- `michell_l15` uses the gym's synthetic Wigley-like offsets; `michell_lines` runs the same Michell "
+              "integral on the real hull lines (KCS, KVLCC2, 5415; grid 121×31, 60 θ, converged to ~1 %). On real "
+              "lines thin-ship theory over-predicts wave resistance by large factors (KCS Fn 0.26: R_W/(qS0) 3.6e-3 "
+              "vs a measured C_T of 3.7e-3; KVLCC2 Fn 0.142: 4.1e-3). Blunt full-form ends violate the thin-ship "
+              "slope assumption, and for 5415 the open transom acts as a source discontinuity (at Fn 0.10, fairing "
+              "the aft 10 % of the offsets to zero drops R_W/(qS0) from 4.1e-3 to 0.1e-3; that is a sensitivity "
+              "check, not a model). The synthetic-offset `michell_l15` numbers therefore agree with tank data "
+              "for the wrong reason (the geometry is not the ship's), and Michell has no validated envelope on "
+              "real hull forms.",
               "- Low-Fn points (Fn ≈ 0.1) carry larger tank uncertainty (3.2% for 5415)."]
     return "\n".join(lines) + "\n"
 
