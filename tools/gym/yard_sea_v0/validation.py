@@ -19,11 +19,17 @@ Comparison convention (stated, not hidden):
   allowance C_A is added (model scale).
 * Oracles:
   - ``hm1984_full``  — Zig HM1984 with the hull's *published* C_M, C_P, S0,
-    LCB; C_WP estimated (Schneekluth (1+2C_B)/3, not tabulated by sources);
-    bulb / transom terms omitted (geometry not tabulated). Method error.
+    LCB, plus C_WP, bulb (A_BT, h_B, T_F = T) and transom (A_T) read off the
+    real hull lines (``hull_lines``; JBC has no lines -> Schneekluth C_WP
+    (1+2C_B)/3, no bulb). Method error.
+  - ``hm1984_full_bare`` — same without bulb / transom and with the Schneekluth
+    C_WP (the composition before the bulb / transom terms were plumbed).
   - ``hm1984_gym``   — Zig HM1984 fed only what ``HullState`` carries
-    (L, B, T, C_B, LCB; C_M=0.98, approximate S). What the reward actually sees.
-  - ``simplified_py`` — Python Holtrop-simplified fallback.
+    (L, B, T, C_B, LCB, abt_m2 / hb_m / at_m2; C_M=0.98, approximate S).
+  - ``hm1984_gym_bare`` — same with abt_m2 = at_m2 = 0: what a default gym
+    hull (no bulb / transom in its state) sees.
+  - ``simplified_py`` / ``simplified_py_bare`` — Python Holtrop-simplified
+    fallback with / without the same HM bulb / transom terms.
   - ``michell_l15``  — L1 viscous (HM1984 gym form factor) + Michell thin-ship
     wave on the gym's synthetic Wigley-like offsets, wave drag normalised by
     wetted surface so it is on the same basis as the friction terms.
@@ -52,7 +58,11 @@ from .resistance_l1 import estimate_resistance, ittc57_cf
 
 VALIDATION_SCHEMA = "yard_sea_v0.validation.tank.v1"
 
-ORACLES = ("hm1984_full", "hm1984_gym", "simplified_py", "michell_l15", "michell_l15_L2basis")
+ORACLES = ("hm1984_full", "hm1984_full_bare", "hm1984_gym", "hm1984_gym_bare", "simplified_py",
+           "simplified_py_bare", "michell_l15", "michell_l15_L2basis")
+
+# Geometry-file Lpp of each hull in ``hull_lines`` (to scale bulb / transom to the model).
+_LINES_LPP = {"KCS": 230.0, "KVLCC2": 320.0, "DTMB5415": 5.72}
 
 # Envelope tolerance: an oracle is "validated" at a reference point when
 # |E%D| <= this. 10 % is the usual ballpark quoted for Holtrop-type regressions
@@ -111,8 +121,24 @@ class TankCase:
     def Cwp_est(self) -> float:
         return (1.0 + 2.0 * self.Cb) / 3.0
 
-    def hull_state(self) -> HullState:
-        return HullState(L=self.L, B=self.B, T=self.T, Cb=self.Cb, lcb_frac=self.lcb_pct / 100.0, Fn=self.Fn)
+    def lines(self) -> Any:
+        """Model-scale particulars read off the real hull lines, or None if not fetched / no lines."""
+        from . import hull_lines
+
+        if self.hull not in _LINES_LPP or not hull_lines.available(self.hull):
+            return None
+        return hull_lines.particulars(self.hull).scaled(_LINES_LPP[self.hull] / self.L)
+
+    def appendages(self) -> dict[str, float]:
+        p = self.lines()
+        if p is None:
+            return {"abt_m2": 0.0, "hb_m": 0.0, "at_m2": 0.0}
+        return {"abt_m2": p.A_BT, "hb_m": p.h_B, "at_m2": p.A_T}
+
+    def hull_state(self, *, appendages: bool = True) -> HullState:
+        extra = self.appendages() if appendages else {}
+        return HullState(L=self.L, B=self.B, T=self.T, Cb=self.Cb, lcb_frac=self.lcb_pct / 100.0, Fn=self.Fn,
+                         **extra)
 
     def params(self) -> dict[str, float]:
         return {
@@ -159,11 +185,15 @@ def _zig_bin() -> Path | None:
         return None
 
 
-def hm1984_full(c: TankCase, *, binary: Path | None = None) -> dict[str, Any]:
+def hm1984_full(c: TankCase, *, binary: Path | None = None, bare: bool = False) -> dict[str, Any]:
     b = binary or _zig_bin()
     if b is None:
         return {"available": False, "reason": "zig_gym binary not built"}
-    args = [c.L, c.B, c.T, c.vol, c.S0, c.Cb, c.Cm, c.Cp, c.Cwp_est, c.lcb_pct, 0.0, c.Fn, c.nu, c.rho]
+    p = None if bare else c.lines()
+    cwp = c.Cwp_est if p is None else p.Cwp
+    args = [c.L, c.B, c.T, c.vol, c.S0, c.Cb, c.Cm, c.Cp, cwp, c.lcb_pct, 0.0, c.Fn, c.nu, c.rho]
+    if p is not None:
+        args += [p.A_BT, c.T, p.h_B, p.A_T]
     proc = subprocess.run([str(b), "hm1984_full", *[repr(float(a)) for a in args]],
                           capture_output=True, text=True, check=False)
     if proc.returncode != 0:
@@ -172,15 +202,22 @@ def hm1984_full(c: TankCase, *, binary: Path | None = None) -> dict[str, Any]:
     if "error" in l1:
         return {"available": False, "reason": l1["error"]}
     return {"available": True, "CT": float(l1["Ct_no_ca"]), "one_plus_k": float(l1["one_plus_k"]),
-            "Cw_S0": float(l1["Cw"]), "Cf": float(l1["Cf"])}
+            "Cw_S0": float(l1["Cw"]), "Cf": float(l1["Cf"]), "C_bulb": float(l1.get("C_bulb", 0.0)),
+            "C_tr": float(l1.get("C_tr", 0.0)), "c_2": float(l1.get("c_2", 1.0)), "c_5": float(l1.get("c_5", 1.0)),
+            "Cwp": cwp, "lines": p is not None}
+
+
+def hm1984_full_bare(c: TankCase) -> dict[str, Any]:
+    """Pre-yard#34 composition: no bulb / transom, Schneekluth C_WP estimate."""
+    return hm1984_full(c, bare=True)
 
 
 def _assemble(c: TankCase, k: float, rw_over_q: float) -> float:
     return ittc57_cf(c.Re) * (1.0 + k) + rw_over_q / c.S0
 
 
-def _gym_l1(c: TankCase, *, prefer_zig: bool) -> tuple[dict[str, Any], Any]:
-    h = c.hull_state()
+def _gym_l1(c: TankCase, *, prefer_zig: bool, appendages: bool = True) -> tuple[dict[str, Any], Any]:
+    h = c.hull_state(appendages=appendages)
     r = estimate_resistance(h, prefer_zig_hm1984=prefer_zig)
     if prefer_zig and r.fidelity != "hm1984_zig":
         return {"available": False, "reason": "zig HM1984 unavailable"}, r
@@ -198,6 +235,15 @@ def simplified_py(c: TankCase) -> dict[str, Any]:
     return _gym_l1(c, prefer_zig=False)[0]
 
 
+def hm1984_gym_bare(c: TankCase) -> dict[str, Any]:
+    """Gym mapping without bulb / transom (what a HullState with abt_m2 = at_m2 = 0 sees)."""
+    return _gym_l1(c, prefer_zig=True, appendages=False)[0]
+
+
+def simplified_py_bare(c: TankCase) -> dict[str, Any]:
+    return _gym_l1(c, prefer_zig=False, appendages=False)[0]
+
+
 def _michell_rw_over_q(c: TankCase) -> tuple[float | None, float | None, str | None]:
     from .teachers import michell_l15
 
@@ -210,9 +256,9 @@ def _michell_rw_over_q(c: TankCase) -> tuple[float | None, float | None, str | N
 
 
 def michell_l15(c: TankCase) -> dict[str, Any]:
-    gym, r = _gym_l1(c, prefer_zig=True)
+    gym, r = _gym_l1(c, prefer_zig=True, appendages=False)
     if not gym.get("available"):
-        gym, r = _gym_l1(c, prefer_zig=False)
+        gym, r = _gym_l1(c, prefer_zig=False, appendages=False)
     rwq, _cw_l2, why = _michell_rw_over_q(c)
     if rwq is None:
         return {"available": False, "reason": why}
@@ -235,8 +281,11 @@ def michell_l15_L2basis(c: TankCase) -> dict[str, Any]:
 
 PREDICTORS: dict[str, Callable[[TankCase], dict[str, Any]]] = {
     "hm1984_full": hm1984_full,
+    "hm1984_full_bare": hm1984_full_bare,
     "hm1984_gym": hm1984_gym,
+    "hm1984_gym_bare": hm1984_gym_bare,
     "simplified_py": simplified_py,
+    "simplified_py_bare": simplified_py_bare,
     "michell_l15": michell_l15,
     "michell_l15_L2basis": michell_l15_L2basis,
 }
@@ -303,8 +352,17 @@ def validate(
             "by_Fn": by_fn,
             "envelope": empirical_envelope(rows, o, envelope_tol_pct),
         }
+    inputs = {}
+    for c in cases:
+        if c.hull in inputs:
+            continue
+        p = c.lines()
+        inputs[c.hull] = None if p is None else {
+            "source": p.source, "A_BT_m2": p.A_BT, "h_B_m": p.h_B, "A_T_m2": p.A_T, "Cwp": p.Cwp,
+            "vol_lines_over_pub": p.vol / c.vol, "S_lines_over_S0": p.S / c.S0}
     return {
         "schema": VALIDATION_SCHEMA,
+        "hull_lines_inputs_model_scale": inputs,
         "reference": str(reference_path().relative_to(repo_root())),
         "convention": "E%D = (D - S)/D*100, model-scale C_T, C_F ITTC-57 at tank Re, no C_A",
         "envelope_tol_pct": envelope_tol_pct,
@@ -429,6 +487,25 @@ def render_markdown(report: dict[str, Any], drift: Sequence[dict[str, Any]] = ()
             p = r["oracles"][o]
             cells.append(f"{p['CT']*1e3:.3f} ({p['E_pct']:+.1f}%)" if "E_pct" in p else "n/a")
         lines.append(f"| {r['hull']} | {r['Fn']:.3f} | {r['Re']:.2e} | {r['CT_measured']*1e3:.3f} | " + " | ".join(cells) + " |")
+    pairs = [(a, b) for a, b in (("hm1984_full_bare", "hm1984_full"), ("hm1984_gym_bare", "hm1984_gym"),
+                                  ("simplified_py_bare", "simplified_py")) if a in names and b in names]
+    if pairs:
+        lines += ["", "## Bulb / transom terms: before → after (E%D)", ""]
+        inp = report.get("hull_lines_inputs_model_scale") or {}
+        for h, v in inp.items():
+            if v:
+                lines.append(f"- {h}: A_BT {v['A_BT_m2']:.4g} m², h_B {v['h_B_m']:.4g} m, A_T {v['A_T_m2']:.4g} m², "
+                             f"C_WP {v['Cwp']:.3f} (model scale, from {v['source']}).")
+            else:
+                lines.append(f"- {h}: no hull lines → no bulb / transom terms.")
+        lines += ["", "| hull | Fn | " + " | ".join(f"`{a}` → `{b}`" for a, b in pairs) + " |",
+                  "|---|---|" + "---|" * len(pairs)]
+        for r in report["rows"]:
+            cells = []
+            for a, b in pairs:
+                ea, eb = r["oracles"][a].get("E_pct"), r["oracles"][b].get("E_pct")
+                cells.append(f"{ea:+.1f} → {eb:+.1f}" if ea is not None and eb is not None else "n/a")
+            lines.append(f"| {r['hull']} | {r['Fn']:.3f} | " + " | ".join(cells) + " |")
     lines += ["", "## Error by Froude band (mean abs E%)", ""]
     bands = list(next(iter(report["per_oracle"].values()))["by_Fn"])
     lines.append("| oracle | " + " | ".join(bands) + " |")
@@ -460,7 +537,8 @@ def render_markdown(report: dict[str, Any], drift: Sequence[dict[str, Any]] = ()
                   "estimate for the small parent→child steps a search takes; the same-hull-only variant "
                   "(KCS speed pairs) is in the JSON under `drift_thresholds_same_hull`."]
     lines += ["", "## Caveats", "", report["notes"],
-              "- Bulb, transom and C_WP are not tabulated by the sources and are omitted / estimated in `hm1984_full`.",
+              "- Bulb / transom / C_WP come from the real hull lines (KCS, KVLCC2, 5415); JBC has no lines here, "
+              "so its `hm1984_full` uses the Schneekluth C_WP and no bulb.",
               "- `michell_l15` uses the gym's synthetic Wigley-like offsets, not the real hull lines.",
               "- Low-Fn points (Fn ≈ 0.1) carry larger tank uncertainty (3.2% for 5415)."]
     return "\n".join(lines) + "\n"
@@ -471,7 +549,10 @@ def write_reports(out_dir: str | Path, *, oracles: Iterable[str] = ORACLES) -> d
     out.mkdir(parents=True, exist_ok=True)
     rep = validate(oracles)
     pairs = [("hm1984_gym", "michell_l15"), ("hm1984_gym", "simplified_py"), ("hm1984_gym", "hm1984_full"),
-             ("simplified_py", "michell_l15")]
+             ("simplified_py", "michell_l15"),
+             # default gym hulls carry no bulb / transom -> "_bare" compositions
+             ("hm1984_gym_bare", "michell_l15"), ("hm1984_gym_bare", "simplified_py_bare"),
+             ("hm1984_gym_bare", "hm1984_full_bare"), ("simplified_py_bare", "michell_l15")]
     drift = [drift_threshold_from_validation(rep, a, b) for a, b in pairs
              if a in rep["per_oracle"] and b in rep["per_oracle"]]
     drift_same = [drift_threshold_from_validation(rep, a, b, same_hull_only=True) for a, b in pairs

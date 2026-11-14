@@ -35,6 +35,10 @@ pub const Hull = struct {
     lcb_frac: f64 = 0,
     kg_frac: f64 = 0.55,
     Fn: f64 = 0.20,
+    /// Holtrop-Mennen bulb / transom inputs (0 = absent). T_F = T (even keel).
+    abt_m2: f64 = 0,
+    hb_m: f64 = 0,
+    at_m2: f64 = 0,
 };
 
 pub fn volume(h: Hull) f64 {
@@ -207,7 +211,8 @@ pub fn estimate_resistance(h: Hull) ResistanceResult {
 ///   C_M  ← CM_DEFAULT (0.98)
 ///   C_P  ← C_B / C_M (clamped)
 ///   C_WP ← Denny (1 + 2 C_B) / 3
-///   c_stern ← C_STERN_DEFAULT (0 = normal); no bulb / transom geometry
+///   c_stern ← C_STERN_DEFAULT (0 = normal)
+///   bulb    ← (abt_m2, T_F = T, hb_m) when abt_m2 > 0; transom ← at_m2 when > 0
 pub fn toHoltropParticulars(h: Hull) holtrop.HullParticulars {
     const cm = CM_DEFAULT;
     var cp = h.Cb / cm;
@@ -225,8 +230,8 @@ pub fn toHoltropParticulars(h: Hull) holtrop.HullParticulars {
         .C_WP = @max(0.55, @min(0.99, cwp)),
         .lcb_pct = h.lcb_frac * 100.0,
         .c_stern = C_STERN_DEFAULT,
-        .bulb = null,
-        .transom = null,
+        .bulb = if (h.abt_m2 > 0.0) holtrop.BulbGeometry{ .A_BT = h.abt_m2, .T_F = h.T, .h_B = h.hb_m } else null,
+        .transom = if (h.at_m2 > 0.0) holtrop.TransomGeometry{ .A_T = h.at_m2 } else null,
     };
 }
 
@@ -249,7 +254,8 @@ pub fn estimate_resistance_hm1984(h: Hull) Hm1984Error!ResistanceResult {
     const q = 0.5 * RHO_SW * U * U * hp.S;
     if (!(q > 0.0) or !math.isFinite(br.r_total)) return error.NonFinite;
     const Ct = br.r_total / q;
-    const Cw = br.r_w / q;
+    // Residuary beyond viscous: wave (c_2 c_5 already applied) + bulb R_B + transom R_TR.
+    const Cw = (br.r_w + br.r_b + br.r_tr) / q;
     const k1 = br.one_plus_k - 1.0;
     if (!math.isFinite(Ct)) return error.NonFinite;
     return .{
@@ -281,6 +287,7 @@ pub const FullResult = struct {
     one_plus_k: f64,
     Cw: f64,
     Cb_bulb: f64,
+    C_tr: f64,
     c_2: f64,
     c_5: f64,
     Ct_no_ca: f64,
@@ -299,6 +306,7 @@ pub fn estimate_hm1984_full(inp: FullInput) Hm1984Error!FullResult {
         .one_plus_k = br.one_plus_k,
         .Cw = br.r_w / q,
         .Cb_bulb = br.r_b / q,
+        .C_tr = br.r_tr / q,
         .c_2 = br.c_2,
         .c_5 = br.c_5,
         .Ct_no_ca = br.r_total / q,
@@ -312,6 +320,20 @@ test "hm1984 full matches gym mapping when given the same particulars" {
     const b = try estimate_hm1984_full(.{ .hp = hp, .Fn = h.Fn });
     try std.testing.expectApproxEqRel(a.Ct, b.Ct_no_ca, 1e-12);
     try std.testing.expectApproxEqRel(a.Cw, b.Cw, 1e-12);
+}
+
+test "gym bulb/transom inputs reach HM1984 and match the full path" {
+    var h: Hull = .{ .L = 230, .B = 32.2, .T = 10.8, .Cb = 0.65, .Fn = 0.26, .abt_m2 = 29.3, .hb_m = 5.2, .at_m2 = 2.0 };
+    const hp = toHoltropParticulars(h);
+    try std.testing.expect(hp.bulb != null and hp.transom != null);
+    const a = try estimate_resistance_hm1984(h);
+    const b = try estimate_hm1984_full(.{ .hp = hp, .Fn = h.Fn });
+    try std.testing.expectApproxEqRel(a.Ct, b.Ct_no_ca, 1e-12);
+    try std.testing.expectApproxEqRel(a.Cw, b.Cw + b.Cb_bulb + b.C_tr, 1e-12);
+    h.abt_m2 = 0;
+    h.at_m2 = 0;
+    const c = try estimate_resistance_hm1984(h);
+    try std.testing.expect(c.Cw != a.Cw);
 }
 
 test "default hull feasible" {
