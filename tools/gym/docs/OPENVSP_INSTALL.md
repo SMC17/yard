@@ -74,3 +74,13 @@ newer glibc host. CLI path is enough for the current stub.
   `VSPAEROSweep`) for real `CL`/`CD`/`CM`; falls back to POD + `WriteVSPFile` if
   `vspaero` is missing.
 - Dedicated module: `yard_sea_v0.teachers.vspaero_l1` (fidelity `aero_vspaero_l1`).
+
+### Load check (detection)
+
+`detect()` now launches `vspscript` / `vspaero` once (`teachers/binprobe.py`)
+and treats a binary the dynamic loader cannot start as **unavailable**
+(`skip_reason: vspaero_binary_load_failed`, `load_error` in availability).
+Before, a vendored tree missing `libcminpack.so.1` was reported available and
+every run surfaced as `vspaero_script_failed`. If `apt` mirrors are down,
+`libcminpack1_1.3.11-3_amd64.deb` from the Debian pool installs with `dpkg -i`.
+Set `YARD_SEA_SKIP_BINPROBE=1` to bypass the probe.
