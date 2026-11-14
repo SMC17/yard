@@ -4,7 +4,7 @@
 const std = @import("std");
 const math = std.math;
 const yard_resistance = @import("yard_resistance");
-const holtrop = yard_resistance.holtrop;
+pub const holtrop = yard_resistance.holtrop;
 
 pub const RHO_SW: f64 = 1025.0;
 pub const G: f64 = 9.80665;
@@ -261,6 +261,57 @@ pub fn estimate_resistance_hm1984(h: Hull) Hm1984Error!ResistanceResult {
         .Rt_N = br.r_total,
         .Ct = Ct,
     };
+}
+
+/// Full-particulars HM1984 (validation path): the caller supplies every
+/// Holtrop input explicitly (C_M, C_P, C_WP, S, optional bulb/transom)
+/// instead of the HullState defaults. Used to separate HM1984 *method* error
+/// from HullState *mapping* error when validating against tank data.
+pub const FullInput = struct {
+    hp: holtrop.HullParticulars,
+    Fn: f64,
+    nu: f64 = NU,
+    rho: f64 = RHO_SW,
+};
+
+pub const FullResult = struct {
+    Fn: f64,
+    Rn: f64,
+    Cf: f64,
+    one_plus_k: f64,
+    Cw: f64,
+    Cb_bulb: f64,
+    c_2: f64,
+    c_5: f64,
+    Ct_no_ca: f64,
+};
+
+pub fn estimate_hm1984_full(inp: FullInput) Hm1984Error!FullResult {
+    const U = inp.Fn * @sqrt(G * inp.hp.L);
+    const env: holtrop.Environment = .{ .rho = inp.rho, .g = G, .nu = inp.nu };
+    const br = holtrop.totalResistance(inp.hp, U, env) catch return error.IttcFailure;
+    const q = 0.5 * inp.rho * U * U * inp.hp.S;
+    if (!(q > 0.0) or !math.isFinite(br.r_total)) return error.NonFinite;
+    return .{
+        .Fn = br.fn_val,
+        .Rn = br.rn,
+        .Cf = br.c_f,
+        .one_plus_k = br.one_plus_k,
+        .Cw = br.r_w / q,
+        .Cb_bulb = br.r_b / q,
+        .c_2 = br.c_2,
+        .c_5 = br.c_5,
+        .Ct_no_ca = br.r_total / q,
+    };
+}
+
+test "hm1984 full matches gym mapping when given the same particulars" {
+    const h: Hull = .{};
+    const hp = toHoltropParticulars(h);
+    const a = try estimate_resistance_hm1984(h);
+    const b = try estimate_hm1984_full(.{ .hp = hp, .Fn = h.Fn });
+    try std.testing.expectApproxEqRel(a.Ct, b.Ct_no_ca, 1e-12);
+    try std.testing.expectApproxEqRel(a.Cw, b.Cw, 1e-12);
 }
 
 test "default hull feasible" {

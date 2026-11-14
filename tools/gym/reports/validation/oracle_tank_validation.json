@@ -1,0 +1,1361 @@
+{
+  "convention": "E%D = (D - S)/D*100, model-scale C_T, C_F ITTC-57 at tank Re, no C_A",
+  "drift_thresholds": [
+    {
+      "holdout": "michell_l15",
+      "max": 0.2249249272856633,
+      "max_dFn": 0.06,
+      "median": 0.06687532123465019,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 40,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": false,
+      "seen": "hm1984_gym",
+      "threshold": 0.17971918496956527
+    },
+    {
+      "holdout": "simplified_py",
+      "max": 0.18399164061350481,
+      "max_dFn": 0.06,
+      "median": 0.04936861535301926,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 40,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": false,
+      "seen": "hm1984_gym",
+      "threshold": 0.1371591419861473
+    },
+    {
+      "holdout": "hm1984_full",
+      "max": 0.09271623995047304,
+      "max_dFn": 0.06,
+      "median": 0.023137865275517824,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 40,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": false,
+      "seen": "hm1984_gym",
+      "threshold": 0.09151331532992234
+    },
+    {
+      "holdout": "michell_l15",
+      "max": 0.127405758287372,
+      "max_dFn": 0.06,
+      "median": 0.05598881913439081,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 40,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": false,
+      "seen": "simplified_py",
+      "threshold": 0.12214398665131383
+    }
+  ],
+  "drift_thresholds_same_hull": [
+    {
+      "holdout": "michell_l15",
+      "max": 0.1773399353739813,
+      "max_dFn": 0.06,
+      "median": 0.08837225595216967,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 12,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": true,
+      "seen": "hm1984_gym",
+      "threshold": 0.1773399353739813
+    },
+    {
+      "holdout": "simplified_py",
+      "max": 0.13448828868579477,
+      "max_dFn": 0.06,
+      "median": 0.05929879223080343,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 12,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": true,
+      "seen": "hm1984_gym",
+      "threshold": 0.13448828868579477
+    },
+    {
+      "holdout": "hm1984_full",
+      "max": 0.0018340616724649428,
+      "max_dFn": 0.06,
+      "median": 0.0012244686225186888,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 12,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": true,
+      "seen": "hm1984_gym",
+      "threshold": 0.0018340616724649428
+    },
+    {
+      "holdout": "michell_l15",
+      "max": 0.12186705130204763,
+      "max_dFn": 0.06,
+      "median": 0.09183326548999901,
+      "method": "quantile of |\u0394e_seen \u2212 \u0394e_holdout| over reference-point pairs (first-order error propagation)",
+      "n_pairs": 12,
+      "n_points": 11,
+      "quantile": 0.95,
+      "same_hull_only": true,
+      "seen": "simplified_py",
+      "threshold": 0.12186705130204763
+    }
+  ],
+  "envelope_tol_pct": 10.0,
+  "hulls": [
+    "DTMB5415",
+    "JBC",
+    "KCS",
+    "KVLCC2"
+  ],
+  "n_points": 11,
+  "notes": "Validation of this harness's oracles against public tank data. Small sample (11 points, 4 hulls): treat envelopes as evidence bounds, not certified validity ranges. Not ITTC V&V, not class.",
+  "per_oracle": {
+    "hm1984_full": {
+      "by_Fn": {
+        "0.00-0.15": {
+          "max_abs_E_pct": 12.991248150851586,
+          "mean_E_pct": -6.485438546998821,
+          "mean_abs_E_pct": 6.485438546998821,
+          "n": 4,
+          "rms_E_pct": 7.508268705260154
+        },
+        "0.15-0.22": {
+          "max_abs_E_pct": 9.160859136690648,
+          "mean_E_pct": -5.991526698254688,
+          "mean_abs_E_pct": 5.991526698254688,
+          "n": 2,
+          "rms_E_pct": 6.778131031576563
+        },
+        "0.22-0.30": {
+          "max_abs_E_pct": 18.045332794395048,
+          "mean_E_pct": -11.466791906752107,
+          "mean_abs_E_pct": 11.466791906752107,
+          "n": 4,
+          "rms_E_pct": 12.706845526465761
+        },
+        "0.30-0.50": {
+          "max_abs_E_pct": 0.7674965789473784,
+          "mean_E_pct": -0.7674965789473784,
+          "mean_abs_E_pct": 0.7674965789473784,
+          "n": 1,
+          "rms_E_pct": 0.7674965789473784
+        }
+      },
+      "by_hull": {
+        "DTMB5415": {
+          "max_abs_E_pct": 5.550482971619364,
+          "mean_E_pct": -3.6819553039632953,
+          "mean_abs_E_pct": 3.6819553039632953,
+          "n": 3,
+          "rms_E_pct": 4.2328013443627714
+        },
+        "JBC": {
+          "max_abs_E_pct": 4.642920913965961,
+          "mean_E_pct": -4.642920913965961,
+          "mean_abs_E_pct": 4.642920913965961,
+          "n": 1,
+          "rms_E_pct": 4.642920913965961
+        },
+        "KCS": {
+          "max_abs_E_pct": 18.045332794395048,
+          "mean_E_pct": -9.313239468958837,
+          "mean_abs_E_pct": 9.313239468958837,
+          "n": 6,
+          "rms_E_pct": 10.952535440889786
+        },
+        "KVLCC2": {
+          "max_abs_E_pct": 12.991248150851586,
+          "mean_E_pct": -12.991248150851586,
+          "mean_abs_E_pct": 12.991248150851586,
+          "n": 1,
+          "rms_E_pct": 12.991248150851586
+        }
+      },
+      "envelope": {
+        "box": {
+          "B_T": [
+            2.7272727272727275,
+            3.099717400080743
+          ],
+          "Cb": [
+            0.507,
+            0.858
+          ],
+          "Cp": [
+            0.6175395858708892,
+            0.8596333032762248
+          ],
+          "Fn": [
+            0.1,
+            0.41
+          ],
+          "L_B": [
+            6.222222222222222,
+            7.449856733524355
+          ],
+          "lcb_frac": [
+            -0.0148,
+            0.025474999999999998
+          ]
+        },
+        "failed_points": [
+          "KCS@Fn=0.227",
+          "KCS@Fn=0.260",
+          "KVLCC2@Fn=0.142"
+        ],
+        "n_failed": 3,
+        "n_validated": 8,
+        "tol_pct": 10.0,
+        "validated_points": [
+          "KCS@Fn=0.108",
+          "KCS@Fn=0.152",
+          "KCS@Fn=0.195",
+          "KCS@Fn=0.282",
+          "JBC@Fn=0.142",
+          "DTMB5415@Fn=0.100",
+          "DTMB5415@Fn=0.280",
+          "DTMB5415@Fn=0.410"
+        ]
+      },
+      "overall": {
+        "max_abs_E_pct": 18.045332794395048,
+        "mean_E_pct": -7.687224708223678,
+        "mean_abs_E_pct": 7.687224708223678,
+        "n": 11,
+        "rms_E_pct": 9.360590794760698
+      }
+    },
+    "hm1984_gym": {
+      "by_Fn": {
+        "0.00-0.15": {
+          "max_abs_E_pct": 15.315641160465221,
+          "mean_E_pct": -7.515994816254965,
+          "mean_abs_E_pct": 7.515994816254965,
+          "n": 4,
+          "rms_E_pct": 9.058391587171442
+        },
+        "0.15-0.22": {
+          "max_abs_E_pct": 9.457591472859486,
+          "mean_E_pct": -6.229123994305904,
+          "mean_abs_E_pct": 6.229123994305904,
+          "n": 2,
+          "rms_E_pct": 7.016052166034376
+        },
+        "0.22-0.30": {
+          "max_abs_E_pct": 18.554553062752408,
+          "mean_E_pct": -9.707222367737383,
+          "mean_abs_E_pct": 11.249870923138428,
+          "n": 4,
+          "rms_E_pct": 12.907185533146336
+        },
+        "0.30-0.50": {
+          "max_abs_E_pct": 4.601011812612866,
+          "mean_E_pct": 4.601011812612866,
+          "mean_abs_E_pct": 4.601011812612866,
+          "n": 1,
+          "rms_E_pct": 4.601011812612866
+        }
+      },
+      "by_hull": {
+        "DTMB5415": {
+          "max_abs_E_pct": 4.601011812612866,
+          "mean_E_pct": 1.7538675358605798,
+          "mean_abs_E_pct": 3.3703384130827216,
+          "n": 3,
+          "rms_E_pct": 3.4913019863544843
+        },
+        "JBC": {
+          "max_abs_E_pct": 8.594285573512215,
+          "mean_E_pct": -8.594285573512215,
+          "mean_abs_E_pct": 8.594285573512215,
+          "n": 1,
+          "rms_E_pct": 8.594285573512215
+        },
+        "KCS": {
+          "max_abs_E_pct": 18.554553062752408,
+          "mean_E_pct": -9.683630130928774,
+          "mean_abs_E_pct": 9.683630130928774,
+          "n": 6,
+          "rms_E_pct": 11.322696192988158
+        },
+        "KVLCC2": {
+          "max_abs_E_pct": 15.315641160465221,
+          "mean_E_pct": -15.315641160465221,
+          "mean_abs_E_pct": 15.315641160465221,
+          "n": 1,
+          "rms_E_pct": 15.315641160465221
+        }
+      },
+      "envelope": {
+        "box": {
+          "B_T": [
+            2.7272727272727275,
+            3.099717400080743
+          ],
+          "Cb": [
+            0.507,
+            0.858
+          ],
+          "Cp": [
+            0.6175395858708892,
+            0.8596333032762248
+          ],
+          "Fn": [
+            0.1,
+            0.41
+          ],
+          "L_B": [
+            6.222222222222222,
+            7.449856733524355
+          ],
+          "lcb_frac": [
+            -0.0148,
+            0.025474999999999998
+          ]
+        },
+        "failed_points": [
+          "KCS@Fn=0.227",
+          "KCS@Fn=0.260",
+          "KVLCC2@Fn=0.142"
+        ],
+        "n_failed": 3,
+        "n_validated": 8,
+        "tol_pct": 10.0,
+        "validated_points": [
+          "KCS@Fn=0.108",
+          "KCS@Fn=0.152",
+          "KCS@Fn=0.195",
+          "KCS@Fn=0.282",
+          "JBC@Fn=0.142",
+          "DTMB5415@Fn=0.100",
+          "DTMB5415@Fn=0.280",
+          "DTMB5415@Fn=0.410"
+        ]
+      },
+      "overall": {
+        "max_abs_E_pct": 18.554553062752408,
+        "mean_E_pct": -6.977282264724395,
+        "mean_abs_E_pct": 8.37479297807257,
+        "n": 11,
+        "rms_E_pct": 10.064423714826741
+      }
+    },
+    "michell_l15": {
+      "by_Fn": {
+        "0.00-0.15": {
+          "max_abs_E_pct": 27.386410829156375,
+          "mean_E_pct": -13.97217410539306,
+          "mean_abs_E_pct": 13.97217410539306,
+          "n": 4,
+          "rms_E_pct": 16.281084913792032
+        },
+        "0.15-0.22": {
+          "max_abs_E_pct": 21.592649214757202,
+          "mean_E_pct": -19.31045229822717,
+          "mean_abs_E_pct": 19.31045229822717,
+          "n": 2,
+          "rms_E_pct": 19.444844836817964
+        },
+        "0.22-0.30": {
+          "max_abs_E_pct": 30.495024431935846,
+          "mean_E_pct": -18.200880229895596,
+          "mean_abs_E_pct": 18.200880229895596,
+          "n": 4,
+          "rms_E_pct": 19.624568138903793
+        },
+        "0.30-0.50": {
+          "max_abs_E_pct": 9.678545476802055,
+          "mean_E_pct": 9.678545476802055,
+          "mean_abs_E_pct": 9.678545476802055,
+          "n": 1,
+          "rms_E_pct": 9.678545476802055
+        }
+      },
+      "by_hull": {
+        "DTMB5415": {
+          "max_abs_E_pct": 16.02998980528429,
+          "mean_E_pct": -4.301006698840573,
+          "mean_abs_E_pct": 10.753370350041942,
+          "n": 3,
+          "rms_E_pct": 11.45364513664254
+        },
+        "JBC": {
+          "max_abs_E_pct": 14.611247501068089,
+          "mean_E_pct": -14.611247501068089,
+          "mean_abs_E_pct": 14.611247501068089,
+          "n": 1,
+          "rms_E_pct": 14.611247501068089
+        },
+        "KCS": {
+          "max_abs_E_pct": 30.495024431935846,
+          "mean_E_pct": -17.122316339010123,
+          "mean_abs_E_pct": 17.122316339010123,
+          "n": 6,
+          "rms_E_pct": 18.679783251987995
+        },
+        "KVLCC2": {
+          "max_abs_E_pct": 27.386410829156375,
+          "mean_E_pct": -27.386410829156375,
+          "mean_abs_E_pct": 27.386410829156375,
+          "n": 1,
+          "rms_E_pct": 27.386410829156375
+        }
+      },
+      "envelope": {
+        "box": {
+          "B_T": [
+            2.9812755997659446,
+            3.099717400080743
+          ],
+          "Cb": [
+            0.507,
+            0.6505
+          ],
+          "Cp": [
+            0.6175395858708892,
+            0.6604731444816733
+          ],
+          "Fn": [
+            0.1,
+            0.41
+          ],
+          "L_B": [
+            7.1428851815505405,
+            7.449856733524355
+          ],
+          "lcb_frac": [
+            -0.0148,
+            -0.00683
+          ]
+        },
+        "failed_points": [
+          "KCS@Fn=0.152",
+          "KCS@Fn=0.195",
+          "KCS@Fn=0.227",
+          "KCS@Fn=0.260",
+          "KCS@Fn=0.282",
+          "JBC@Fn=0.142",
+          "KVLCC2@Fn=0.142",
+          "DTMB5415@Fn=0.280"
+        ],
+        "n_failed": 8,
+        "n_validated": 3,
+        "tol_pct": 10.0,
+        "validated_points": [
+          "KCS@Fn=0.108",
+          "DTMB5415@Fn=0.100",
+          "DTMB5415@Fn=0.410"
+        ]
+      },
+      "overall": {
+        "max_abs_E_pct": 30.495024431935846,
+        "mean_E_pct": -14.330416041891539,
+        "mean_abs_E_pct": 16.090151583128275,
+        "n": 11,
+        "rms_E_pct": 17.711495564480447
+      }
+    },
+    "michell_l15_L2basis": {
+      "by_Fn": {
+        "0.00-0.15": {
+          "max_abs_E_pct": 16.785637704118177,
+          "mean_E_pct": -7.556593054109715,
+          "mean_abs_E_pct": 7.556593054109715,
+          "n": 4,
+          "rms_E_pct": 9.309828972326954
+        },
+        "0.15-0.22": {
+          "max_abs_E_pct": 5.423364505792772,
+          "mean_E_pct": -4.899677308526602,
+          "mean_abs_E_pct": 4.899677308526602,
+          "n": 2,
+          "rms_E_pct": 4.927584195959617
+        },
+        "0.22-0.30": {
+          "max_abs_E_pct": 19.46187104371138,
+          "mean_E_pct": 8.544837518767407,
+          "mean_abs_E_pct": 11.066974176251463,
+          "n": 4,
+          "rms_E_pct": 12.752901306376557
+        },
+        "0.30-0.50": {
+          "max_abs_E_pct": 45.335754127338596,
+          "mean_E_pct": 45.335754127338596,
+          "mean_abs_E_pct": 45.335754127338596,
+          "n": 1,
+          "rms_E_pct": 45.335754127338596
+        }
+      },
+      "by_hull": {
+        "DTMB5415": {
+          "max_abs_E_pct": 45.335754127338596,
+          "mean_E_pct": 19.08210144804195,
+          "mean_abs_E_pct": 21.097909455034493,
+          "n": 3,
+          "rms_E_pct": 27.61343649318762
+        },
+        "JBC": {
+          "max_abs_E_pct": 6.084301070961161,
+          "mean_E_pct": -6.084301070961161,
+          "mean_abs_E_pct": 6.084301070961161,
+          "n": 1,
+          "rms_E_pct": 6.084301070961161
+        },
+        "KCS": {
+          "max_abs_E_pct": 19.46187104371138,
+          "mean_E_pct": 0.8521686333116089,
+          "mean_abs_E_pct": 7.24428508760895,
+          "n": 6,
+          "rms_E_pct": 9.081560307033765
+        },
+        "KVLCC2": {
+          "max_abs_E_pct": 16.785637704118177,
+          "mean_E_pct": -16.785637704118177,
+          "mean_abs_E_pct": 16.785637704118177,
+          "n": 1,
+          "rms_E_pct": 16.785637704118177
+        }
+      },
+      "envelope": {
+        "box": {
+          "B_T": [
+            2.7272727272727275,
+            3.099717400080743
+          ],
+          "Cb": [
+            0.507,
+            0.858
+          ],
+          "Cp": [
+            0.6175395858708892,
+            0.8596333032762248
+          ],
+          "Fn": [
+            0.1,
+            0.26
+          ],
+          "L_B": [
+            6.222222222222222,
+            7.449856733524355
+          ],
+          "lcb_frac": [
+            -0.0148,
+            0.025474999999999998
+          ]
+        },
+        "failed_points": [
+          "KCS@Fn=0.282",
+          "KVLCC2@Fn=0.142",
+          "DTMB5415@Fn=0.280",
+          "DTMB5415@Fn=0.410"
+        ],
+        "n_failed": 4,
+        "n_validated": 7,
+        "tol_pct": 10.0,
+        "validated_points": [
+          "KCS@Fn=0.108",
+          "KCS@Fn=0.152",
+          "KCS@Fn=0.195",
+          "KCS@Fn=0.227",
+          "KCS@Fn=0.260",
+          "JBC@Fn=0.142",
+          "DTMB5415@Fn=0.100"
+        ]
+      },
+      "overall": {
+        "max_abs_E_pct": 45.335754127338596,
+        "mean_E_pct": 3.589943397174197,
+        "mean_abs_E_pct": 11.784488878712411,
+        "n": 11,
+        "rms_E_pct": 16.790501652605634
+      }
+    },
+    "simplified_py": {
+      "by_Fn": {
+        "0.00-0.15": {
+          "max_abs_E_pct": 10.942554319650705,
+          "mean_E_pct": -3.3681602526873204,
+          "mean_abs_E_pct": 3.9212077284079427,
+          "n": 4,
+          "rms_E_pct": 5.77993638467993
+        },
+        "0.15-0.22": {
+          "max_abs_E_pct": 4.121027238392887,
+          "mean_E_pct": -3.124119056221695,
+          "mean_abs_E_pct": 3.124119056221695,
+          "n": 2,
+          "rms_E_pct": 3.279320935975527
+        },
+        "0.22-0.30": {
+          "max_abs_E_pct": 18.494018039608644,
+          "mean_E_pct": 6.8137600769661795,
+          "mean_abs_E_pct": 8.749585438969655,
+          "n": 4,
+          "rms_E_pct": 10.841915196223606
+        },
+        "0.30-0.50": {
+          "max_abs_E_pct": 29.88935165033258,
+          "mean_E_pct": 29.88935165033258,
+          "mean_abs_E_pct": 29.88935165033258,
+          "n": 1,
+          "rms_E_pct": 29.88935165033258
+        }
+      },
+      "by_hull": {
+        "DTMB5415": {
+          "max_abs_E_pct": 29.88935165033258,
+          "mean_E_pct": 13.558068954175345,
+          "mean_abs_E_pct": 13.558068954175345,
+          "n": 3,
+          "rms_E_pct": 18.273044494643727
+        },
+        "JBC": {
+          "max_abs_E_pct": 0.7227876402895889,
+          "mean_E_pct": 0.7227876402895889,
+          "mean_abs_E_pct": 0.7227876402895889,
+          "n": 1,
+          "rms_E_pct": 0.7227876402895889
+        },
+        "KCS": {
+          "max_abs_E_pct": 18.494018039608644,
+          "mean_E_pct": 1.1615121086399514,
+          "mean_abs_E_pct": 5.7468689349700055,
+          "n": 6,
+          "rms_E_pct": 8.131482135200905
+        },
+        "KVLCC2": {
+          "max_abs_E_pct": 10.942554319650705,
+          "mean_E_pct": -10.942554319650705,
+          "mean_abs_E_pct": 10.942554319650705,
+          "n": 1,
+          "rms_E_pct": 10.942554319650705
+        }
+      },
+      "envelope": {
+        "box": {
+          "B_T": [
+            2.7272727272727275,
+            3.099717400080743
+          ],
+          "Cb": [
+            0.507,
+            0.858
+          ],
+          "Cp": [
+            0.6175395858708892,
+            0.8596333032762248
+          ],
+          "Fn": [
+            0.1,
+            0.26
+          ],
+          "L_B": [
+            6.222222222222222,
+            7.449856733524355
+          ],
+          "lcb_frac": [
+            -0.0148,
+            0.025474999999999998
+          ]
+        },
+        "failed_points": [
+          "KCS@Fn=0.282",
+          "KVLCC2@Fn=0.142",
+          "DTMB5415@Fn=0.280",
+          "DTMB5415@Fn=0.410"
+        ],
+        "n_failed": 4,
+        "n_validated": 7,
+        "tol_pct": 10.0,
+        "validated_points": [
+          "KCS@Fn=0.108",
+          "KCS@Fn=0.152",
+          "KCS@Fn=0.195",
+          "KCS@Fn=0.227",
+          "KCS@Fn=0.260",
+          "JBC@Fn=0.142",
+          "DTMB5415@Fn=0.100"
+        ]
+      },
+      "overall": {
+        "max_abs_E_pct": 29.88935165033258,
+        "mean_E_pct": 3.4021375304549664,
+        "mean_abs_E_pct": 7.892796584753305,
+        "n": 11,
+        "rms_E_pct": 11.750049874600915
+      }
+    }
+  },
+  "reference": "data/reference/tank_resistance_reference.json",
+  "rows": [
+    {
+      "CT_measured": 0.003796,
+      "Fn": 0.108,
+      "Re": 5230296.603894101,
+      "U_D_pct": 1.0,
+      "dataset_id": "t2015_kcs_case21",
+      "hull": "KCS",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.003931885365,
+          "Cf": 0.003368698573,
+          "Cw_S0": 2.133075e-06,
+          "E_pct": -3.5796987618545932,
+          "available": true,
+          "one_plus_k": 1.166549100364
+        },
+        "hm1984_gym": {
+          "CT": 0.003937565982329342,
+          "Cw_S0": 2.2005990446680944e-06,
+          "E_pct": -3.7293462152092136,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.168252075111
+        },
+        "michell_l15": {
+          "CT": 0.004074605989792783,
+          "Cw_S0": 0.00013924060650810866,
+          "E_pct": -7.339462323308293,
+          "available": true,
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.003960470105515852,
+          "Cw_S0_physical": 0.00013924060650810866,
+          "Cw_as_composed": 2.5104722231177867e-05,
+          "E_pct": -4.332721430870707,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "simplified_py": {
+          "CT": 0.0039340294551508115,
+          "Cw_S0": 2.3793784777398047e-06,
+          "E_pct": -3.636181642539821,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.167149149655307
+        }
+      },
+      "params": {
+        "B_T": 2.9812755997659446,
+        "Cb": 0.6505,
+        "Cp": 0.6604731444816733,
+        "Fn": 0.108,
+        "L_B": 7.1428851815505405,
+        "lcb_frac": -0.0148
+      }
+    },
+    {
+      "CT_measured": 0.003641,
+      "Fn": 0.152,
+      "Re": 7361158.183258364,
+      "U_D_pct": 1.0,
+      "dataset_id": "t2015_kcs_case21",
+      "hull": "KCS",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.003743756093,
+          "Cf": 0.003166368216,
+          "Cw_S0": 5.0032099e-05,
+          "E_pct": -2.822194259818729,
+          "available": true,
+          "one_plus_k": 1.166549100364
+        },
+        "hm1984_gym": {
+          "CT": 0.003750253903738542,
+          "Cw_S0": 5.12504028646854e-05,
+          "E_pct": -3.0006565157523215,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.168252075111
+        },
+        "michell_l15": {
+          "CT": 0.004260998778447593,
+          "Cw_S0": 0.0005619952775737363,
+          "E_pct": -17.02825538169714,
+          "available": true,
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0038003297999509925,
+          "Cw_S0_physical": 0.0005619952775737363,
+          "Cw_as_composed": 0.00010132629907713545,
+          "E_pct": -4.375990111260432,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "simplified_py": {
+          "CT": 0.003718451747924179,
+          "Cw_S0": 2.2940408723926297e-05,
+          "E_pct": -2.1272108740505034,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.167149149655307
+        }
+      },
+      "params": {
+        "B_T": 2.9812755997659446,
+        "Cb": 0.6505,
+        "Cp": 0.6604731444816733,
+        "Fn": 0.152,
+        "L_B": 7.1428851815505405,
+        "lcb_frac": -0.0148
+      }
+    },
+    {
+      "CT_measured": 0.003475,
+      "Fn": 0.195,
+      "Re": 9443591.090364348,
+      "U_D_pct": 1.0,
+      "dataset_id": "t2015_kcs_case21",
+      "hull": "KCS",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.003793339855,
+          "Cf": 0.003030149756,
+          "Cw_S0": 0.000258521384,
+          "E_pct": -9.160859136690648,
+          "available": true,
+          "one_plus_k": 1.166549100364
+        },
+        "hm1984_gym": {
+          "CT": 0.003803651303681867,
+          "Cw_S0": 0.00026377810580151387,
+          "E_pct": -9.457591472859486,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.168252075111
+        },
+        "michell_l15": {
+          "CT": 0.004225344560212813,
+          "Cw_S0": 0.00068547136233246,
+          "E_pct": -21.592649214757202,
+          "available": true,
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0036634619165762986,
+          "Cw_S0_physical": 0.00068547136233246,
+          "Cw_as_composed": 0.00012358871869594555,
+          "E_pct": -5.423364505792772,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "simplified_py": {
+          "CT": 0.0036182056965341526,
+          "Cw_S0": 8.167442831354036e-05,
+          "E_pct": -4.121027238392887,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.167149149655307
+        }
+      },
+      "params": {
+        "B_T": 2.9812755997659446,
+        "Cb": 0.6505,
+        "Cp": 0.6604731444816733,
+        "Fn": 0.195,
+        "L_B": 7.1428851815505405,
+        "lcb_frac": -0.0148
+      }
+    },
+    {
+      "CT_measured": 0.003467,
+      "Fn": 0.227,
+      "Re": 10993308.602629269,
+      "U_D_pct": 1.0,
+      "dataset_id": "t2015_kcs_case21",
+      "hull": "KCS",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.00401082665,
+          "Cf": 0.002951335083,
+          "Cw_S0": 0.000567949364,
+          "E_pct": -15.685798961638312,
+          "available": true,
+          "one_plus_k": 1.166549100364
+        },
+        "hm1984_gym": {
+          "CT": 0.004026512666632303,
+          "Cw_S0": 0.0005787107830615833,
+          "E_pct": -16.13823670701767,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.168252075111
+        },
+        "michell_l15": {
+          "CT": 0.004524262497055216,
+          "Cw_S0": 0.0010764606134844967,
+          "E_pct": -30.495024431935846,
+          "available": true,
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0036418849558299445,
+          "Cw_S0_physical": 0.0010764606134844967,
+          "Cw_as_composed": 0.00019408307225922527,
+          "E_pct": -5.044273314968111,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "simplified_py": {
+          "CT": 0.003601230130601321,
+          "Cw_S0": 0.00015668325384342064,
+          "E_pct": -3.871650724006949,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.167149149655307
+        }
+      },
+      "params": {
+        "B_T": 2.9812755997659446,
+        "Cb": 0.6505,
+        "Cp": 0.6604731444816733,
+        "Fn": 0.227,
+        "L_B": 7.1428851815505405,
+        "lcb_frac": -0.0148
+      }
+    },
+    {
+      "CT_measured": 0.003711,
+      "Fn": 0.26,
+      "Re": 12591454.787152465,
+      "U_D_pct": 1.0,
+      "dataset_id": "t2015_kcs_case21",
+      "hull": "KCS",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.0043806623,
+          "Cf": 0.002883504371,
+          "Cw_S0": 0.00101691287,
+          "E_pct": -18.045332794395048,
+          "available": true,
+          "one_plus_k": 1.166549100364
+        },
+        "hm1984_gym": {
+          "CT": 0.004399559464158742,
+          "Cw_S0": 0.001030997473224578,
+          "E_pct": -18.554553062752408,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.168252075111
+        },
+        "michell_l15": {
+          "CT": 0.004274231356457611,
+          "Cw_S0": 0.0009056693655234469,
+          "E_pct": -15.177347250272454,
+          "available": true,
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0035318518416820434,
+          "Cw_S0_physical": 0.0009056693655234469,
+          "Cw_as_composed": 0.00016328985074787913,
+          "E_pct": 4.827490119050296,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "simplified_py": {
+          "CT": 0.0036282029478647802,
+          "Cw_S0": 0.00026282115480745553,
+          "E_pct": 2.2311250912212253,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.167149149655307
+        }
+      },
+      "params": {
+        "B_T": 2.9812755997659446,
+        "Cb": 0.6505,
+        "Cp": 0.6604731444816733,
+        "Fn": 0.26,
+        "L_B": 7.1428851815505405,
+        "lcb_frac": -0.0148
+      }
+    },
+    {
+      "CT_measured": 0.004501,
+      "Fn": 0.282,
+      "Re": 13656885.576834597,
+      "U_D_pct": 1.0,
+      "dataset_id": "t2015_kcs_case21",
+      "hull": "KCS",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.004797415736,
+          "Cf": 0.002844025124,
+          "Cw_S0": 0.001479720786,
+          "E_pct": -6.5855528993557,
+          "available": true,
+          "one_plus_k": 1.166549100364
+        },
+        "hm1984_gym": {
+          "CT": 0.0048260350705072895,
+          "Cw_S0": 0.0015035927864263446,
+          "E_pct": -7.221396811981553,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.168252075111
+        },
+        "michell_l15": {
+          "CT": 0.005000663186038362,
+          "Cw_S0": 0.0016782209019574168,
+          "E_pct": -11.101159432089798,
+          "available": true,
+          "one_plus_k": 1.168252075111,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0036250211843225507,
+          "Cw_S0_physical": 0.0016782209019574168,
+          "Cw_as_composed": 0.0003025789002416061,
+          "E_pct": 19.46187104371138,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.18029742085126507
+        },
+        "simplified_py": {
+          "CT": 0.003668584248037215,
+          "Cw_S0": 0.00034927862105986273,
+          "E_pct": 18.494018039608644,
+          "S_gym_over_S0": 1.2520598143405428,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.167149149655307
+        }
+      },
+      "params": {
+        "B_T": 2.9812755997659446,
+        "Cb": 0.6505,
+        "Cp": 0.6604731444816733,
+        "Fn": 0.282,
+        "L_B": 7.1428851815505405,
+        "lcb_frac": -0.0148
+      }
+    },
+    {
+      "CT_measured": 0.004289,
+      "Fn": 0.142,
+      "Re": 7437052.056153051,
+      "U_D_pct": 1.0,
+      "dataset_id": "t2015_jbc_case11a",
+      "hull": "JBC",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.004488134878,
+          "Cf": 0.003160292421,
+          "Cw_S0": 0.000178775326,
+          "E_pct": -4.642920913965961,
+          "available": true,
+          "one_plus_k": 1.363595192673
+        },
+        "hm1984_gym": {
+          "CT": 0.004657608908247939,
+          "Cw_S0": 0.00022917035582785544,
+          "E_pct": -8.594285573512215,
+          "S_gym_over_S0": 1.1011055103677398,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.401190194802
+        },
+        "michell_l15": {
+          "CT": 0.004915676405320811,
+          "Cw_S0": 0.0004872378529007274,
+          "E_pct": -14.611247501068089,
+          "available": true,
+          "one_plus_k": 1.401190194802,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0045499556729335245,
+          "Cw_S0_physical": 0.0004872378529007274,
+          "Cw_as_composed": 0.0001215171205134414,
+          "E_pct": -6.084301070961161,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.24939999999999998
+        },
+        "simplified_py": {
+          "CT": 0.00425799963810798,
+          "Cw_S0": 3.6190515974291444e-06,
+          "E_pct": 0.7227876402895889,
+          "S_gym_over_S0": 1.1011055103677398,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.3461169873333456
+        }
+      },
+      "params": {
+        "B_T": 2.7272727272727275,
+        "Cb": 0.858,
+        "Cp": 0.8596333032762248,
+        "Fn": 0.142,
+        "L_B": 6.222222222222222,
+        "lcb_frac": 0.025474999999999998
+      }
+    },
+    {
+      "CT_measured": 0.00411,
+      "Fn": 0.142,
+      "Re": 4600000.0,
+      "U_D_pct": 1.0,
+      "dataset_id": "g2010_kvlcc2_moeri",
+      "hull": "KVLCC2",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.004643940299,
+          "Cf": 0.003449763786,
+          "Cw_S0": 8.3108994e-05,
+          "E_pct": -12.991248150851586,
+          "available": true,
+          "one_plus_k": 1.322070607714
+        },
+        "hm1984_gym": {
+          "CT": 0.0047394728516951205,
+          "Cw_S0": 9.9259434185083e-05,
+          "E_pct": -15.315641160465221,
+          "S_gym_over_S0": 1.1384328102505208,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.345124281947
+        },
+        "michell_l15": {
+          "CT": 0.005235581485078327,
+          "Cw_S0": 0.0005953680675682892,
+          "E_pct": -27.386410829156375,
+          "available": true,
+          "one_plus_k": 1.345124281947,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.004799889709639257,
+          "Cw_S0_physical": 0.0005953680675682892,
+          "Cw_as_composed": 0.00015967629212921942,
+          "E_pct": -16.785637704118177,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.2681976088865472
+        },
+        "simplified_py": {
+          "CT": 0.004559738982537644,
+          "Cw_S0": 1.6623354290273384e-06,
+          "E_pct": -10.942554319650705,
+          "S_gym_over_S0": 1.1384328102505208,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.3213141347906774
+        }
+      },
+      "params": {
+        "B_T": 2.7886224205242613,
+        "Cb": 0.8098,
+        "Cp": 0.8114228456913827,
+        "Fn": 0.142,
+        "L_B": 5.5172,
+        "lcb_frac": 0.0348
+      }
+    },
+    {
+      "CT_measured": 0.00393,
+      "Fn": 0.1,
+      "Re": 3910682.9396197954,
+      "U_D_pct": 3.2,
+      "dataset_id": "ittc_5415_cssrc",
+      "hull": "DTMB5415",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.004115805934,
+          "Cf": 0.00355597933,
+          "Cw_S0": 7.66199e-07,
+          "E_pct": -4.727886361323144,
+          "available": true,
+          "one_plus_k": 1.157217000475
+        },
+        "hm1984_gym": {
+          "CT": 0.004025290958212246,
+          "Cw_S0": 4.360644242123323e-07,
+          "E_pct": -2.424706315833213,
+          "S_gym_over_S0": 1.4239814786069651,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.131723940049
+        },
+        "michell_l15": {
+          "CT": 0.004187476927683952,
+          "Cw_S0": 0.00016262203389591888,
+          "E_pct": -6.551575768039484,
+          "available": true,
+          "one_plus_k": 1.131723940049,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.004048831882012211,
+          "Cw_S0_physical": 0.00016262203389591888,
+          "Cw_as_composed": 2.3976988224177e-05,
+          "E_pct": -3.0237120104888158,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.1474399726147978
+        },
+        "simplified_py": {
+          "CT": 0.00391493602267174,
+          "Cw_S0": 2.903921472972504e-06,
+          "E_pct": 0.383307311151655,
+          "S_gym_over_S0": 1.4239814786069651,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.1
+        }
+      },
+      "params": {
+        "B_T": 3.099717400080743,
+        "Cb": 0.507,
+        "Cp": 0.6175395858708892,
+        "Fn": 0.1,
+        "L_B": 7.449856733524355,
+        "lcb_frac": -0.00683
+      }
+    },
+    {
+      "CT_measured": 0.004193,
+      "Fn": 0.28,
+      "Re": 10949912.230935426,
+      "U_D_pct": 0.5,
+      "dataset_id": "ittc_5415_cssrc",
+      "hull": "DTMB5415",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.004425731751,
+          "Cf": 0.002952947667,
+          "Cw_S0": 0.001008530509,
+          "E_pct": -5.550482971619364,
+          "available": true,
+          "one_plus_k": 1.157217000475
+        },
+        "hm1984_gym": {
+          "CT": 0.004063633492144068,
+          "Cw_S0": 0.000721357807660222,
+          "E_pct": 3.0852971108020864,
+          "S_gym_over_S0": 1.4239814786069651,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.131723940049
+        },
+        "michell_l15": {
+          "CT": 0.00486513747253557,
+          "Cw_S0": 0.0015228617880517236,
+          "E_pct": -16.02998980528429,
+          "available": true,
+          "one_plus_k": 1.131723940049,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0035668063848103143,
+          "Cw_S0_physical": 0.0015228617880517236,
+          "Cw_as_composed": 0.00022453070032646817,
+          "E_pct": 14.934262227276065,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.1474399726147978
+        },
+        "simplified_py": {
+          "CT": 0.003756863096509317,
+          "Cw_S0": 0.0005082764731910457,
+          "E_pct": 10.4015479010418,
+          "S_gym_over_S0": 1.4239814786069651,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.1
+        }
+      },
+      "params": {
+        "B_T": 3.099717400080743,
+        "Cb": 0.507,
+        "Cp": 0.6175395858708892,
+        "Fn": 0.28,
+        "L_B": 7.449856733524355,
+        "lcb_frac": -0.00683
+      }
+    },
+    {
+      "CT_measured": 0.00646,
+      "Fn": 0.41,
+      "Re": 16033800.052441156,
+      "U_D_pct": 0.32,
+      "dataset_id": "ittc_5415_cssrc",
+      "hull": "DTMB5415",
+      "oracles": {
+        "hm1984_full": {
+          "CT": 0.006509580279,
+          "Cf": 0.002768019586,
+          "Cw_S0": 0.003306380956,
+          "E_pct": -0.7674965789473784,
+          "available": true,
+          "one_plus_k": 1.157217000475
+        },
+        "hm1984_gym": {
+          "CT": 0.0061627746369052085,
+          "Cw_S0": 0.0030298192274360856,
+          "E_pct": 4.601011812612866,
+          "S_gym_over_S0": 1.4239814786069651,
+          "available": true,
+          "fidelity": "hm1984_zig",
+          "one_plus_k": 1.131723940049
+        },
+        "michell_l15": {
+          "CT": 0.005834765962198587,
+          "Cw_S0": 0.002701810552729465,
+          "E_pct": 9.678545476802055,
+          "available": true,
+          "one_plus_k": 1.131723940049,
+          "viscous_from": "hm1984_zig"
+        },
+        "michell_l15_L2basis": {
+          "CT": 0.0035313102833739265,
+          "Cw_S0_physical": 0.002701810552729465,
+          "Cw_as_composed": 0.000398354873904804,
+          "E_pct": 45.335754127338596,
+          "available": true,
+          "basis_ratio_S0_over_L2": 0.1474399726147978
+        },
+        "simplified_py": {
+          "CT": 0.004529147883388515,
+          "Cw_S0": 0.0014840139700184188,
+          "E_pct": 29.88935165033258,
+          "S_gym_over_S0": 1.4239814786069651,
+          "available": true,
+          "fidelity": "simplified_py",
+          "one_plus_k": 1.1
+        }
+      },
+      "params": {
+        "B_T": 3.099717400080743,
+        "Cb": 0.507,
+        "Cp": 0.6175395858708892,
+        "Fn": 0.41,
+        "L_B": 7.449856733524355,
+        "lcb_frac": -0.00683
+      }
+    }
+  ],
+  "schema": "yard_sea_v0.validation.tank.v1"
+}
