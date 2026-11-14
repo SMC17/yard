@@ -1,0 +1,163 @@
+# Yard public-data catalog (machine-readable). Public / OSINT sources only; no ITAR / CUI.
+# status: ingested (values in repo) | vendored (file in repo, licence allows) |
+#         fetch-script (data/fetch/fetch_yard_data.py downloads + sha256) | catalogued (URL only) |
+#         not-usable (reason given)
+schema: yard.data.catalog.v1
+updated: 2026-11-14
+datasets:
+  - id: t2015_kcs_case21
+    name: Tokyo 2015 CFD workshop - KCS Case 2.1 resistance, sinkage, trim (EFD)
+    url: https://t2015.nmri.go.jp/Instructions_KCS/Case_2.1/Case_2-1.html
+    file_url: https://t2015.nmri.go.jp/Instructions_KCS/Case_2.1/vary_Fr_2-1.xls
+    licence: unspecified (public workshop download; raw file not redistributed)
+    citation: "Hino, T., Stern, F., Larsson, L., Visonneau, M., Hirata, N., Kim, J. (eds.), Numerical Ship Hydrodynamics: An Assessment of the Tokyo 2015 Workshop, Springer 2020. EFD: KRISO/NMRI."
+    size: 34 KB
+    quantities: [Fn, C_T, sinkage FP/AP, mean sinkage, trim]
+    n_points: 6
+    used_for: L1/L1.5 oracle validation (C_T vs Fn), validity envelope, drift threshold
+    status: ingested+fetch-script
+    sha256: 37e8bae8eb23f8353abbd1fcf65d14d0a4d5d32e3599054b69797369bda9cfff
+  - id: t2015_jbc_case11a
+    name: Tokyo 2015 - JBC Case 1.1a bare-hull resistance (EFD, NMRI)
+    url: https://t2015.nmri.go.jp/Instructions_JBC/Case_1-1a.html
+    licence: unspecified (raw file not redistributed)
+    citation: Tokyo 2015 Workshop on CFD in Ship Hydrodynamics, JBC Case 1.1a, NMRI
+    size: 13 KB
+    quantities: [C_T, sinkage, trim]
+    n_points: 1
+    used_for: oracle validation at high C_B (0.858)
+    status: ingested+fetch-script
+    sha256: c513ebbc4e18606de433835443b754b11a5b6dc416016fe22909049e1758ccfe
+  - id: g2010_kvlcc2_moeri
+    name: KVLCC2 design-draft resistance (MOERI tank, G2010 reference value)
+    url: https://simman2014.dk/ship-data/moeri-kvlcc2-tanker/geometry-and-conditions-moeri-kvlcc2-tanker/
+    licence: single factual value quoted with citation
+    citation: "MOERI tank test as used in Gothenburg 2010; quoted (C_T=4.110e-3, U_D=1.0%) in Eca, Hoekstra et al., doi:10.1007/978-94-007-6143-8_9"
+    quantities: [C_T at Fn=0.142]
+    n_points: 1
+    used_for: oracle validation (full-form tanker)
+    status: ingested
+  - id: korkmaz2021_kvlcc2_ballast
+    name: KVLCC2 ballast-condition resistance curve with uncertainty (SSPA)
+    url: https://strathprints.strath.ac.uk/74780/
+    licence: CC BY 4.0 (open-access article)
+    citation: "Korkmaz, K.B. et al. (2021), CFD based form factor determination method, Ocean Engineering 220:108451, Table 4"
+    quantities: [Fn, C_T, U_D]
+    n_points: 5
+    used_for: none yet
+    status: not-usable
+    reason: ballast condition with 2.8 m trim; HullState has no trim / ballast draft so the oracles cannot represent it
+  - id: ittc_5415_cssrc
+    name: DTMB 5415 5.72 m geosim resistance (CSSRC, ITTC uncertainty example)
+    url: https://www.ittc.info/media/11782/75-02-02-021.pdf
+    licence: ITTC procedure (copyright ITTC); three factual values quoted with citation
+    citation: "ITTC Recommended Procedure 7.5-02-02-02.1 (2021), Example for Uncertainty Analysis of Resistance Tests in Towing Tanks, Table 15"
+    quantities: [Fn, C_T, expanded uncertainty, sinkage, trim]
+    n_points: 3
+    used_for: oracle validation incl. high Fn (0.41), transom-stern combatant
+    status: ingested
+  - id: simman_particulars
+    name: SIMMAN 2008 / 2014 hull particulars (KCS, KVLCC1/2, DTMB 5415)
+    url: http://www.simman2008.dk/
+    licence: unspecified (particulars quoted; IGES geometry not redistributed)
+    quantities: [Lpp, B, T, displacement, S, C_B, C_M, LCB, IGES hull geometry]
+    used_for: model-scale particulars for validation; IGES lines are the path to real-geometry Michell / L2 / L3 validation
+    status: ingested (particulars) / catalogued (IGES)
+  - id: ittc_5415_facility_bias
+    name: ITTC Facility Bias World Wide Campaign (DTMB 5415, 11+10 tanks)
+    url: https://www.ittc.info/
+    licence: ITTC proceedings
+    quantities: [C_T, sinkage, trim, facility-to-facility scatter]
+    used_for: would give an empirical tank-to-tank scatter floor for the envelope tolerance
+    status: catalogued
+    reason: tabulated per-facility data only in ITTC 27th/28th proceedings PDFs; not machine-readable
+  - id: dsyhs_4tu
+    name: Delft Systematic Yacht Hull Series measurement data (model + full scale)
+    url: https://doi.org/10.4121/21501402
+    licence: CC0
+    citation: "den Ouden, J. (2022). Delft Systematic Yacht Hull Series Measurement Data. 4TU.ResearchData. doi:10.4121/21501402.v1"
+    size: 635 KB
+    quantities: [V, R_t, heave, pitch, heel/yaw runs, appendages]
+    used_for: future planing / yacht-form envelope and negative control
+    status: fetch-script
+    reason_not_used_yet: hydrostatics (S, displacement, C_M per Sysser) live on dsyhs.tudelft.nl, not in the xlsx
+    sha256: d8e03c1185717d783199723ba0cdf5bbc55b16f31508805f7ea9c6911f6b86d3
+  - id: uci_yacht_hydrodynamics
+    name: UCI Yacht Hydrodynamics (DSYHS series 1, 308 runs, residuary resistance)
+    url: https://archive.ics.uci.edu/dataset/243/yacht+hydrodynamics
+    licence: CC BY 4.0
+    citation: "Gerritsma, J., Onnink, R., Versluis, A. (1981). Yacht Hydrodynamics [Dataset]. UCI ML Repository. doi:10.24432/C5XG7R"
+    size: 11 KB
+    quantities: [LCB, C_P, L/disp^(1/3), B/T, L/B, Fn, R_r per unit weight x1e3]
+    used_for: out-of-envelope negative control and surrogate benchmarking (C_B ~0.35, below the gym's 0.45 floor)
+    status: vendored (data/vendored/uci_yacht_hydrodynamics.csv)
+  - id: shipd
+    name: Ship-D 30k parametric hull dataset (MIT DeCoDE)
+    url: https://doi.org/10.7910/DVN/MMGAUS
+    licence: CC0 1.0
+    citation: "Bagazinski, N.J., Ahmed, F. (2023). Ship-D: Ship Hull Dataset for Design Optimization using Machine Learning."
+    size: ~1.5 GB full; sampled
+    quantities: [45-D hull vector, Michell C_w at Fn grid, hydrostatics, constraints]
+    used_for: 45-D action space, HP surfaces, Michell L1.5, corpus sampling (already ingested via yard_sea_v0.corpus)
+    status: ingested (sample) + fetch (tools/gym/yard_sea_v0/corpus.py)
+  - id: mit_bluff_body_wakes
+    name: Turbulent wakes behind nine bluff bodies, DNS + PIV, MIT Intelligent Towing Tank (Re=10,000)
+    url: https://arxiv.org/abs/2611.09632
+    licence: per paper / host (reported CC-BY Harvard Dataverse; not verified here)
+    quantities: [mean + phase-averaged velocity, pressure, Reynolds stresses, drag/lift histories]
+    used_for: candidate L3 OpenFOAM wake validation (bluff-body appendage proxies)
+    status: catalogued
+    reason: hosting/licence not confirmed from the abstract page; size unknown
+  - id: turtles
+    name: TurtLES 3D turbulent cylinder-wake ILES benchmark (14 TB)
+    url: https://arxiv.org/abs/2611.09567
+    licence: per host
+    size: 14 TB
+    quantities: [400 trajectories x 400 steps, 3-11 M points/frame]
+    used_for: long-rollout surrogate drift tests (sample only)
+    status: catalogued
+    reason: 14 TB; only a single-trajectory sample would be fetched, host URL not yet confirmed
+  - id: wigley_cooperative
+    name: Wigley parabolic hull cooperative experiments (ITTC / Japan)
+    url: null
+    licence: n/a
+    quantities: [C_T, C_W, wave cuts vs Fn]
+    used_for: the cleanest Michell thin-ship validation case (analytic offsets)
+    status: catalogued
+    reason: no machine-readable open table located; values in Kajitani et al. (1983) scanned report
+  - id: series60
+    name: Series 60 systematic series (Todd 1963, DTMB report 1712)
+    url: https://apps.dtic.mil/
+    licence: US Government work (public domain)
+    quantities: [C_R vs Fn for C_B 0.60-0.80]
+    used_for: systematic-series validation over C_B
+    status: catalogued
+    reason: scanned report; tables need careful digitisation before use (not done - no fake values)
+  - id: wageningen_b
+    name: Wageningen B-screw series open-water polynomials
+    url: https://doi.org/10.1016/0029-8018(75)90002-X
+    licence: published regression coefficients (Oosterveld & van Oossanen 1975)
+    quantities: [K_T, K_Q vs J, P/D, A_E/A_0, Z]
+    used_for: propulsion L1 teacher (not yet in gym)
+    status: catalogued
+  - id: simman_kcs_5415_propeller_openwater
+    name: SIMMAN 5415 / KCS propeller open-water data (FORCE, MARIN)
+    url: http://www.simman2008.dk/5415/5415_geometry.htm
+    licence: unspecified
+    quantities: [K_T, K_Q, eta_0 vs J]
+    used_for: future propulsion validation
+    status: catalogued
+  - id: capytaine_wamit_benchmarks
+    name: Capytaine published validation cases vs WAMIT / Nemoh
+    url: https://github.com/capytaine/capytaine
+    licence: GPL-3.0 (code); cases in docs
+    used_for: L2 BEM self-verification (radiation / diffraction), not resistance
+    status: catalogued
+  - id: dtc_duisburg
+    name: Duisburg Test Case (DTC) post-Panamax container ship
+    url: https://doi.org/10.17185/duepublico/70104
+    licence: per publication (open access)
+    quantities: [geometry, resistance at design speed, propulsion]
+    used_for: additional container-ship point at different C_B
+    status: catalogued
+    reason: not yet extracted
