@@ -118,6 +118,7 @@ def run_search(
     reward_mode: str = "single_fn",
     wave_oracle: str = "auto",
     holdout: bool = False,
+    holdout_oracle: str = "michell",
 ) -> list[dict[str, Any]]:
     """Run random + hill-climb (and optional BoTorch) per parent.
 
@@ -154,26 +155,40 @@ def run_search(
             row["episode_id"] = env.episode_id
             if holdout:
                 # Post-hoc only: the held-out oracle never feeds the reward or the policy.
-                from .holdout import holdout_check, states_from_evidence, trajectory_drift
+                from .holdout import (
+                    holdout_check,
+                    make_holdout_fn,
+                    seen_wave_model,
+                    states_from_evidence,
+                    trajectory_drift,
+                )
 
-                hc = holdout_check([child.hull], parent)
+                hfn = make_holdout_fn(oracle=holdout_oracle)
+                hc = holdout_check([child.hull], parent, holdout_fn=hfn)
                 r0 = hc["rows"][0]
                 row["holdout"] = {
                     "oracle": hc["holdout_oracle"],
+                    "available": hc["holdout_available"],
+                    "unavailable_reason": hc["holdout_unavailable_reason"],
                     "seen": r0["seen"],
                     "holdout": r0["holdout"],
                     "exploit": r0["exploit"],
                     "confirmed": r0["confirmed"],
+                    "blind": r0["blind"],
                 }
-                # The held-out oracle uses Michell wave; if the reward did too it is not held out.
+                # Held out only if its wave model differs from the one that produced the reward.
                 if reward_mode == "multi_froude":
                     from .multi_froude import resolve_wave_oracle
 
-                    used = resolve_wave_oracle(wave_oracle, parent)["resolved"]
-                    row["holdout"]["independent_of_reward"] = used != "michell"
+                    rw = resolve_wave_oracle(wave_oracle, parent)
+                    reward_wm = "michell_l15" if rw["resolved"] == "michell" else rw["l1_fidelity"]
                 else:
-                    row["holdout"]["independent_of_reward"] = True
-                dr = trajectory_drift(states_from_evidence(env.evidence_packs), parent)
+                    reward_wm = seen_wave_model(parent)
+                hold_wm = getattr(hfn, "wave_model", None)
+                row["holdout"]["reward_wave_model"] = reward_wm
+                row["holdout"]["holdout_wave_model"] = hold_wm
+                row["holdout"]["independent_of_reward"] = None if hold_wm is None else hold_wm != reward_wm
+                dr = trajectory_drift(states_from_evidence(env.evidence_packs), parent, holdout_fn=hfn)
                 row["drift"] = {k: dr[k] for k in (
                     "n_steps", "first_step_error", "final_error", "max_error",
                     "error_slope_per_step", "growth_ratio",

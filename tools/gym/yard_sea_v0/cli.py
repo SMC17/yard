@@ -85,6 +85,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Post-hoc held-out oracle check + drift diagnostics (never enters reward)",
     )
     run.add_argument(
+        "--holdout-oracle",
+        choices=("michell", "hm1984", "capytaine_l2"),
+        default="michell",
+        help=(
+            "Held-out oracle for --holdout: Michell L1.5 wave (default), Zig HM1984 L1, or "
+            "Capytaine L2 box BEM (blind to Cb/lcb/kg). independent_of_reward is recorded"
+        ),
+    )
+    run.add_argument(
         "--no-cost-aware",
         action="store_true",
         help="With --multifidelity --botorch: use plain BoTorch EI instead of cost-weighted qLogEI",
@@ -152,6 +161,7 @@ def main(argv: list[str] | None = None) -> int:
             reward_mode=args.reward,
             wave_oracle=args.wave_oracle,
             holdout=args.holdout,
+            holdout_oracle=args.holdout_oracle,
         )
         print(
             f"Wrote {args.out} improved={manifest['n_improved']} "
