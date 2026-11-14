@@ -1269,6 +1269,11 @@ def run_teacher(
     if backend_note:
         out["backend_note"] = backend_note
     out["native_forces_health"] = health or None
+    # Acceptance gate: Cd/Cl/Cm must all be settled; the Cd number alone is not credited.
+    from ..acceptance import accept_force_coeffs_file
+
+    out["coeffs_path"] = str(coeffs_path)
+    out["acceptance"] = accept_force_coeffs_file(coeffs_path).to_dict()
     return out
 
 

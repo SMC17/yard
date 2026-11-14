@@ -12,6 +12,7 @@ from typing import Any
 from . import __version__
 from .hull import HullState, L0Report
 from .resistance_l1 import ResistanceResult
+from .acceptance import accept_l1
 from .strip_assurance import strip_overlay
 
 
@@ -28,6 +29,7 @@ def build_evidence(
     monitor_allowed: bool,
     monitor_reasons: list[str],
     parent_id: str | None = None,
+    acceptance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     odd = {
         "domain": "exploratory_parametric_hull_calm_water",
@@ -43,8 +45,24 @@ def build_evidence(
             "learning_in_ops": False,
         },
     }
+    if acceptance is None and resistance is not None:
+        acceptance = accept_l1(resistance).to_dict()
+    l1_accepted = bool(acceptance and acceptance.get("passed"))
     claims = []
-    if l0.feasible and resistance is not None:
+    if l0.feasible and resistance is not None and not l1_accepted:
+        claims.append(
+            {
+                "id": "l1_acceptance_failed",
+                "statement": (
+                    "L1 number produced but its acceptance gate failed "
+                    f"({', '.join(acceptance.get('failed_checks', [])) if acceptance else 'n/a'}); "
+                    "value is recorded but not credited."
+                ),
+                "status": "unsupported",
+                "evidence": ["resistance_l1", "acceptance"],
+            }
+        )
+    if l0.feasible and resistance is not None and l1_accepted:
         claims.append(
             {
                 "id": "drag_rank_l1",
@@ -105,6 +123,7 @@ def build_evidence(
         "hull": hull.to_dict(),
         "l0": l0.to_dict(),
         "resistance": None if resistance is None else resistance.to_dict(),
+        "acceptance": acceptance,
         "reward": reward,
         "action": action,
         "monitor": {"allow": monitor_allowed, "reason_codes": monitor_reasons},

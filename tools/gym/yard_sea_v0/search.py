@@ -133,7 +133,14 @@ def run_search(
             row["delta_ct_vs_parent"] = parent_ct - child.ct
             row["parent_ct"] = parent_ct
             row["parent_index"] = i
-            row["improved"] = child.ct < parent_ct and estimate_resistance(child.hull).Ct > 0
+            # Measure-then-claim: "improved" is the env's fresh re-measurement verdict.
+            verdict = env.claim_done({"Ct": child.ct})
+            row["improved"] = bool(verdict["accepted"])
+            row["claim"] = {
+                "accepted": verdict["accepted"],
+                "reasons": verdict["reasons"],
+                "measured_ct": verdict["measured"]["Ct"],
+            }
             results.append(row)
         if use_botorch:
             try:
