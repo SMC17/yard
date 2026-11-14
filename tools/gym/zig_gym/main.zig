@@ -1,5 +1,7 @@
 //! CLI for Python ctypes/subprocess bridge: emit JSON for L0/L1.
 //! Modes: l0 | l1 | l1_hm1984 | both | both_hm1984
+//!        hm1984_full L B T vol S Cb Cm Cp Cwp lcb_pct c_stern Fn nu rho [A_BT T_F h_B A_T]
+//!        (validation path: every Holtrop input explicit; bulb/transom optional, 0 = absent)
 const std = @import("std");
 const gym = @import("root.zig");
 
@@ -9,6 +11,35 @@ fn writeL1(stdout: anytype, r: gym.ResistanceResult, fidelity: []const u8) !void
         r.Fn, r.Rn, r.Cf, r.k1, r.Cw, r.Rt_N, r.Ct, fidelity,
     });
     try stdout.writeAll("}");
+}
+
+fn runFull(init: std.process.Init, args: anytype) !void {
+    var v: [18]f64 = .{0} ** 18;
+    var n: usize = 0;
+    while (args.next()) |s| {
+        if (n >= v.len) return error.TooManyArgs;
+        v[n] = try std.fmt.parseFloat(f64, s);
+        n += 1;
+    }
+    if (n < 14) return error.NotEnoughArgs;
+    var hp: gym.holtrop.HullParticulars = .{
+        .L = v[0], .B = v[1], .T = v[2], .displacement_vol = v[3], .S = v[4],
+        .C_B = v[5], .C_M = v[6], .C_P = v[7], .C_WP = v[8], .lcb_pct = v[9], .c_stern = v[10],
+    };
+    if (n >= 17 and v[14] > 0) hp.bulb = .{ .A_BT = v[14], .T_F = v[15], .h_B = v[16] };
+    if (n >= 18 and v[17] > 0) hp.transom = .{ .A_T = v[17] };
+    var out_buf: [4096]u8 = undefined;
+    var file_writer = std.Io.File.stdout().writer(init.io, &out_buf);
+    const stdout = &file_writer.interface;
+    const r = gym.estimate_hm1984_full(.{ .hp = hp, .Fn = v[11], .nu = v[12], .rho = v[13] }) catch {
+        try stdout.writeAll("{\"l1\":{\"error\":\"hm1984_failed\",\"fidelity\":\"hm1984_full_zig\"}}\n");
+        try stdout.flush();
+        return;
+    };
+    try stdout.print("{{\"l1\":{{\"Fn\":{d:.12},\"Rn\":{d:.12},\"Cf\":{d:.12},\"one_plus_k\":{d:.12},\"Cw\":{d:.12},\"C_bulb\":{d:.12},\"c_2\":{d:.12},\"c_5\":{d:.12},\"Ct_no_ca\":{d:.12},\"bulb\":{},\"transom\":{},\"fidelity\":\"hm1984_full_zig\"}}}}\n", .{
+        r.Fn, r.Rn, r.Cf, r.one_plus_k, r.Cw, r.Cb_bulb, r.c_2, r.c_5, r.Ct_no_ca, hp.bulb != null, hp.transom != null,
+    });
+    try stdout.flush();
 }
 
 pub fn main(init: std.process.Init) !void {
@@ -23,6 +54,7 @@ pub fn main(init: std.process.Init) !void {
 
     // Optional: mode then 7 floats: L B T Cb lcb_frac kg_frac Fn
     if (args.next()) |m| {
+        if (std.mem.eql(u8, m, "hm1984_full")) return runFull(init, &args);
         if (std.mem.eql(u8, m, "l0") or std.mem.eql(u8, m, "l1") or std.mem.eql(u8, m, "l1_hm1984") or
             std.mem.eql(u8, m, "both") or std.mem.eql(u8, m, "both_hm1984") or
             std.mem.eql(u8, m, "hm1984"))
