@@ -88,6 +88,15 @@ class SuiteConventions:
     close_quarters_m: float = 3000.0  # ... and range < this
     clear_margin: float = 0.15  # controller aims for (1+margin)·dcpa_min perceived
     min_hold_s: float = 60.0
+    # Rule 17(a)(ii) reading (convention): the stand-on vessel may act by her own manoeuvre once
+    # the give-way vessel has had ``stand_on_grace_s`` since risk was first perceived, has not
+    # visibly altered (course change < ``give_way_turn_deg``), risk persists, and TCPA has fallen
+    # below ``rule17a_tcpa_s``. Action is to starboard only (17(c): not to port for a vessel on
+    # the own port side). 17(b) is the existing last-resort condition above.
+    stand_on_grace_s: float = 120.0
+    rule17a_tcpa_s: float = 720.0
+    give_way_turn_deg: float = 5.0
+    rule17a_perception_margin_s: float = 90.0  # controller acts at perceived TCPA < window - margin
 
 
 # ---------------------------------------------------------------- scenarios
@@ -210,6 +219,9 @@ class BaselineColregController:
     since: float = 0.0
     log: list[dict[str, Any]] = field(default_factory=list)
 
+    rule17a: bool = True  # False = pre-v1.1 behaviour (stand-on acts only at 17(b) last resort)
+    _risk_seen: dict = field(default_factory=dict)  # target index -> (t first perceived, course)
+
     name = "baseline_rule_v1"
 
     def _clear(self, own: Vessel, targets: list[Vessel]) -> bool:
@@ -232,10 +244,20 @@ class BaselineColregController:
         cls = [classify(own, tg, self.th) for tg in targets]
         give = [c for c in cls if c["risk_of_collision"] and c["role"] == "give_way"]
         stand = [c for c in cls if c["risk_of_collision"] and c["role"] == "stand_on"]
+        rule17a_due = False
+        for i, (c, tg) in enumerate(zip(cls, targets)):
+            if c["risk_of_collision"] and c["role"] == "stand_on":
+                t0, c0 = self._risk_seen.setdefault(i, (t, tg.course_deg))
+                if (self.rule17a and t - t0 >= self.conv.stand_on_grace_s
+                        and abs(_ang(tg.course_deg, c0)) < self.conv.give_way_turn_deg
+                        and c["tcpa_s"] < self.conv.rule17a_tcpa_s - self.conv.rule17a_perception_margin_s):
+                    rule17a_due = True
         prev = self.mode
         if self.mode == "transit":
             if give:
                 self.mode, self.commanded_alt = "give_way", self._pick(own, route, targets)
+            elif stand and rule17a_due:
+                self.mode, self.commanded_alt = "stand_on_17a_ii", self._pick(own, route, targets)
             elif stand and any(c["dcpa_m"] < self.conv.last_resort_frac * self.th.dcpa_min_m
                                and _range(own, tg) < self.conv.close_quarters_m
                                for c, tg in zip(cls, targets) if c["role"] == "stand_on"):
@@ -347,7 +369,15 @@ def simulate_iter(sc: Scenario, *, th: Thresholds = Thresholds(), conv: SuiteCon
                          "crosses_ahead": [_crosses_ahead(replace(own, course_deg=cmd), tg) for tg in tgts],
                          "last_resort_true": [
                              cpa_tcpa(own, tg)[0] < conv.last_resort_frac * th.dcpa_min_m
-                             and _range(own, tg) < conv.close_quarters_m for tg in tgts]}
+                             and _range(own, tg) < conv.close_quarters_m for tg in tgts],
+                         # truth reading of 17(a)(ii): after the grace period the give-way
+                         # vessel's action (if any) has not removed the risk — judged on the
+                         # true geometry, so a stale-track turn that did resolve it fails.
+                         "rule17a_ii_true": [
+                             t >= conv.stand_on_grace_s
+                             and cpa_tcpa(own, tg)[0] < th.dcpa_min_m
+                             and 0.0 < cpa_tcpa(own, tg)[1] < conv.rule17a_tcpa_s
+                             for tg in tgts]}
         # truth metrics
         for i, tg in enumerate(tgts):
             rr = _range(own, tg)
@@ -412,10 +442,14 @@ def _rule_checks(init: list[dict[str, Any]], first_alt: dict[str, Any] | None,
         checks[f"t{i}_{enc}_early"] = first_alt["true_tcpa_s"][i] >= conv.early_action_tcpa_s
         if enc == "crossing_starboard":
             checks[f"t{i}_not_crossing_ahead"] = first_alt["crosses_ahead"][i] is not True
-    if stand and not give:  # pure stand-on: no alteration unless the last-resort condition held
+    if stand and not give:
+        # pure stand-on: keep course (17(a)(i)) unless 17(a)(ii) [give-way vessel not acting,
+        # convention window, starboard only] or 17(b) [last resort] held on ground truth
         for i in stand:
-            ok = first_alt is None or first_alt["last_resort_true"][i]
-            checks[f"t{i}_{init[i]['encounter']}_kept_course_until_last_resort"] = bool(ok)
+            ok = (first_alt is None or first_alt["last_resort_true"][i]
+                  or (first_alt.get("rule17a_ii_true", [False] * (i + 1))[i]
+                      and first_alt["alteration_deg"] > 0))
+            checks[f"t{i}_{init[i]['encounter']}_stand_on_rule17"] = bool(ok)
     return checks
 
 
