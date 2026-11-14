@@ -305,6 +305,30 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         self.last_claim = verdict
         return verdict
 
+    def record_evidence(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Append a non-step record (e.g. a drift_check flag) to this episode's evidence.
+
+        It never changes state or reward. It is written next to the step packs
+        when ``evidence_dir`` is set, and included in ``export_log``.
+        """
+        rec = dict(record)
+        rec.setdefault("episode_id", self.episode_id)
+        rec.setdefault("step", self.step_count)
+        rec.setdefault("optimizer_implementation", self.optimizer.to_dict().get("implementation"))
+        if "evidence_id" not in rec:
+            # Deterministic, content-derived id: episodes share episode_id across policies (CRN).
+            import json
+            import uuid
+
+            body = json.dumps(rec, sort_keys=True, default=str)
+            rec["evidence_id"] = f"{rec.get('type', 'record')}-{uuid.uuid5(uuid.NAMESPACE_URL, body)}"
+        self.evidence_packs.append(rec)
+        if self.evidence_dir:
+            from pathlib import Path
+
+            write_evidence(rec, Path(self.evidence_dir))
+        return rec
+
     def export_log(self, path: str) -> dict[str, Any]:
         """Write this episode's evidence + claim records as a digest-chained JSONL log."""
         return export_episode_log(
