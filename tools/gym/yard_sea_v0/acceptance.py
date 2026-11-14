@@ -242,9 +242,9 @@ def accept_l1(resistance: Mapping[str, Any] | Any, *, hull: Any | None = None) -
     if _finite(r.get("Cw")):
         res.checks.append(Check("Cw_non_negative", float(r["Cw"]) >= 0.0, float(r["Cw"]), 0.0))
     if hull is not None:
-        from .applicability import assess
+        from .applicability import assess, oracle_for_result
 
-        ap = assess(hull, r.get("fidelity"))
+        ap = assess(hull, oracle_for_result(r))
         if ap["in_declared_range"] is not None:
             res.checks.append(Check("in_declared_method_range", ap["in_declared_range"],
                                     detail="; ".join(ap["declared_violations"]), advisory=True))

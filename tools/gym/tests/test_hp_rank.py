@@ -63,6 +63,8 @@ def test_rank_shipd_primary_path(tmp_path: Path):
     assert result.michell is not None
     assert result.michell.get("offset_source") == "shipd_hp_waterlines"
     assert result.michell.get("skipped") is False
+    ap = result.michell["applicability"]
+    assert ap["oracle_validated_as"] == "michell_shipd_hp" and ap["in_validated_envelope"] is False
     assert np.isfinite(result.michell["Cw"])
     assert result.stl_path is not None
     assert Path(result.stl_path).is_file()
