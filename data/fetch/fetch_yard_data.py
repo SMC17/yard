@@ -61,6 +61,11 @@ SOURCES = {
         "file": "DSYHS_all_measurements_modelscale.xlsx",
         "sha256": "d8e03c1185717d783199723ba0cdf5bbc55b16f31508805f7ea9c6911f6b86d3",
     },
+    "dsyhs_hydrostatics_modelscale": {
+        "url": "https://data.4tu.nl/file/e198553e-0130-45d4-88cc-680d9f441b9b/8da67eeb-6d5a-4909-ac60-6fda527d774f",
+        "file": "DSYHS_hydrostatics_modelscale.xlsx",
+        "sha256": "f064b12109e180f69b6da17cc824fd43c9b515e650631411eeea4d0017ba5983",
+    },
     "dsyhs_overview": {
         "url": "https://data.4tu.nl/file/d0db7d79-a31d-492d-95a1-30dd9a17063f/db3ad96b-37db-419e-a5ad-1ac9d83f8a9d",
         "file": "DSYHS_overview_performed_tests.xlsx",
