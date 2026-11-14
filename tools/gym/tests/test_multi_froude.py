@@ -9,6 +9,7 @@ from yard_sea_v0.env import DesignSearchEnv
 from yard_sea_v0.hull import HullState, evaluate_l0
 from yard_sea_v0.multi_froude import evaluate_point, fn_grid_for, multi_froude_score
 from yard_sea_v0.resistance_l1 import estimate_resistance
+from yard_sea_v0.zig_bridge import zig_available
 
 
 def test_point_decomposition_sums_to_l1_ct():
@@ -41,6 +42,8 @@ def test_out_of_envelope_fn_not_credited():
     assert out["points"][1]["credited"] is False
 
 
+@pytest.mark.skipif(not zig_available(), reason="needs the HM1984 Zig L1 (zig_gym not built); "
+                    "the simplified Python fallback gives different magnitudes")
 def test_off_design_penalty_catches_point_optimised_hull():
     """A hull that edges the parent at design Fn but loses off-design must score below zero.
 
