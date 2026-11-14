@@ -10,6 +10,7 @@ from .acceptance import accept_l1
 from .evidence import build_evidence, write_evidence
 from .hull import HullState, evaluate_l0
 from .monitors import apply_action, monitor_action
+from .multi_froude import multi_froude_score
 from .provenance import (
     OptimizerRecord,
     deterministic_episode_id,
@@ -28,6 +29,12 @@ except ImportError:  # pragma: no cover
     gym = None  # type: ignore
     spaces = None  # type: ignore
     _HAS_GYM = False
+
+
+def _shape_terms(h: HullState, parent_vol: float) -> float:
+    vol_term = (h.volume() - parent_vol) / max(parent_vol, 1e-6)
+    gm_term = min(0.5, max(0.0, h.gm0() - 0.15)) * 0.1
+    return float(0.5 * vol_term + gm_term + 0.25 * stability_bonus(h))
 
 
 def _reward(h: HullState, parent_ct: float, parent_vol: float) -> float:
@@ -51,7 +58,17 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         seed: int = 0,
         evidence_dir: str | None = None,
         optimizer: OptimizerRecord | None = None,
+        reward_mode: str = "single_fn",
+        fn_grid: tuple[float, ...] | None = None,
+        wave_oracle: str = "l1",
+        worst_case_weight: float = 1.0,
     ) -> None:
+        if reward_mode not in ("single_fn", "multi_froude"):
+            raise ValueError("reward_mode must be 'single_fn' or 'multi_froude'")
+        self.reward_mode = reward_mode
+        self.fn_grid = fn_grid
+        self.wave_oracle = wave_oracle
+        self.worst_case_weight = worst_case_weight
         self.max_steps = max_steps
         self._seed = seed
         self.base_seed = int(seed)
@@ -154,8 +171,20 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         l0 = evaluate_l0(self.state)
         res = estimate_resistance(self.state)
         acc = accept_l1(res).to_dict()
-        # Acceptance gate: an L1 number whose envelope checks fail earns no credit.
-        reward = _reward(self.state, self.parent_ct, self.parent_vol) if acc["passed"] else -1.0
+        mf = None
+        if self.reward_mode == "multi_froude":
+            mf = multi_froude_score(
+                self.state,
+                self.parent,
+                self.fn_grid,
+                wave_oracle=self.wave_oracle,
+                worst_case_weight=self.worst_case_weight,
+            )
+            ok = acc["passed"] and mf["accepted"]
+            reward = (2.0 * mf["score"] + _shape_terms(self.state, self.parent_vol)) if ok else -1.0
+        else:
+            # Acceptance gate: an L1 number whose envelope checks fail earns no credit.
+            reward = _reward(self.state, self.parent_ct, self.parent_vol) if acc["passed"] else -1.0
         pack = build_evidence(
             hull=self.state,
             l0=l0,
@@ -171,12 +200,15 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             optimizer=self.optimizer.to_dict(),
             seeds=dict(self.seeds),
         )
+        if mf is not None:
+            pack["multi_froude"] = mf
         self.evidence_packs.append(pack)
         if self.evidence_dir:
             from pathlib import Path
 
             write_evidence(pack, Path(self.evidence_dir))
         info = {
+            "multi_froude": mf,
             "ct": res.Ct,
             "gm0": self.state.gm0(),
             "Rt_N": res.Rt_N,
@@ -185,6 +217,19 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             "acceptance": acc,
         }
         return self._obs(), reward, terminated, truncated, info
+
+    def candidate_reward(self, h: HullState) -> float:
+        """Reward ``step`` would assign to an already-monitored hull (for look-ahead search)."""
+        acc = accept_l1(estimate_resistance(h))
+        if self.reward_mode == "multi_froude":
+            mf = multi_froude_score(
+                h, self.parent, self.fn_grid,
+                wave_oracle=self.wave_oracle, worst_case_weight=self.worst_case_weight,
+            )
+            if not (acc.passed and mf["accepted"]):
+                return -1.0
+            return 2.0 * mf["score"] + _shape_terms(h, self.parent_vol)
+        return _reward(h, self.parent_ct, self.parent_vol) if acc.passed else -1.0
 
     # ------------------------------------------------------------ measure-then-claim
     def claim_done(
@@ -223,6 +268,15 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         if mismatches:
             reasons.append("claim_mismatch:" + ",".join(sorted(mismatches)))
         improved = res.Ct < self.parent_ct
+        mf = None
+        if self.reward_mode == "multi_froude":
+            # Improvement must hold across the Froude grid, not just at design Fn.
+            mf = multi_froude_score(
+                fresh, self.parent, self.fn_grid,
+                wave_oracle=self.wave_oracle, worst_case_weight=self.worst_case_weight,
+            )
+            improved = bool(mf["accepted"] and mf["score"] is not None and mf["score"] > 0)
+            measured["multi_froude_score"] = mf["score"]
         if require_improvement and not improved:
             reasons.append("no_improvement_vs_parent")
         verdict = {
@@ -237,6 +291,8 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             "mismatches": mismatches,
             "parent_ct": self.parent_ct,
             "improved": improved,
+            "reward_mode": self.reward_mode,
+            "multi_froude": mf,
             "l0": l0.to_dict(),
             "acceptance": acc.to_dict(),
             "hull": fresh.to_dict(),
