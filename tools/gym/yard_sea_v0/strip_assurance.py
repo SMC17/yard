@@ -17,10 +17,15 @@ def strip_overlay(evidence: dict[str, Any]) -> dict[str, Any]:
     monitor_ok = evidence.get("monitor", {}).get("allow", False)
     l0_ok = evidence.get("l0", {}).get("feasible", False)
     has_l1 = evidence.get("resistance") is not None
+    acc = evidence.get("acceptance") or {}
+    l1_accepted = has_l1 and acc.get("passed") is True
     if not monitor_ok or not l0_ok:
         level = "L0_reject"
         disposition = "reject_before_eval"
-    elif has_l1:
+    elif has_l1 and not l1_accepted:
+        level = "L0_reject"
+        disposition = "reject_acceptance_gate"
+    elif l1_accepted:
         level = "L1_rank"
         disposition = "rank_only"
     else:
@@ -41,7 +46,8 @@ def strip_overlay(evidence: dict[str, Any]) -> dict[str, Any]:
         "validation_gates": {
             "runtime_monitor": monitor_ok,
             "hydrostatic_l0": l0_ok,
-            "resistance_l1": has_l1 and l0_ok,
+            "resistance_l1": l1_accepted and l0_ok,
+            "acceptance_l1": l1_accepted,
             "panel_l2": False,
             "cfd_l3": False,
         },

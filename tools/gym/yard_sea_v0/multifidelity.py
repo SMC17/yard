@@ -94,12 +94,25 @@ def stage_a_score(row: dict[str, Any]) -> float:
     return float(ct)
 
 
+def l3_credited(row: dict[str, Any]) -> bool:
+    """L3 numbers are credited only when the L3 result carries a passing acceptance block."""
+    from .acceptance import is_accepted
+
+    return is_accepted(row.get("l3_openfoam"))
+
+
 def stage_b_score(row: dict[str, Any]) -> float:
-    """Lower is better. Prefer L3 Cd, else L3 Ct, else Stage-A score."""
+    """Lower is better. Prefer *accepted* L3 Cd, else accepted L3 Ct, else Stage-A score.
+
+    An L3 result without a passing acceptance gate (e.g. Cl or Cm still drifting,
+    too few iterations) is recorded on the row but never used for ranking.
+    """
+    if not l3_credited(row):
+        return stage_a_score(row)
+    l3 = row.get("l3_openfoam") or {}
     cd = row.get("Cd")
     if cd is not None and np.isfinite(float(cd)):
         return float(cd)
-    l3 = row.get("l3_openfoam") or {}
     if l3.get("Cd") is not None and np.isfinite(float(l3["Cd"])):
         return float(l3["Cd"])
     if l3.get("Ct") is not None and np.isfinite(float(l3["Ct"])):
@@ -342,6 +355,8 @@ def evaluate_l3_elites(
         row["l3_fidelity"] = l3.get("fidelity")
         row["l3_Ct"] = l3.get("Ct")
         row["l3_solver"] = l3.get("solver")
+        row["l3_accepted"] = l3_credited(row)
+        row["l3_failed_checks"] = (l3.get("acceptance") or {}).get("failed_checks")
         spent = 0.0 if l3.get("skipped") else COST_L3
         ladder = list(row.get("fidelity_ladder") or [])
         ladder = [s for s in ladder if not str(s.get("level", "")).startswith("L3")]
@@ -354,7 +369,7 @@ def evaluate_l3_elites(
                 teacher="openfoam_l3",
                 skipped=bool(l3.get("skipped")),
                 skip_reason=l3.get("skip_reason"),
-                extra={"solver": l3.get("solver")},
+                extra={"solver": l3.get("solver"), "accepted": row["l3_accepted"]},
             ).to_dict()
         )
         row["fidelity_ladder"] = ladder
