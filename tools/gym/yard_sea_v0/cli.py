@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument(
         "--reward",
-        choices=("single_fn", "multi_froude"),
+        choices=("single_fn", "multi_froude", "sea_state"),
         default="single_fn",
         help="Reward: design-Fn Ct only, or multi-Froude grid with worst-case penalty",
     )
