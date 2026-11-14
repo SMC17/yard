@@ -27,7 +27,8 @@ machine-readable twin is [`catalog.yaml`](catalog.yaml).
 | `t2015_jbc_iges` | JBC hull IGES (trimmed surfaces) | unspecified | catalogued | needs trimmed-surface support |
 | `korkmaz2021_kvlcc2_ballast` | KVLCC2 ballast C_T curve | CC BY 4.0 | not-usable | trimmed ballast not representable by HullState |
 | `ittc_5415_facility_bias` | tank-to-tank scatter | ITTC | catalogued | envelope tolerance floor |
-| `dsyhs_4tu` | DSYHS full measurement set | CC0 | fetch-script | yacht / planing envelope (needs hydrostatics) |
+| `dsyhs_4tu` | DSYHS full measurement set | CC0 | vendored (upright bare-hull subset, CSV) + fetch-script | 500 measured C_T points, out-of-population check |
+| `dsyhs_hydrostatics_4tu` | DSYHS canoe-body hydrostatics | CC0 | vendored (upright, CSV) + fetch-script | joins the measurements; S_c, C_B, C_P, LCB |
 | `uci_yacht_hydrodynamics` | DSYHS series-1 residuary resistance, 308 runs | CC BY 4.0 | vendored | out-of-envelope negative control |
 | `shipd` | 30k parametric hulls + Michell C_w | CC0 | ingested (sample) | 45-D action space, L1.5 |
 | `mit_bluff_body_wakes` | DNS + PIV wakes, 9 bodies | per host | catalogued | L3 wake validation |
@@ -39,8 +40,9 @@ machine-readable twin is [`catalog.yaml`](catalog.yaml).
 | `capytaine_wamit_benchmarks` | BEM radiation/diffraction | GPL-3.0 | catalogued | L2 self-verification |
 | `dtc_duisburg` | DTC geometry + resistance | open access | catalogued | extra container ship |
 
-Count: 22 entries — 5 ingested (11 measured C_T points + particulars), 1 vendored,
-5 fetch-script-only (2 DSYHS; KCS, KVLCC2 and 5415 hull lines), 1 not-usable, 10 catalogued.
+Count: 23 entries — 5 ingested (11 measured C_T points + particulars), 3 vendored
+(UCI yacht; DSYHS measurements + hydrostatics as derived CSV, CC0), 4 fetch-script-only
+(DSYHS overview; KCS, KVLCC2 and 5415 hull lines), 1 not-usable, 10 catalogued.
 
 Hull lines are read by `tools/gym/yard_sea_v0/hull_lines.py`; its derived volume, C_B,
 LCB and wetted surface are checked against the published particulars in
