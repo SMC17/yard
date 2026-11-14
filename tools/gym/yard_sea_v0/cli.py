@@ -43,6 +43,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Attach Michell L1.5 wave-drag teacher per child hull (vendored ModMichell)",
     )
     run.add_argument(
+        "--l2-panel",
+        action="store_true",
+        help="Attach Capytaine L2 panel/BEM teacher per child (skips if capytaine missing)",
+    )
+    run.add_argument(
         "--botorch",
         action="store_true",
         help="Enable BoTorch Bayesian optimization search path (requires botorch/torch)",
@@ -136,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
             use_corpus=use_corpus,
             l3_openfoam=args.l3_openfoam,
             l15_michell=args.l15_michell,
+            l2_panel=args.l2_panel,
             use_botorch=args.botorch,
             multifidelity=args.multifidelity,
             l3_top=args.l3_top,

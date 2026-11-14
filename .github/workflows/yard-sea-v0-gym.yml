@@ -22,3 +22,16 @@ jobs:
         with:
           name: yard-sea-v0-gallery
           path: tools/gym/out/gallery
+  pytest-l2-capytaine:
+    # Exercises the optional Capytaine L2 panel teacher for real (no silent skips).
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/gym
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt "capytaine>=2.2" "meshio>=5.0"
+      - run: YARD_REQUIRE_CAPYTAINE=1 PYTHONPATH=. pytest -q tests/test_panel_l2.py
