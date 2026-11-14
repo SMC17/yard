@@ -51,9 +51,9 @@ def test_head_on_give_way_turns_starboard_readily_and_early():
     assert r["first_alteration"]["alteration_deg"] >= 30.0
 
 
-def test_pure_stand_on_keeps_course_until_last_resort():
+def test_pure_stand_on_rule17_check():
     r = simulate(generate("crossing_port", 0))
-    assert r["rule_checks"] == {"t0_crossing_port_kept_course_until_last_resort": True}
+    assert r["rule_checks"] == {"t0_crossing_port_stand_on_rule17": True}
 
 
 def test_metrics_catch_port_turn_and_hold_course():
@@ -109,3 +109,30 @@ def test_controller_log_records_mode_changes():
     simulate(generate("head_on", 0), ctl)
     modes = [e["mode"] for e in ctl.log]
     assert modes[0] == "give_way" and modes[-1] == "transit"
+
+
+def test_stand_on_rule17a_ii_acts_earlier_to_starboard_and_stays_rule_consistent():
+    from yard_sea_v0.colreg_suite import BaselineColregController
+
+    gains = []
+    for seed in range(6):
+        sc = generate("crossing_port", seed)
+        new = simulate(sc, BaselineColregController())
+        old = simulate(sc, BaselineColregController(rule17a=False))
+        assert new["rule_consistent"] and not new["collision"]
+        if new["controller_log"]:
+            first = new["controller_log"][0]
+            assert first["mode"] in ("stand_on_17a_ii", "last_resort") and first["alteration_deg"] > 0
+            if old["controller_log"]:
+                assert first["t"] <= old["controller_log"][0]["t"]
+        gains.append(new["min_range_m"] - old["min_range_m"])
+    assert sum(gains) > 0
+
+
+def test_rule17a_ii_waits_for_grace_period():
+    from yard_sea_v0.colreg_suite import BaselineColregController, SuiteConventions
+
+    sc = generate("crossing_port", 1)
+    c = BaselineColregController(conv=SuiteConventions(stand_on_grace_s=1e9))
+    r = simulate(sc, c)
+    assert all(e["mode"] != "stand_on_17a_ii" for e in r["controller_log"])
