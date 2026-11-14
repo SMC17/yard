@@ -1,0 +1,70 @@
+{
+  "CT_measured": 0.00411,
+  "Fn": 0.142,
+  "implied_one_plus_k_max": 1.191385919430021,
+  "lines_full_scale": {
+    "A_BT_m2": 172.55339354939548,
+    "A_T_m2": 0.0,
+    "h_B_m": 10.243740652356973
+  },
+  "lines_vs_published": {
+    "A_BT_pct": -0.8484781075702608,
+    "h_B_pct": -0.35271738952360465
+  },
+  "published": {
+    "A_BT_m2": 174.03,
+    "A_T_m2": 13.82,
+    "T_F_m": 20.8,
+    "h_B_m": 10.28,
+    "i_E_deg": 59.95,
+    "source": "Chahbi (2014), EMSHIP master thesis, KVLCC2, Table 2 (TRIBON M3 Holtrop-Mennen inputs)",
+    "url": "https://matheo.uliege.be/bitstream/2268.2/6141/1/CHAHBI%20-%20UGAL%20%20%28Jan%202014%29.pdf"
+  },
+  "runs": {
+    "bare (no bulb, no transom)": {
+      "CT": 0.004650835645,
+      "C_bulb": 0.0,
+      "C_tr": 0.0,
+      "Cf_1k": 0.00456083130502677,
+      "Cw": 9.000434e-05,
+      "E_pct": -13.15901812652069,
+      "available": true,
+      "c_2": 1.0,
+      "one_plus_k": 1.322070607714
+    },
+    "lines-derived bulb (current)": {
+      "CT": 0.004827918288,
+      "C_bulb": 0.000212872395,
+      "C_tr": 0.0,
+      "Cf_1k": 0.00456083130502677,
+      "Cw": 5.4214587e-05,
+      "E_pct": -17.46759824817519,
+      "available": true,
+      "c_2": 0.602355256366,
+      "one_plus_k": 1.322070607714
+    },
+    "published bulb (Chahbi 2014)": {
+      "CT": 0.004842130625,
+      "C_bulb": 0.000227278438,
+      "C_tr": 0.0,
+      "Cf_1k": 0.00456083130502677,
+      "Cw": 5.4020883e-05,
+      "E_pct": -17.81339720194647,
+      "available": true,
+      "c_2": 0.600203086214,
+      "one_plus_k": 1.322070607714
+    },
+    "published bulb + transom (Chahbi 2014)": {
+      "CT": 0.00484163454,
+      "C_bulb": 0.000227278438,
+      "C_tr": 0.0,
+      "Cf_1k": 0.00456083130502677,
+      "Cw": 5.3524797e-05,
+      "E_pct": -17.80132700729926,
+      "available": true,
+      "c_2": 0.600203086214,
+      "one_plus_k": 1.322070607714
+    }
+  },
+  "schema": "yard_sea_v0.kvlcc2_bulb_check.v1"
+}
