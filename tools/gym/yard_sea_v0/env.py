@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 import numpy as np
@@ -11,6 +10,12 @@ from .acceptance import accept_l1
 from .evidence import build_evidence, write_evidence
 from .hull import HullState, evaluate_l0
 from .monitors import apply_action, monitor_action
+from .provenance import (
+    OptimizerRecord,
+    deterministic_episode_id,
+    export_episode_log,
+    seeds_record,
+)
 from .resistance_l1 import estimate_resistance
 from .stability_bridge import stability_bonus
 
@@ -45,9 +50,14 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         max_steps: int = 50,
         seed: int = 0,
         evidence_dir: str | None = None,
+        optimizer: OptimizerRecord | None = None,
     ) -> None:
         self.max_steps = max_steps
         self._seed = seed
+        self.base_seed = int(seed)
+        self.episode_index = -1
+        self.seeds: dict[str, Any] = seeds_record(self.base_seed, 0)
+        self.optimizer = optimizer or OptimizerRecord(implementation="unspecified")
         self.evidence_dir = evidence_dir
         self.parent = parent or HullState()
         self.episode_id = ""
@@ -76,12 +86,24 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         return np.asarray(vec, dtype=np.float32)
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):
+        # Seeded resets with shared randomness: the episode RNG is derived from
+        # (base_seed, episode_index) so any two policies replayed with the same
+        # pair see identical environment draws (common random numbers).
         if seed is not None:
-            self._seed = seed
-            self.np_random = np.random.default_rng(seed)
-        if options and "parent" in options:
+            self.base_seed = int(seed)
+            self.episode_index = -1
+        options = options or {}
+        if "parent" in options:
             self.parent = options["parent"]
-        self.episode_id = str(uuid.uuid4())
+        if "optimizer" in options:
+            self.optimizer = options["optimizer"]
+        self.episode_index = int(options.get("episode_index", self.episode_index + 1))
+        self.seeds = seeds_record(self.base_seed, self.episode_index)
+        self._seed = self.seeds["episode_seed"]
+        self.np_random = np.random.default_rng(self._seed)
+        self.episode_id = deterministic_episode_id(
+            self.base_seed, self.episode_index, self.parent.as_vector()
+        )
         self.state = HullState(**{k: getattr(self.parent, k) for k in (
             "L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn"
         )})
@@ -91,11 +113,12 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         self.evidence_packs = []
         self.last_claim = None
         obs = self._obs()
-        info = {"episode_id": self.episode_id, "parent_ct": self.parent_ct}
+        info = {"episode_id": self.episode_id, "parent_ct": self.parent_ct, "seeds": dict(self.seeds)}
         return obs, info
 
     def step(self, action):
         action = list(np.asarray(action, dtype=float).reshape(-1))
+        self.optimizer.tick()
         decision = monitor_action(self.state, action)
         self.step_count += 1
         terminated = False
@@ -116,6 +139,8 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
                 monitor_allowed=False,
                 monitor_reasons=decision.reason_codes,
                 parent_id=None,
+                optimizer=self.optimizer.to_dict(),
+                seeds=dict(self.seeds),
             )
             self.evidence_packs.append(pack)
             if self.evidence_dir:
@@ -143,6 +168,8 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             monitor_allowed=True,
             monitor_reasons=[],
             acceptance=acc,
+            optimizer=self.optimizer.to_dict(),
+            seeds=dict(self.seeds),
         )
         self.evidence_packs.append(pack)
         if self.evidence_dir:
@@ -213,8 +240,24 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             "l0": l0.to_dict(),
             "acceptance": acc.to_dict(),
             "hull": fresh.to_dict(),
+            "optimizer": self.optimizer.to_dict(),
+            "seeds": dict(self.seeds),
             "notes": "Measure-then-claim: verdict from a fresh re-evaluation, not the agent's report.",
         }
         self.evidence_packs.append(verdict)
         self.last_claim = verdict
         return verdict
+
+    def export_log(self, path: str) -> dict[str, Any]:
+        """Write this episode's evidence + claim records as a digest-chained JSONL log."""
+        return export_episode_log(
+            self.evidence_packs,
+            path,
+            header={
+                "episode_id": self.episode_id,
+                "seeds": dict(self.seeds),
+                "optimizer": self.optimizer.to_dict(),
+                "parent": self.parent.to_dict(),
+                "max_steps": self.max_steps,
+            },
+        )

@@ -42,3 +42,21 @@ schema `yard_sea_v0.acceptance.v1`) holding the individual checks and an overall
 
 These are harness checks (iterative settling, envelope, consistency). They are not ITTC V&V,
 grid-convergence studies, or class acceptance.
+
+## Evidence pack v2: provenance, seeds, replayable logs
+
+`yard_sea_v0.evidence.v2` (backwards-compatible superset of v1, see `schema_compat`) adds:
+
+- `harness`: name, version, git SHA (`YARD_GIT_SHA`/`GITHUB_SHA` or `git rev-parse`), numpy/python.
+- `optimizer`: implementation, version, settings, `budget` (max evals / max wall-clock) and
+  `used` (evals and wall-clock actually spent). Every `env.step` counts one eval.
+- `seeds`: `base_seed`, `episode_index`, derived `episode_seed`
+  (`numpy.SeedSequence(entropy=base_seed, spawn_key=(episode_index,))`). Episode ids are
+  deterministic (uuid5), so policies compared at the same `(base_seed, episode_index)` share
+  environment randomness. `run_search` runs random and hill-climb on the same index.
+- `oracle`: fidelity and implementation that produced the number.
+
+`env.export_log(path)` writes a JSONL log (header → records → footer). Each record carries a
+sha256 over its deterministic fields, and the footer chains them. `provenance.verify_log` detects
+any edit, and two replays with the same seeds produce the same `log_digest`. This is bookkeeping
+for later audit tools, not a certification artefact.
