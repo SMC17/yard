@@ -13,6 +13,7 @@ from . import __version__
 from .hull import HullState, L0Report
 from .resistance_l1 import ResistanceResult
 from .acceptance import accept_l1
+from .applicability import assess as assess_applicability
 from .provenance import harness_info
 from .strip_assurance import strip_overlay
 
@@ -52,7 +53,11 @@ def build_evidence(
         },
     }
     if acceptance is None and resistance is not None:
-        acceptance = accept_l1(resistance).to_dict()
+        acceptance = accept_l1(resistance, hull=hull).to_dict()
+    # Advisory: declared method range + tank-validated envelope for the oracle that scored this hull.
+    applicability = (
+        None if resistance is None else assess_applicability(hull, getattr(resistance, "fidelity", None))
+    )
     l1_accepted = bool(acceptance and acceptance.get("passed"))
     claims = []
     if l0.feasible and resistance is not None and not l1_accepted:
@@ -97,6 +102,19 @@ def build_evidence(
                 "evidence": ["l0_report"],
             }
         )
+        if applicability and applicability.get("in_validated_envelope") is False:
+            claims.append(
+                {
+                    "id": "outside_validated_envelope",
+                    "statement": (
+                        f"{fid} has no tank-validated backing for this hull "
+                        f"({'; '.join(applicability['envelope_violations'])}); the L1 rank is an "
+                        "extrapolation (advisory, reward unchanged)."
+                    ),
+                    "status": "flagged",
+                    "evidence": ["applicability", "reports/validation/oracle_tank_validation.json"],
+                }
+            )
     else:
         claims.append(
             {
@@ -144,6 +162,7 @@ def build_evidence(
         "l0": l0.to_dict(),
         "resistance": None if resistance is None else resistance.to_dict(),
         "acceptance": acceptance,
+        "applicability": applicability,
         "reward": reward,
         "action": action,
         "monitor": {"allow": monitor_allowed, "reason_codes": monitor_reasons},

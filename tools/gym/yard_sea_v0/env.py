@@ -170,7 +170,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         self.state = decision.projected
         l0 = evaluate_l0(self.state)
         res = estimate_resistance(self.state)
-        acc = accept_l1(res).to_dict()
+        acc = accept_l1(res, hull=self.state).to_dict()
         mf = None
         if self.reward_mode == "multi_froude":
             mf = multi_froude_score(

@@ -217,4 +217,7 @@ def test_run_search_records_drift_flag_without_changing_reward(tmp_path):
     checks = [r for r in recs if r.get("type") == "drift_check"]
     assert len(checks) == len(flagged) and all(c["affects_reward"] is False for c in checks)
     default = run_search([HullState()], steps=6, seed=0, holdout=True)
-    assert all(r["drift"]["long_horizon"]["threshold"] == 0.10 for r in default)
+    # Default resolves the empirical per-pair threshold (HM1984 reward vs Michell held-out).
+    for r in default:
+        lh = r["drift"]["long_horizon"]
+        assert lh["threshold_source"] == "empirical_tank_validation" and 0.05 < lh["threshold"] < 0.5
