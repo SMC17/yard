@@ -179,6 +179,11 @@ datasets:
     used_for: systematic-series validation over C_B
     status: catalogued
     reason: scanned report; tables need careful digitisation before use (not done - no fake values)
+    machine_readable_search_2026_11_14: >-
+      No machine-readable public Series 60 offsets or C_R tables found. IIHR (stern.lab.uiowa.edu, Series 60
+      CB=0.6 steady flow / drift) describes resistance tests but publishes no data files. ITTC 17th RC collected
+      data (DTNSRDC-85/011) is microfiche only. A search hit "data.nemar.org nm000328 sourcedata/S60" is an
+      unrelated EEG dataset (16-channel time series), not hull data. Per policy, not hand-digitised.
   - id: wageningen_b
     name: Wageningen B-screw series open-water polynomials
     url: https://doi.org/10.1016/0029-8018(75)90002-X
