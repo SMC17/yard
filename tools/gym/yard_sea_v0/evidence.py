@@ -12,7 +12,12 @@ from typing import Any
 from . import __version__
 from .hull import HullState, L0Report
 from .resistance_l1 import ResistanceResult
+from .acceptance import accept_l1
+from .provenance import harness_info
 from .strip_assurance import strip_overlay
+
+
+EVIDENCE_SCHEMA = "yard_sea_v0.evidence.v2"
 
 
 def build_evidence(
@@ -28,6 +33,9 @@ def build_evidence(
     monitor_allowed: bool,
     monitor_reasons: list[str],
     parent_id: str | None = None,
+    acceptance: dict[str, Any] | None = None,
+    optimizer: dict[str, Any] | None = None,
+    seeds: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     odd = {
         "domain": "exploratory_parametric_hull_calm_water",
@@ -43,8 +51,24 @@ def build_evidence(
             "learning_in_ops": False,
         },
     }
+    if acceptance is None and resistance is not None:
+        acceptance = accept_l1(resistance).to_dict()
+    l1_accepted = bool(acceptance and acceptance.get("passed"))
     claims = []
-    if l0.feasible and resistance is not None:
+    if l0.feasible and resistance is not None and not l1_accepted:
+        claims.append(
+            {
+                "id": "l1_acceptance_failed",
+                "statement": (
+                    "L1 number produced but its acceptance gate failed "
+                    f"({', '.join(acceptance.get('failed_checks', [])) if acceptance else 'n/a'}); "
+                    "value is recorded but not credited."
+                ),
+                "status": "unsupported",
+                "evidence": ["resistance_l1", "acceptance"],
+            }
+        )
+    if l0.feasible and resistance is not None and l1_accepted:
         claims.append(
             {
                 "id": "drag_rank_l1",
@@ -89,7 +113,8 @@ def build_evidence(
 
     pack: dict[str, Any] = {
         "evidence_id": str(uuid.uuid4()),
-        "schema": "yard_sea_v0.evidence.v1",
+        "schema": EVIDENCE_SCHEMA,
+        "schema_compat": ["yard_sea_v0.evidence.v1"],
         "created_unix": time.time(),
         "episode_id": episode_id,
         "parent_id": parent_id,
@@ -100,11 +125,19 @@ def build_evidence(
             "python": platform.python_version(),
             "platform": platform.platform(),
         },
+        "harness": harness_info(),
+        "optimizer": optimizer or {"implementation": "unspecified"},
+        "seeds": seeds or {"base_seed": seed},
+        "oracle": {
+            "fidelity": None if resistance is None else resistance.fidelity,
+            "implementation": "yard_sea_v0.resistance_l1.estimate_resistance",
+        },
         "agent_class": "learned_offline",
         "odd": odd,
         "hull": hull.to_dict(),
         "l0": l0.to_dict(),
         "resistance": None if resistance is None else resistance.to_dict(),
+        "acceptance": acceptance,
         "reward": reward,
         "action": action,
         "monitor": {"allow": monitor_allowed, "reason_codes": monitor_reasons},
