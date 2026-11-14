@@ -16,6 +16,11 @@ of any published scenario catalogue. What it adds over the stub:
   corrupts the relative picture); ``comms_loss`` (target tracks drop out for a
   window → dead reckoning); ``comms_loss_manoeuvre`` (as comms_loss, and a
   target alters course during the blackout, so dead reckoning goes stale).
+  Opt-in (not in the default ``VARIANTS`` table): ``gnss_spoof_ramp`` — GNSS
+  correct at first, then a spoofing-like pull-off that grows linearly from an
+  onset time during the approach. Every variant also carries a small constant
+  heading/speed-log bias on the ``own_velocity`` channel (``DR_SENSOR_BIAS``,
+  convention) so a dead-reckoning integrity monitor is never error-free.
 * **Own-ship dynamics**: constant speed, heading rate-limited to
   ``max_rot_deg_s`` (convention). Targets keep course and speed except for
   scripted manoeuvres. No hydrodynamics, wind, current, or ship domain.
@@ -58,6 +63,11 @@ NOT_A_COMPLIANCE_CLAIM = (
 )
 KINDS = ("head_on", "crossing_starboard", "crossing_port", "overtaking", "overtaken", "multi_ship")
 VARIANTS = ("nominal", "gnss_degraded", "comms_loss", "comms_loss_manoeuvre")
+EXTRA_VARIANTS = ("gnss_spoof_ramp",)
+ALL_VARIANTS = VARIANTS + EXTRA_VARIANTS
+# Constant heading [deg] and speed-log [m/s] bias seen by the own-ship velocity
+# sensors (gyro / log) — an evaluation convention, not a sensor specification.
+DR_SENSOR_BIAS = (0.5, 0.03)
 
 
 @dataclass(frozen=True)
@@ -131,12 +141,13 @@ _MULTI = (("head_on", "crossing_starboard"), ("crossing_starboard", "crossing_po
 def generate(kind: str, seed: int = 0, variant: str = "nominal", *, own_speed: float = 6.0,
              tcpa_range: tuple[float, float] = (900.0, 1500.0),
              offset_range: tuple[float, float] = (0.0, 300.0),
-             th: Thresholds = Thresholds()) -> Scenario:
+             th: Thresholds = Thresholds(),
+             dr_sensor_bias: tuple[float, float] | None = DR_SENSOR_BIAS) -> Scenario:
     if kind not in KINDS:
         raise ValueError(f"kind must be one of {KINDS}")
-    if variant not in VARIANTS:
-        raise ValueError(f"variant must be one of {VARIANTS}")
-    rng = np.random.default_rng([seed, KINDS.index(kind), VARIANTS.index(variant)])
+    if variant not in ALL_VARIANTS:
+        raise ValueError(f"variant must be one of {ALL_VARIANTS}")
+    rng = np.random.default_rng([seed, KINDS.index(kind), ALL_VARIANTS.index(variant)])
     own = Vessel(0.0, 0.0, 0.0, own_speed)
     parts = _MULTI[int(rng.integers(len(_MULTI)))] if kind == "multi_ship" else (kind,)
     base_tcpa = rng.uniform(*tcpa_range)
@@ -158,11 +169,19 @@ def generate(kind: str, seed: int = 0, variant: str = "nominal", *, own_speed: f
         faults = [Fault("bias", "own_position", (b * math.cos(ang), b * math.sin(ang))),
                   Fault("drift", "own_position", (0.05, -0.05)),
                   Fault("noise", "own_position", 25.0)]
+    elif variant == "gnss_spoof_ramp":
+        ang = rng.uniform(0, 2 * math.pi)
+        rate = rng.uniform(0.5, 1.5)  # m/s pull-off
+        t0 = max(0.0, base_tcpa - rng.uniform(700.0, 1000.0))
+        faults = [Fault("drift", "own_position", (rate * math.cos(ang), rate * math.sin(ang)), t0),
+                  Fault("noise", "own_position", 25.0)]
     elif variant.startswith("comms_loss"):
         t0 = max(0.0, base_tcpa - rng.uniform(700.0, 900.0))
         faults = [Fault("dropout", "target_track", 0.0, t0, t0 + rng.uniform(400.0, 600.0))]
         if variant == "comms_loss_manoeuvre":
             manoeuvres = [(t0 + 60.0, 0, float(rng.choice([-25.0, 25.0])))]
+    if dr_sensor_bias is not None:
+        faults = faults + [Fault("bias", "own_velocity", tuple(dr_sensor_bias))]
     return Scenario(id=f"{kind}_{variant}_s{seed}", kind=kind, variant=variant, own=own,
                     targets=targets, manoeuvres=manoeuvres, faults=faults, seed=seed,
                     horizon_s=min(4800.0, 2.0 * tmax + 900.0))
@@ -240,7 +259,9 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
     """Run one scenario. ``policy(t, own_perceived, targets_perceived, route) -> course``.
 
     ``wrapper`` (optional) is a runtime-assurance object with
-    ``filter(t, own_p, targets_p, route, proposed) -> course`` and ``summary()``.
+    ``filter(t, own_p, targets_p, route, proposed) -> course`` and ``summary()``;
+    if it has ``reset(own0)`` it is called once with the scenario's initial own
+    state — modelling a trusted navigation fix taken before the run (convention).
     """
     policy = policy if policy is not None else BaselineColregController(th=th, conv=conv)
     inj = FaultInjector(list(sc.faults), seed=sc.seed)
@@ -258,6 +279,8 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
     last_resort_ok = [False] * len(tgts)  # true-geometry last-resort condition reached
     resolved_t = None
     max_xtrack = 0.0
+    if wrapper is not None and hasattr(wrapper, "reset"):
+        wrapper.reset(sc.own)
     t = 0.0
     while t <= sc.horizon_s:
         for m in pending:
@@ -270,7 +293,9 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
             own_est = own_est.at(conv.dt_s) if own_est else own
         else:
             own_est = replace(own, x=float(p[0]), y=float(p[1]))
-        own_est = replace(own_est, course_deg=own.course_deg, speed=own.speed)
+        vel = inj.apply("own_velocity", t, (own.course_deg, own.speed))
+        own_est = replace(own_est, course_deg=float(vel[0]) % 360.0 if vel is not None else own.course_deg,
+                          speed=float(vel[1]) if vel is not None else own.speed)
         perceived = []
         for i, tg in enumerate(tgts):
             r = inj.apply("target_track", t, (tg.x, tg.y, tg.course_deg, tg.speed))
