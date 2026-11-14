@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from yard_sea_v0.colreg_stub import Vessel
-from yard_sea_v0.colreg_suite import ALL_VARIANTS, VARIANTS, generate, run_suite, simulate
+from yard_sea_v0.colreg_suite import ALL_VARIANTS, VARIANTS, BaselineColregController, generate, run_suite, simulate
 from yard_sea_v0.runtime_assurance import ColregRTA, GnssIntegrityMonitor, HoldCoursePolicy
 
 
@@ -53,9 +53,11 @@ def test_spoof_ramp_variant_is_opt_in_and_corrupts_after_onset():
 @pytest.mark.parametrize("seed", [4, 20, 29])
 def test_gnss_monitor_prevents_spoof_collisions_that_baseline_suffers(seed):
     sc = generate("crossing_port", seed, "gnss_spoof_ramp")
-    bare = simulate(sc)
-    held = simulate(sc, HoldCoursePolicy(), wrapper=ColregRTA())
-    guarded = simulate(sc, HoldCoursePolicy(), wrapper=_rta())
+    # pre-Rule-17(a)(ii) fallback: these were collisions before the stand-on fix
+    old = lambda: BaselineColregController(rule17a=False)  # noqa: E731
+    bare = simulate(sc, old())
+    held = simulate(sc, HoldCoursePolicy(), wrapper=ColregRTA(fallback=old()))
+    guarded = simulate(sc, HoldCoursePolicy(), wrapper=ColregRTA(fallback=old(), gnss_monitor=GnssIntegrityMonitor()))
     assert bare["collision"] and held["collision"]
     g = guarded["runtime_assurance"]["gnss_integrity"]
     assert g["suspect"] and not guarded["collision"]
