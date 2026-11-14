@@ -60,6 +60,23 @@ def main(argv: list[str] | None = None) -> int:
         help="With --multifidelity: number of Stage-A elites to evaluate at L3 (default 3)",
     )
     run.add_argument(
+        "--reward",
+        choices=("single_fn", "multi_froude"),
+        default="single_fn",
+        help="Reward: design-Fn Ct only, or multi-Froude grid with worst-case penalty",
+    )
+    run.add_argument(
+        "--wave-oracle",
+        choices=("l1", "michell"),
+        default="l1",
+        help="Wave term for --reward multi_froude (michell = L1.5 thin-ship Cw)",
+    )
+    run.add_argument(
+        "--holdout",
+        action="store_true",
+        help="Post-hoc held-out oracle check + drift diagnostics (never enters reward)",
+    )
+    run.add_argument(
         "--no-cost-aware",
         action="store_true",
         help="With --multifidelity --botorch: use plain BoTorch EI instead of cost-weighted qLogEI",
@@ -123,6 +140,9 @@ def main(argv: list[str] | None = None) -> int:
             multifidelity=args.multifidelity,
             l3_top=args.l3_top,
             cost_aware=not args.no_cost_aware,
+            reward_mode=args.reward,
+            wave_oracle=args.wave_oracle,
+            holdout=args.holdout,
         )
         print(
             f"Wrote {args.out} improved={manifest['n_improved']} "
