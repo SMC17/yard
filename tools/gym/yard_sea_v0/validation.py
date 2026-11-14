@@ -27,9 +27,10 @@ Comparison convention (stated, not hidden):
   - ``michell_l15``  — L1 viscous (HM1984 gym form factor) + Michell thin-ship
     wave on the gym's synthetic Wigley-like offsets, wave drag normalised by
     wetted surface so it is on the same basis as the friction terms.
-    ``michell_l15_L2basis`` reproduces the composition ``multi_froude`` used
-    before this report (Michell C_W on Ship-D's L^2 basis added to S-based
-    friction terms) so the size of that basis inconsistency is on the record.
+    ``michell_l15_L2basis`` reproduces the legacy composition ``multi_froude``
+    used before yard#27's finding was fixed (Michell C_W on Ship-D's L^2 basis
+    added to S-based friction terms) so the size of that inconsistency stays on
+    the record. ``multi_froude`` now uses the S basis (``Cw_S``).
 
 These are validation statistics for *this harness on these hulls*. They are not
 ITTC verification & validation of the oracles and they are not class approval.
