@@ -13,6 +13,11 @@ Two separate questions are answered for a design and the oracle that scored it:
    ``yard_sea_v0.validation``)? Outside it, the oracle's number is an
    extrapolation with no measured backing in this repo.
 
+Michell results are keyed on their offset source (``oracle_for_result``): the synthetic Wigley
+grid maps to ``michell_l15``, and Ship-D HP waterlines map to ``michell_shipd_hp``. The latter has its own
+envelope, which is empty because no tank case has Ship-D offsets. The real-lines Michell result
+(``michell_lines``) is attached only as context.
+
 The result is *advisory*: it is recorded in evidence and as advisory acceptance
 checks, it never changes the reward or the acceptance verdict. Validation was
 done at model-scale Reynolds numbers; full-scale designs rely on the ITTC-57
@@ -43,7 +48,22 @@ ORACLE_ALIASES = {
     "michell": "michell_l15",
     "michell_l15": "michell_l15",
     "L1.5_michell": "michell_l15",
+    # Michell on Ship-D HP waterlines (the vector's own offsets, not the synthetic Wigley grid): its own entry.
+    "shipd_hp_waterlines": "michell_shipd_hp",
+    "michell_shipd_hp": "michell_shipd_hp",
 }
+
+# Michell offset sources -> applicability oracle. ``wigley_synthetic`` is what ``michell_l15`` in the
+# tank report validates; Ship-D HP waterlines are a different geometry and must not borrow that envelope.
+MICHELL_OFFSET_ORACLE = {"wigley_synthetic": "michell_l15", "shipd_hp_waterlines": "michell_shipd_hp"}
+
+
+def oracle_for_result(r: dict[str, Any]) -> str | None:
+    """Applicability oracle tag for a resistance / teacher dict, honouring the Michell offset source."""
+    src = r.get("offset_source")
+    if src in MICHELL_OFFSET_ORACLE and str(r.get("fidelity", "")).startswith("L1.5_michell"):
+        return MICHELL_OFFSET_ORACLE[src]
+    return r.get("fidelity")
 
 _HM_RANGE = {
     "Fn": (0.0, 0.45),
@@ -63,6 +83,10 @@ DECLARED_RANGES: dict[str, dict[str, Any]] = {
     "michell_l15": {
         "ranges": {"L_B": (5.0, math.inf), "Fn": (0.1, 0.6)},
         "source": "gym convention for thin-ship (slender-hull) validity; not a published limit",
+    },
+    "michell_shipd_hp": {
+        "ranges": {"L_B": (5.0, math.inf), "Fn": (0.1, 0.6)},
+        "source": "same thin-ship convention as michell_l15; not a published limit",
     },
 }
 
@@ -134,6 +158,24 @@ def assess(h: HullState, oracle: str | None, *, report_path: str | Path | None =
         out.update(in_declared_range=not dv, declared_violations=dv, declared_source=decl["source"])
 
     po = (rep or {}).get("per_oracle", {}).get(name or "")
+    if name == "michell_shipd_hp" and not po:
+        # No tank point has Ship-D HP waterline offsets, so nothing validates this path. The nearest
+        # evidence is the same Michell integral on real hull lines (``michell_lines``), recorded as context.
+        out.update(in_validated_envelope=False,
+                   envelope_violations=["no tank-validated point for Michell on Ship-D HP waterlines"],
+                   validation_status="no_validated_points")
+        ml = (rep or {}).get("per_oracle", {}).get("michell_lines")
+        out["validation"] = {"report_schema": (rep or {}).get("schema"), "n_validated": 0,
+                             "own_envelope": "michell_shipd_hp (empty: no Ship-D-offset tank cases)"}
+        if ml and ml.get("overall", {}).get("n"):
+            out["validation"]["real_hull_lines"] = {
+                "oracle": "michell_lines",
+                "mean_E_pct": ml["overall"].get("mean_E_pct"),
+                "mean_abs_E_pct": ml["overall"].get("mean_abs_E_pct"),
+                "n_validated": ml["envelope"].get("n_validated"),
+                "n": ml["overall"].get("n"),
+            }
+        return out
     if not po:
         out.update(
             in_validated_envelope=None,

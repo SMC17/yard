@@ -98,3 +98,30 @@ def test_michell_record_carries_real_lines_result():
     a = assess(HullState(), "michell")
     rl = a["validation"]["real_hull_lines"]
     assert rl["oracle"] == "michell_lines" and rl["mean_abs_E_pct"] > 20
+
+
+def test_shipd_hp_waterlines_michell_uses_its_own_envelope():
+    from yard_sea_v0.applicability import assess, canonical_oracle, oracle_for_result
+
+    shipd = {"fidelity": "L1.5_michell", "offset_source": "shipd_hp_waterlines"}
+    wig = {"fidelity": "L1.5_michell", "offset_source": "wigley_synthetic"}
+    assert oracle_for_result(shipd) == "michell_shipd_hp"
+    assert canonical_oracle(oracle_for_result(wig)) == "michell_l15"
+    assert oracle_for_result({"fidelity": "hm1984_zig"}) == "hm1984_zig"
+    a = assess(HullState(), oracle_for_result(shipd))
+    assert a["oracle_validated_as"] == "michell_shipd_hp"
+    assert a["in_validated_envelope"] is False  # nothing validates Ship-D-offset Michell
+    assert a["validation_status"] == "no_validated_points"
+    assert a["in_declared_range"] is not None
+    # the synthetic-offset path keeps the michell_l15 tank envelope
+    assert assess(HullState(), oracle_for_result(wig))["oracle_validated_as"] == "michell_l15"
+
+
+def test_accept_l1_routes_michell_by_offset_source():
+    from yard_sea_v0.acceptance import accept_l1
+
+    r = {"fidelity": "L1.5_michell", "offset_source": "shipd_hp_waterlines", "Ct": 4e-3, "Cf": 3e-3,
+         "Cw": 1e-3, "k1": 0.1, "Fn": 0.2, "Rn": 1e8}
+    res = accept_l1(r, hull=HullState())
+    env = [c for c in res.checks if c.name == "in_tank_validated_envelope"]
+    assert env and env[0].passed is False and "Ship-D" in env[0].detail

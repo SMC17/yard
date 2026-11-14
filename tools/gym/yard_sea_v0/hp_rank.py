@@ -200,6 +200,11 @@ def rank_shipd(
         notes.append(
             f"michell_offset_source:{michell_out.get('offset_source', 'unknown')}"
         )
+        if not michell_out.get("skipped"):
+            from .applicability import assess, oracle_for_result
+
+            # Advisory, keyed on the offset source (Ship-D waterlines have their own, empty, envelope).
+            michell_out["applicability"] = assess(hull, oracle_for_result(michell_out))
 
     out_stl: str | None = None
     if stl_path is not None:
