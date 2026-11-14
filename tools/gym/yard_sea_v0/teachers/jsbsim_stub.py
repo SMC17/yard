@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import tempfile
 from dataclasses import dataclass
 from typing import Any
 
@@ -89,9 +90,14 @@ def run(
     # FGFDMExec is chatty on stdout — silence for teacher hygiene
     buf = io.StringIO()
     try:
-        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+        # Stock aircraft models carry <output> directives (e.g. c172x writes
+        # JSBout172B.csv); keep that out of the caller's cwd / the repo tree.
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf), \
+                tempfile.TemporaryDirectory(prefix="yard_jsbsim_") as out_dir:
             fdm = jsbsim.FGFDMExec(None)
+            fdm.set_output_path(out_dir)
             ok = fdm.load_model(model)
+            fdm.disable_output()
             if not ok:
                 return {
                     "teacher": TEACHER,

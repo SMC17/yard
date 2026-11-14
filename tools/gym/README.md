@@ -92,5 +92,27 @@ without `--holdout`, and a test enforces it.
   slope, so surrogate error is judged on the long horizon rather than only the first step.
 - The gallery manifest gets a `holdout` summary (claimed / confirmed / exploit, max final drift).
 
-The held-out oracle is a second model, not ground truth. Plug L2/L3 teachers in via `holdout_fn=`
-when they're available.
+`--holdout-oracle` selects the held-out oracle (`holdout.make_holdout_fn(oracle=...)`):
+
+| oracle | model | sees | notes |
+|---|---|---|---|
+| `michell` (default) | L1 viscous + Michell L1.5 thin-ship wave, Froude grid | all 7 params | |
+| `hm1984` | Zig Holtrop-Mennen 1984 L1, Froude grid | all 7 params | Unavailable (NaN, `available=false`) without `zig_gym`; never falls back to the Python L1 |
+| `capytaine_l2` | Capytaine linear BEM on an L×B×T box at design Fn | L, B, T | A radiation-damping proxy, closer to seakeeping than to calm-water resistance. Designs that only change Cb/lcb/kg/Fn are `blind`, not scored 0 |
+
+Every row records `reward_wave_model`, `holdout_wave_model` and `independent_of_reward`. With
+`zig_gym` built, the default L1 reward *is* HM1984, so `--holdout-oracle hm1984` is flagged
+`independent_of_reward=false`. In that case it is a consistency check, not a held-out one.
+Blind and NaN rows are left out of the agreement stats.
+
+Example (3 parents × 2 policies, 12 steps, seed 0, HM1984 reward). These numbers show how the
+oracles behave and are not a validation result:
+
+| oracle | independent | claimed | confirmed | exploit |
+|---|---|---|---|---|
+| michell | yes | 6 | 4 | 2 |
+| hm1984 | no | 6 | 5 | 1 |
+| capytaine_l2 | yes | 6 | 2 | 4 |
+
+The oracles disagree with each other, and that disagreement is the signal. Each one is a second
+model, not ground truth, and none of this is ITTC / class.
