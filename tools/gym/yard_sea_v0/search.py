@@ -158,7 +158,6 @@ def run_search(
             if holdout:
                 # Post-hoc only: the held-out oracle never feeds the reward or the policy.
                 from .holdout import (
-                    DEFAULT_DRIFT_THRESHOLD,
                     holdout_check,
                     long_horizon_drift_check,
                     make_holdout_fn,
@@ -196,7 +195,7 @@ def run_search(
                 dr = trajectory_drift(ep_states, parent, holdout_fn=hfn)
                 lh = long_horizon_drift_check(
                     ep_states, parent, horizon=drift_horizon,
-                    threshold=DEFAULT_DRIFT_THRESHOLD if drift_threshold is None else drift_threshold,
+                    threshold=drift_threshold,  # None -> empirical per-pair default
                     holdout_fn=hfn, episode_id=env.episode_id,
                 )
                 env.record_evidence(lh)  # evidence flag only; the reward is already final

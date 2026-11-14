@@ -96,7 +96,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "With --holdout: flag when |seen - held-out| cumulative improvement error exceeds this "
-            "fraction of parent Ct (default 0.10, a convention, not a validated limit). Flag only"
+            "fraction of parent Ct (default: per-oracle-pair empirical threshold from the tank-validation "
+            "report, e.g. ~0.18 for HM1984 vs Michell; 0.10 convention for unvalidated pairs). Flag only"
         ),
     )
     run.add_argument(
