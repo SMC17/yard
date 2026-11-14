@@ -1,0 +1,1032 @@
+{
+ "conventions": {
+  "appendage_depth": "T_T (1 - s)^2 parabola (Doctors hollow shape)",
+  "grid": "open stern {'nx': 121, 'nz': 31, 'n_theta': 60}, transom variants {'nx': 481, 'nz': 61, 'n_theta': 60}",
+  "hollow_length": "6.68 T_T (Doctors 2006 minimum; full regression not used)",
+  "transom_drag": "HM1984 c_6 (wet/partially ventilated); Doctors-Day dry hydrostatic not used",
+  "transom_section": "0.002 Lpp inside aft end (hull_lines A_T convention)"
+ },
+ "envelope": null,
+ "primary": "Watanabe 1+k + transom",
+ "rows": [
+  {
+   "CT_measured": 0.003796,
+   "Fn": 0.108,
+   "hull": "KCS",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.004059159542298637,
+     "C_F": 0.0033685926754384405,
+     "Cw_S0": 0.0001237941590139634,
+     "E_pct": -6.932548532630063,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.003791330969340664,
+     "C_F": 0.0033685926754384405,
+     "Cw_S0": 0.00010597760301555701,
+     "E_pct": 0.12299870019325242,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.0038091475253390706,
+     "C_F": 0.0033685926754384405,
+     "Cw_S0": 0.0001237941590139634,
+     "E_pct": -0.34635209007035483,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.004041342986300231,
+     "C_F": 0.0033685926754384405,
+     "Cw_S0": 0.00010597760301555701,
+     "E_pct": -6.463197742366457,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 2.9812755997659446,
+    "Cb": 0.6505,
+    "Cp": 0.6604731444816733,
+    "Fn": 0.108,
+    "L_B": 7.1428851815505405,
+    "lcb_frac": -0.0148
+   }
+  },
+  {
+   "CT_measured": 0.003641,
+   "Fn": 0.152,
+   "hull": "KCS",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.004348401715686953,
+     "C_F": 0.003166271714537636,
+     "Cw_S0": 0.0006493982148130964,
+     "E_pct": -19.4287754926381,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.004080262420196638,
+     "C_F": 0.003166271714537636,
+     "Cw_S0": 0.0006162549707496715,
+     "E_pct": -12.06433452888322,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.004113405664260062,
+     "C_F": 0.003166271714537636,
+     "Cw_S0": 0.0006493982148130964,
+     "E_pct": -12.974613135404073,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.004315258471623528,
+     "C_F": 0.003166271714537636,
+     "Cw_S0": 0.0006162549707496715,
+     "E_pct": -18.518496886117223,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 2.9812755997659446,
+    "Cb": 0.6505,
+    "Cp": 0.6604731444816733,
+    "Fn": 0.152,
+    "L_B": 7.1428851815505405,
+    "lcb_frac": -0.0148
+   }
+  },
+  {
+   "CT_measured": 0.003475,
+   "Fn": 0.195,
+   "hull": "KCS",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.005094211693917238,
+     "C_F": 0.003030059413799044,
+     "Cw_S0": 0.0015543384960368856,
+     "E_pct": -46.596019968841404,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.0048317665651878144,
+     "C_F": 0.003030059413799044,
+     "Cw_S0": 0.0015167799411799226,
+     "E_pct": -39.04364216367812,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.004869325120044777,
+     "C_F": 0.003030059413799044,
+     "Cw_S0": 0.0015543384960368856,
+     "E_pct": -40.12446388618064,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.005056653139060276,
+     "C_F": 0.003030059413799044,
+     "Cw_S0": 0.0015167799411799226,
+     "E_pct": -45.51519824633888,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 2.9812755997659446,
+    "Cb": 0.6505,
+    "Cp": 0.6604731444816733,
+    "Fn": 0.195,
+    "L_B": 7.1428851815505405,
+    "lcb_frac": -0.0148
+   }
+  },
+  {
+   "CT_measured": 0.003467,
+   "Fn": 0.227,
+   "hull": "KCS",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.00613937659526779,
+     "C_F": 0.0029512482425876545,
+     "Cw_S0": 0.0026915747116970715,
+     "E_pct": -77.08037482745284,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.0058843030035537446,
+     "C_F": 0.0029512482425876545,
+     "Cw_S0": 0.002655538444102861,
+     "E_pct": -69.72319018037913,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.005920339271147955,
+     "C_F": 0.0029512482425876545,
+     "Cw_S0": 0.0026915747116970715,
+     "E_pct": -70.76259795638751,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.00610334032767358,
+     "C_F": 0.0029512482425876545,
+     "Cw_S0": 0.002655538444102861,
+     "E_pct": -76.04096705144447,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 2.9812755997659446,
+    "Cb": 0.6505,
+    "Cp": 0.6604731444816733,
+    "Fn": 0.227,
+    "L_B": 7.1428851815505405,
+    "lcb_frac": -0.0148
+   }
+  },
+  {
+   "CT_measured": 0.003711,
+   "Fn": 0.26,
+   "hull": "KCS",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.007013495687569595,
+     "C_F": 0.0028834205071830107,
+     "Cw_S0": 0.003644933696635431,
+     "E_pct": -88.99206918807855,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.006771112755389375,
+     "C_F": 0.0028834205071830107,
+     "Cw_S0": 0.003616554013348927,
+     "E_pct": -82.46059701938495,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.006799492438675879,
+     "C_F": 0.0028834205071830107,
+     "Cw_S0": 0.003644933696635431,
+     "E_pct": -83.22534192066504,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.006985116004283091,
+     "C_F": 0.0028834205071830107,
+     "Cw_S0": 0.003616554013348927,
+     "E_pct": -88.22732428679846,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 2.9812755997659446,
+    "Cb": 0.6505,
+    "Cp": 0.6604731444816733,
+    "Fn": 0.26,
+    "L_B": 7.1428851815505405,
+    "lcb_frac": -0.0148
+   }
+  },
+  {
+   "CT_measured": 0.004501,
+   "Fn": 0.282,
+   "hull": "KCS",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.010308100273138703,
+     "C_F": 0.002843942976746065,
+     "Cw_S0": 0.0069856579890577595,
+     "E_pct": -129.01800206928914,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.010081651932830503,
+     "C_F": 0.002843942976746065,
+     "Cw_S0": 0.006970282933126909,
+     "E_pct": -123.98693474406805,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.010097026988761354,
+     "C_F": 0.002843942976746065,
+     "Cw_S0": 0.0069856579890577595,
+     "E_pct": -124.32852674430914,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.094033539049193,
+     "transom": {
+      "A_T_m2": 0.00020144634914838269,
+      "C_TR": 0.0,
+      "Fn_T": null,
+      "T_T_m": 0.0,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.0
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.010292725217207853,
+     "C_F": 0.002843942976746065,
+     "Cw_S0": 0.006970282933126909,
+     "E_pct": -128.67641006904807,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.168252075111,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 2.9812755997659446,
+    "Cb": 0.6505,
+    "Cp": 0.6604731444816733,
+    "Fn": 0.282,
+    "L_B": 7.1428851815505405,
+    "lcb_frac": -0.0148
+   }
+  },
+  {
+   "CT_measured": 0.00411,
+   "Fn": 0.142,
+   "hull": "KVLCC2",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.00869746507449873,
+     "C_F": 0.0034496540429658747,
+     "Cw_S0": 0.004057251656988692,
+     "E_pct": -111.61715509729271,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.345124281947,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.008586081240121881,
+     "C_F": 0.0034496540429658747,
+     "Cw_S0": 0.004057251656988692,
+     "E_pct": -108.90708613435234,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.3128358747648452,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.008586081240121881,
+     "C_F": 0.0034496540429658747,
+     "Cw_S0": 0.004057251656988692,
+     "E_pct": -108.90708613435234,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.3128358747648452,
+     "transom": {
+      "applied": false
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.00869746507449873,
+     "C_F": 0.0034496540429658747,
+     "Cw_S0": 0.004057251656988692,
+     "E_pct": -111.61715509729271,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.345124281947,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 2.7886224205242613,
+    "Cb": 0.8098,
+    "Cp": 0.8114228456913827,
+    "Fn": 0.142,
+    "L_B": 5.5172,
+    "lcb_frac": 0.0348
+   }
+  },
+  {
+   "CT_measured": 0.00393,
+   "Fn": 0.1,
+   "hull": "DTMB5415",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.005680559604933643,
+     "C_F": 0.003556392819271606,
+     "Cw_S0": 0.0015387150577441072,
+     "E_pct": -44.54350139780261,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.131723940049,
+     "transom": {
+      "A_T_m2": 0.0043535071894216446,
+      "C_TR": 0.00011698965340150276,
+      "Fn_T": 1.7591756286738598,
+      "T_T_m": 0.01848321985000001,
+      "applied": true,
+      "c_6": 0.1296329748530456,
+      "hollow_length_m": 0.12346790859800007
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.007800681720321534,
+     "C_F": 0.003556392819271606,
+     "Cw_S0": 0.004109756152277837,
+     "E_pct": -98.49062901581509,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.0378284277380936,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.005346630279189307,
+     "C_F": 0.003556392819271606,
+     "Cw_S0": 0.0015387150577441072,
+     "E_pct": -36.04657198954978,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.0378284277380936,
+     "transom": {
+      "A_T_m2": 0.0043535071894216446,
+      "C_TR": 0.00011698965340150276,
+      "Fn_T": 1.7591756286738598,
+      "T_T_m": 0.01848321985000001,
+      "applied": true,
+      "c_6": 0.1296329748530456,
+      "hollow_length_m": 0.12346790859800007
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.00813461104606587,
+     "C_F": 0.003556392819271606,
+     "Cw_S0": 0.004109756152277837,
+     "E_pct": -106.98755842406791,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.131723940049,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 3.099717400080743,
+    "Cb": 0.507,
+    "Cp": 0.6175395858708892,
+    "Fn": 0.1,
+    "L_B": 7.449856733524355,
+    "lcb_frac": -0.00683
+   }
+  },
+  {
+   "CT_measured": 0.004193,
+   "Fn": 0.28,
+   "hull": "DTMB5415",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.004856950755935235,
+     "C_F": 0.0029532605666529738,
+     "Cw_S0": 0.001511992638152678,
+     "E_pct": -15.834742569406998,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.131723940049,
+     "transom": {
+      "A_T_m2": 0.0043535071894216446,
+      "C_TR": 2.682433298711852e-06,
+      "Fn_T": 4.925691760286807,
+      "T_T_m": 0.01848321985000001,
+      "applied": true,
+      "c_6": 0.0029723295885276894,
+      "hollow_length_m": 0.12346790859800007
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.004901776362502766,
+     "C_F": 0.0029532605666529738,
+     "Cw_S0": 0.001836798591912399,
+     "E_pct": -16.903800679770235,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.0378284277380936,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.004579652842041757,
+     "C_F": 0.0029532605666529738,
+     "Cw_S0": 0.001511992638152678,
+     "E_pct": -9.22138903033048,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.0378284277380936,
+     "transom": {
+      "A_T_m2": 0.0043535071894216446,
+      "C_TR": 2.682433298711852e-06,
+      "Fn_T": 4.925691760286807,
+      "T_T_m": 0.01848321985000001,
+      "applied": true,
+      "c_6": 0.0029723295885276894,
+      "hollow_length_m": 0.12346790859800007
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.005179074276396245,
+     "C_F": 0.0029532605666529738,
+     "Cw_S0": 0.001836798591912399,
+     "E_pct": -23.517154218846777,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.131723940049,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 3.099717400080743,
+    "Cb": 0.507,
+    "Cp": 0.6175395858708892,
+    "Fn": 0.28,
+    "L_B": 7.449856733524355,
+    "lcb_frac": -0.00683
+   }
+  },
+  {
+   "CT_measured": 0.00646,
+   "Fn": 0.41,
+   "hull": "DTMB5415",
+   "oracles": {
+    "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+     "CT": 0.007987888310759719,
+     "C_F": 0.0027683035576091778,
+     "Cw_S0": 0.004854932901290597,
+     "E_pct": -23.651521838385744,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.131723940049,
+     "transom": {
+      "A_T_m2": 0.0043535071894216446,
+      "C_TR": 0.0,
+      "Fn_T": 7.212620077562824,
+      "T_T_m": 0.01848321985000001,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.12346790859800007
+     }
+    },
+    "Watanabe 1+k": {
+     "CT": 0.007865069904820807,
+     "C_F": 0.0027683035576091778,
+     "Cw_S0": 0.004992045776125503,
+     "E_pct": -21.750308124161112,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.0378284277380936,
+     "transom": {
+      "applied": false
+     }
+    },
+    "Watanabe 1+k + transom": {
+     "CT": 0.0077279570299859015,
+     "C_F": 0.0027683035576091778,
+     "Cw_S0": 0.004854932901290597,
+     "E_pct": -19.62781780163935,
+     "available": true,
+     "form_factor": "watanabe",
+     "grid": {
+      "n_theta": 60,
+      "nx": 481,
+      "nz": 61
+     },
+     "one_plus_k": 1.0378284277380936,
+     "transom": {
+      "A_T_m2": 0.0043535071894216446,
+      "C_TR": 0.0,
+      "Fn_T": 7.212620077562824,
+      "T_T_m": 0.01848321985000001,
+      "applied": true,
+      "c_6": 0.0,
+      "hollow_length_m": 0.12346790859800007
+     }
+    },
+    "baseline (HM 1+k, open stern)": {
+     "CT": 0.008125001185594626,
+     "C_F": 0.0027683035576091778,
+     "Cw_S0": 0.004992045776125503,
+     "E_pct": -25.77401216090753,
+     "available": true,
+     "form_factor": "hm1984_gym",
+     "grid": {
+      "n_theta": 60,
+      "nx": 121,
+      "nz": 31
+     },
+     "one_plus_k": 1.131723940049,
+     "transom": {
+      "applied": false
+     }
+    }
+   },
+   "params": {
+    "B_T": 3.099717400080743,
+    "Cb": 0.507,
+    "Cp": 0.6175395858708892,
+    "Fn": 0.41,
+    "L_B": 7.449856733524355,
+    "lcb_frac": -0.00683
+   }
+  }
+ ],
+ "schema": "yard_sea_v0.michell_corrections.v1",
+ "sensitivity": [
+  {
+   "Cw_S0": 0.0044647616876739874,
+   "E_pct": -120.82440873874656,
+   "case": "KVLCC2@Fn=0.142",
+   "what": "truncated stern closed as if a transom"
+  },
+  {
+   "Cw_S0": 0.0020605392084152075,
+   "E_pct": -49.32454020001035,
+   "case": "DTMB5415@Fn=0.100",
+   "what": "hollow length x0.5"
+  },
+  {
+   "Cw_S0": 0.001295372316666528,
+   "E_pct": -29.854644735667357,
+   "case": "DTMB5415@Fn=0.100",
+   "what": "hollow length x2.0"
+  },
+  {
+   "Cw_S0": 0.0016529715106738353,
+   "E_pct": -12.583632591531455,
+   "case": "DTMB5415@Fn=0.280",
+   "what": "hollow length x0.5"
+  },
+  {
+   "Cw_S0": 0.001384689114946543,
+   "E_pct": -6.1852926028051955,
+   "case": "DTMB5415@Fn=0.280",
+   "what": "hollow length x2.0"
+  },
+  {
+   "Cw_S0": 0.004923413445415955,
+   "E_pct": -20.687888144137133,
+   "case": "DTMB5415@Fn=0.410",
+   "what": "hollow length x0.5"
+  },
+  {
+   "Cw_S0": 0.004772352537369249,
+   "E_pct": -18.34948399480733,
+   "case": "DTMB5415@Fn=0.410",
+   "what": "hollow length x2.0"
+  }
+ ],
+ "stats": {
+  "HM 1+k + transom (Doctors appendage + HM R_TR)": {
+   "max_abs_E_pct": 129.01800206928914,
+   "mean_E_pct": -56.36947109818182,
+   "mean_abs_E_pct": 56.36947109818182,
+   "n": 10,
+   "n_within_tol": 1,
+   "rms_E_pct": 69.5384716753287
+  },
+  "Watanabe 1+k": {
+   "max_abs_E_pct": 123.98693474406805,
+   "mean_E_pct": -57.320752389029906,
+   "mean_abs_E_pct": 57.34535212906856,
+   "n": 10,
+   "n_within_tol": 1,
+   "rms_E_pct": 71.43092774267069
+  },
+  "Watanabe 1+k + transom": {
+   "max_abs_E_pct": 124.32852674430914,
+   "mean_E_pct": -50.55647606888887,
+   "mean_abs_E_pct": 50.55647606888887,
+   "n": 10,
+   "n_within_tol": 2,
+   "rms_E_pct": 65.42187136384325
+  },
+  "baseline (HM 1+k, open stern)": {
+   "max_abs_E_pct": 128.67641006904807,
+   "mean_E_pct": -63.133747418322855,
+   "mean_abs_E_pct": 63.133747418322855,
+   "n": 10,
+   "n_within_tol": 1,
+   "rms_E_pct": 75.96205109628507
+  }
+ },
+ "tol_pct": 10.0,
+ "validated": false
+}
