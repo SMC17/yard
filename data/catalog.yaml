@@ -116,10 +116,18 @@ datasets:
     citation: "den Ouden, J. (2022). Delft Systematic Yacht Hull Series Measurement Data. 4TU.ResearchData. doi:10.4121/21501402.v1"
     size: 635 KB
     quantities: [V, R_t, heave, pitch, heel/yaw runs, appendages]
-    used_for: future planing / yacht-form envelope and negative control
-    status: fetch-script
-    reason_not_used_yet: hydrostatics (S, displacement, C_M per Sysser) live on dsyhs.tudelft.nl, not in the xlsx
+    used_for: upright bare-hull R_T joined with dsyhs_hydrostatics_4tu -> out-of-population oracle check (500 C_T points)
+    status: vendored (derived CSV data/vendored/dsyhs_bare_upright_resistance_modelscale.csv) + fetch-script (xlsx)
     sha256: d8e03c1185717d783199723ba0cdf5bbc55b16f31508805f7ea9c6911f6b86d3
+  - id: dsyhs_hydrostatics_4tu
+    name: DSYHS bare-hull hydrostatics (model + full scale, 0/10/20/30 deg heel)
+    url: https://doi.org/10.4121/21501375
+    licence: CC0 1.0
+    citation: "Keuning, J.A. et al. Delft Systematic Yacht Hull Series hydrostatics data. 4TU.ResearchData. doi:10.4121/21501375"
+    size: 43 KB (xlsx)
+    quantities: [L_WL, B_WL, T_c, volume, LCB, A_W, A_X, S_c, C_B, C_M, C_P, C_W]
+    used_for: joined with dsyhs_4tu upright bare-hull R_T -> 500 measured C_T points on 36 canoe bodies (out-of-population oracle check, reports/validation/dsyhs_validation.*)
+    status: vendored (derived CSV data/vendored/dsyhs_hydrostatics_upright_modelscale.csv) + fetch-script (xlsx)
   - id: uci_yacht_hydrodynamics
     name: UCI Yacht Hydrodynamics (DSYHS series 1, 308 runs, residuary resistance)
     url: https://archive.ics.uci.edu/dataset/243/yacht+hydrodynamics
