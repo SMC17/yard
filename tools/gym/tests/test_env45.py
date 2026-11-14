@@ -31,7 +31,9 @@ def test_env45_step_zeros_accepted():
     assert obs.shape == (11,)
     assert info.get("shipd_infeasible") is not True
     assert info["rejected"] is False
-    assert abs(estimate_resistance(env.state).Ct - ct0) < 1e-12
+    # HP every-step volumes may re-lerp with tiny float drift vs reset hull
+    assert abs(estimate_resistance(env.state).Ct - ct0) < 1e-6
+    assert info.get("geometry_source") == "hp"
     assert isinstance(reward, float)
 
 
@@ -92,21 +94,30 @@ def test_apply_shipd_delta_clamps_and_bits():
         assert out[i] in (0.0, 1.0)
 
 
-def test_env45_hp_hydro_on_reset():
-    """use_hp_hydro=True attaches HP volumes on reset; default stays off."""
-    env0 = DesignSearchEnv45(sample_index=0, max_steps=3, seed=10)
-    _, info0 = env0.reset()
-    assert info0.get("use_hp_hydro") is False or "hp_hydro" not in info0
+def test_env45_hp_geometry_default_on():
+    """use_hp_geometry defaults True when Ship-D vendor present."""
+    env = DesignSearchEnv45(sample_index=0, max_steps=3, seed=10)
+    _, info = env.reset()
+    assert info["use_hp_geometry"] is True
+    assert info["use_hp_hydro"] is True
+    assert info["geometry_source"] == "hp"
+    assert "hp_hydro" in info
+    assert info["hp_hydro"]["primary"]["volume_m3"] > 0
 
+
+def test_env45_hp_hydro_on_reset():
+    """Explicit use_hp_geometry + every_n=0: HP on reset; steps stay project unless refresh."""
     env = DesignSearchEnv45(
         sample_index=0,
         max_steps=5,
         seed=11,
+        use_hp_geometry=True,
         use_hp_hydro=True,
         hp_hydro_every_n=0,
     )
     _, info = env.reset()
     assert info["use_hp_hydro"] is True
+    assert info["geometry_source"] == "hp"
     hydro = info["hp_hydro"]
     assert hydro["primary"]["volume_m3"] > 0
     assert hydro["primary"]["displacement_t"] > 0
@@ -121,11 +132,26 @@ def test_env45_hp_hydro_on_reset():
         assert "hp_hydro" not in step_info
 
 
+def test_env45_hp_geometry_can_disable():
+    env = DesignSearchEnv45(
+        sample_index=0,
+        max_steps=3,
+        seed=13,
+        use_hp_geometry=False,
+        use_hp_hydro=False,
+    )
+    _, info = env.reset()
+    assert info["use_hp_geometry"] is False
+    assert info["geometry_source"] == "project_fallback"
+    assert "hp_hydro" not in info
+
+
 def test_env45_hp_hydro_every_n():
     env = DesignSearchEnv45(
         sample_index=0,
         max_steps=6,
         seed=12,
+        use_hp_geometry=True,
         use_hp_hydro=True,
         hp_hydro_every_n=2,
         delta_frac=0.02,
@@ -146,3 +172,13 @@ def test_env45_hp_hydro_every_n():
             assert "hp_hydro" not in info
             saw_odd_without = True
     assert saw_even and saw_odd_without
+
+
+def test_env45_step_uses_hp_geometry_by_default():
+    env = DesignSearchEnv45(sample_index=0, max_steps=4, seed=20, delta_frac=0.02)
+    env.reset()
+    _, _, _, _, info = env.step(np.zeros(ACTION_DIM, dtype=np.float32))
+    if not info["rejected"]:
+        assert info["geometry_source"] == "hp"
+        assert "hp_hydro" in info
+        assert info["hp_hydro"]["primary"]["volume_m3"] > 0
