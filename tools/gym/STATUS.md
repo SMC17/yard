@@ -16,7 +16,7 @@ Implemented (on `feat/yard-sea-v0-gym` / remaining-stones + local BoTorch/L3 loo
 - **HP primary ranking** — `hp_rank.rank_shipd` (calc_volumes + Ship-D STL + Michell-from-HP); env45 `use_hp_geometry=True` by default when vendor present; `project_to_hull` fallback only (`out/hp_primary_result.md`)
 - **Michell L1.5 Ship-D waterlines** — `teachers.michell_l15.shipd_waterline_offsets` via HP `gen_MeshGridWL`; Wigley fallback retained (`out/michell_wl_result.md`)
 - **L2 Capytaine panel/BEM** — `teachers/panel_l2.py` (`detect`/`run` → Cw/Cd-like); CLI `--l2-panel`; skips if capytaine missing; not ITTC / not class (`docs/attack_results/panel_l2_result.md`)
-- Zig L0 mirror under `gym/`, GitHub Actions pytest+gallery
+- Zig L0/L1 CLI under `tools/gym/zig_gym/` (Zig 0.16; the stale duplicate at repo-root `gym/` was removed), GitHub Actions pytest+gallery
 - Local: pytest green with constraint + STL + act45 tests (see `out/shipd_surface_result.md`, `out/act45_result.md`)
 
 Hard stops (need new deps / access / product decisions):

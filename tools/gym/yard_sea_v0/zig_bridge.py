@@ -43,13 +43,6 @@ def resolve_zig_binary(explicit: str | Path | None = None) -> Path:
         return Path(which)
     if _DEFAULT_BIN.is_file():
         return _DEFAULT_BIN
-    # Monorepo: SMC17/yard has gym/ at repo root; tools/gym package sits two levels down.
-    alt = _PKG_ROOT.parent.parent / "gym" / "zig-out" / "bin" / "yard_sea_zig"
-    if alt.is_file():
-        return alt
-    alt2 = _PKG_ROOT / "gym" / "zig-out" / "bin" / "yard_sea_zig"
-    if alt2.is_file():
-        return alt2
     raise FileNotFoundError(
         "yard_sea_zig not found; build with `cd zig_gym && zig build` "
         f"(expected {_DEFAULT_BIN})"
