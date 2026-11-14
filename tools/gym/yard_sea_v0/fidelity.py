@@ -310,7 +310,7 @@ class FidelityChoiceEnv(DesignSearchEnv):
         """Base measure-then-claim, plus a fresh HF measurement that must also show improvement."""
         require = kwargs.get("require_improvement", True)
         verdict = super().claim_done(claimed, **kwargs)
-        fresh = HullState.from_vector(self.state.as_vector())
+        fresh = HullState(**{**HullState.from_vector(self.state.as_vector()).__dict__, **self.state.appendages()})
         hf_val, e_hf = self._eval(self.hf, fresh)
         verdict["hf_measured"] = e_hf
         verdict["cost_spent"] = self.cost_spent

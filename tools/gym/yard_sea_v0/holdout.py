@@ -319,6 +319,10 @@ def resolve_drift_threshold(
     ind = oracle_independence(seen_fn, holdout_fn or make_holdout_fn(), parent)
     a = _DRIFT_ALIASES.get(str(ind["seen_wave_model"]))
     b = _DRIFT_ALIASES.get(str(ind["holdout_wave_model"]))
+    if not (getattr(parent, "abt_m2", 0.0) > 0 or getattr(parent, "at_m2", 0.0) > 0):
+        # No bulb / transom in the state: use the thresholds derived from the "_bare" compositions.
+        a = f"{a}_bare" if a in ("hm1984_gym", "simplified_py") else a
+        b = f"{b}_bare" if b in ("hm1984_gym", "simplified_py") else b
     rep = report if report is not None else load_report()
     fallback = {"threshold": DEFAULT_DRIFT_THRESHOLD, "source": "default_convention_not_validated",
                 "pair": [ind["seen_wave_model"], ind["holdout_wave_model"]], "derivation": None}

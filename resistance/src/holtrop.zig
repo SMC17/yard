@@ -191,6 +191,18 @@ fn bulbResistance(hp: HullParticulars, v: f64, env: Environment) f64 {
     return 0.11 * decay * powF(fn_i, 3) * powF(bulb.A_BT, 1.5) * env.rho * env.g / denom;
 }
 
+/// Immersed-transom resistance (Holtrop & Mennen 1982; Holtrop 1984):
+///   R_TR  = 0.5 rho V^2 A_T c_6
+///   F_nT  = V / sqrt(2 g A_T / (B + B C_WP))
+///   c_6   = 0.2 (1 - 0.2 F_nT)  for F_nT < 5, else 0
+pub fn transomResistance(hp: HullParticulars, v: f64, env: Environment) f64 {
+    const transom = hp.transom orelse return 0.0;
+    if (!(transom.A_T > 0.0)) return 0.0;
+    const fn_t = v / @sqrt(2.0 * env.g * transom.A_T / (hp.B + hp.B * hp.C_WP));
+    const c_6 = if (fn_t < 5.0) 0.2 * (1.0 - 0.2 * fn_t) else 0.0;
+    return 0.5 * env.rho * v * v * transom.A_T * c_6;
+}
+
 fn m1(hp: HullParticulars) f64 {
     return 0.0140407 * hp.L / hp.T
         - 1.75254 * powF(hp.displacement_vol, 1.0 / 3.0) / hp.L
@@ -257,6 +269,7 @@ pub const ResistanceBreakdown = struct {
     c_5: f64,
     r_w: f64,
     r_b: f64,
+    r_tr: f64 = 0.0,
     r_total: f64,
 };
 
@@ -269,6 +282,7 @@ pub fn totalResistance(hp: HullParticulars, v: f64, env: Environment) ittc.Error
     const c_5_val = c5(hp);
     const r_w = waveResistance(hp, v, env);
     const r_b = bulbResistance(hp, v, env);
+    const r_tr = transomResistance(hp, v, env);
     return .{
         .rn = rn,
         .fn_val = v / @sqrt(env.g * hp.L),
@@ -279,7 +293,8 @@ pub fn totalResistance(hp: HullParticulars, v: f64, env: Environment) ittc.Error
         .c_5 = c_5_val,
         .r_w = r_w,
         .r_b = r_b,
-        .r_total = r_f * k + r_w + r_b,
+        .r_tr = r_tr,
+        .r_total = r_f * k + r_w + r_b + r_tr,
     };
 }
 
@@ -398,6 +413,19 @@ test "c_2 below 1 when bulb geometry supplied" {
     hp.bulb = .{ .A_BT = 2.56, .T_F = 8.0, .h_B = 4.0 };
     try std.testing.expect(c2(hp) < 1.0);
     try std.testing.expect(c2(hp) > 0.0);
+}
+
+test "transom resistance: zero without transom, positive and decaying with speed" {
+    var hp = fixtureCargo();
+    const env: Environment = .{};
+    try std.testing.expectEqual(@as(f64, 0.0), transomResistance(hp, 5.0, env));
+    hp.transom = .{ .A_T = 12.0 };
+    const slow = transomResistance(hp, 3.0, env) / (0.5 * env.rho * 9.0 * 12.0);
+    const fast = transomResistance(hp, 8.0, env) / (0.5 * env.rho * 64.0 * 12.0);
+    try std.testing.expect(slow > fast and fast > 0.0 and slow <= 0.2);
+    // F_nT >= 5 -> c_6 = 0
+    hp.transom = .{ .A_T = 0.01 };
+    try std.testing.expectEqual(@as(f64, 0.0), transomResistance(hp, 8.0, env));
 }
 
 test "c_5 below 1 when transom area supplied" {
