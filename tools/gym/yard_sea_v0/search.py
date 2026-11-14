@@ -292,7 +292,8 @@ def finalize_optimizer_row(
         wave_oracle=wave_oracle,
     )
     env.reset(options={"episode_index": 0, "optimizer": opt})
-    env.state = HullState(**{k: row["hull"][k] for k in ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")})
+    env.state = HullState(**{k: row["hull"][k] for k in ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")},
+                          **{k: row["hull"].get(k, 0.0) for k in ("abt_m2", "hb_m", "at_m2")})
     env.step_count = int(opt.evals)
     verdict = env.claim_done({"Ct": float(row["ct"])})
     row["optimizer_claimed_improved"] = bool(row.get("improved"))

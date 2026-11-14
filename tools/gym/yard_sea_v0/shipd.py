@@ -16,6 +16,8 @@ See STATUS.md — not class / ITTC.
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import csv
 import json
 from dataclasses import dataclass
@@ -80,8 +82,13 @@ def project_to_hull(
     cb: float | None = None,
     fn: float = 0.20,
     kg_frac: float = 0.55,
+    appendages: bool = False,
 ) -> HullState:
     """Project Ship-D principals into exploratory HullState for L0/L1.
+
+    ``appendages=True`` also fills the Holtrop bulb / transom inputs
+    (``abt_m2``, ``hb_m``, ``at_m2``) from the Ship-D geometry
+    (``shipd_appendages``). Off by default so existing Ship-D rewards are unchanged.
 
     Midbody fullness is approximated from chine beam / deck beam when cb omitted.
     This is intentionally a *projection*, not a volume-accurate Ship-D → hydro map.
@@ -101,7 +108,7 @@ def project_to_hull(
     del mid_frac  # reserved for future volume map
     lcb_frac = 0.02 * (d["Ls"] - d["Lb"])  # more stern taper → LCB forward soft
     lcb_frac = max(-0.05, min(0.05, lcb_frac))
-    return HullState(
+    h = HullState(
         L=L,
         B=B,
         T=T,
@@ -110,6 +117,44 @@ def project_to_hull(
         kg_frac=kg_frac,
         Fn=fn,
     )
+    if appendages:
+        app = shipd_appendages(tuple(v.values), T)
+        h = HullState(**{**h.__dict__, **app})
+    return h
+
+
+@lru_cache(maxsize=4096)
+def shipd_appendages(vec: tuple[float, ...], draft: float) -> dict[str, float]:
+    """Holtrop A_BT / h_B / A_T read off a Ship-D hull (same definitions as ``hull_lines``).
+
+    Ship-D x runs from the bow (0) to the stern (LOA). FP = first station where the
+    design waterline has breadth; A_BT = submerged section area there (both sides),
+    h_B its centroid height above the keel; A_T = submerged section area at the last
+    station with any breadth (immersed transom). A_BT below 0.5 % of B*T is a stem
+    sliver -> 0 (no bulb).
+    """
+    from .teachers.michell_l15 import shipd_waterline_offsets
+
+    try:
+        Y, X, Z = shipd_waterline_offsets(np.asarray(vec), nx=401, nz=41, draft=draft)
+    except (np.linalg.LinAlgError, ValueError):
+        # Upstream Ship-D geometry fails for some vectors: no bulb / transom terms (= bare).
+        return {"abt_m2": 0.0, "hb_m": 0.0, "at_m2": 0.0}
+    depth = -Z  # 0 at WL .. T at keel
+    wl = np.nonzero(Y[:, 0] > 1e-9)[0]
+    anyy = np.nonzero(Y.max(axis=1) > 1e-9)[0]
+    out = {"abt_m2": 0.0, "hb_m": 0.0, "at_m2": 0.0}
+    if wl.size == 0:
+        return out
+    B = 2.0 * float(Y[:, 0].max())
+    yf = Y[wl[0]]
+    abt = 2.0 * float(np.trapezoid(yf, depth))
+    if abt > 0.005 * B * draft:
+        out["abt_m2"] = abt
+        out["hb_m"] = float(draft - 2.0 * np.trapezoid(yf * depth, depth) / abt)
+    at = 2.0 * float(np.trapezoid(Y[anyy[-1]], depth))
+    out["at_m2"] = at if at > 1e-4 * B * draft else 0.0
+    return out
 
 
 def load_sample_vectors(path: Path | None = None) -> list[ShipDVector]:

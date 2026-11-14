@@ -109,6 +109,17 @@ def estimate_resistance(
     Cw = c1 * 0.02 * math.exp(m1 * Fn**d + 0.0 * math.cos(h.lcb_frac * math.pi))
     Cw = max(0.0, min(0.05, Cw * (1.0 + 2.0 * (Fn - 0.15) ** 2)))
 
+    # Holtrop-Mennen bulb / transom terms (same formulas as the Zig HM1984 path).
+    if h.abt_m2 > 0 or h.at_m2 > 0:
+        from . import hm_appendages as hma
+
+        cm = 0.98  # same C_M default as the Zig mapping
+        cwp = max(0.55, min(0.99, (1.0 + 2.0 * Cb) / 3.0))
+        qS = 0.5 * RHO_SW * U * U * S
+        Cw = Cw * hma.c2(B, T, h.abt_m2, h.hb_m) * hma.c5(B, T, h.at_m2, cm)
+        Cw += (hma.bulb_resistance(U, T, h.abt_m2, h.hb_m, RHO_SW, G)
+               + hma.transom_resistance(U, B, cwp, h.at_m2, RHO_SW, G)) / qS
+
     Ca = 0.006 * (L + 100.0) ** -0.16 - 0.00205  # roughness allowance soft
     Ca = max(0.0, Ca)
 

@@ -112,6 +112,11 @@ def _outside(params: dict[str, float], box: dict[str, Any]) -> list[str]:
 def assess(h: HullState, oracle: str | None, *, report_path: str | Path | None = None) -> dict[str, Any]:
     """Applicability record for one design under one oracle (advisory)."""
     name = canonical_oracle(oracle)
+    rep = load_report(report_path)
+    # A hull without bulb / transom in its state is validated against the "_bare" composition.
+    if name in ("hm1984_gym", "simplified_py") and not (getattr(h, "abt_m2", 0.0) > 0 or getattr(h, "at_m2", 0.0) > 0):
+        if f"{name}_bare" in (rep or {}).get("per_oracle", {}):
+            name = f"{name}_bare"
     params = hull_params(h)
     out: dict[str, Any] = {
         "schema": APPLICABILITY_SCHEMA,
@@ -121,14 +126,13 @@ def assess(h: HullState, oracle: str | None, *, report_path: str | Path | None =
         "affects_reward": False,
         "reynolds_extrapolated": True,
     }
-    decl = DECLARED_RANGES.get(name or "")
+    decl = DECLARED_RANGES.get((name or "").removesuffix("_bare"))
     if decl is None:
         out.update(in_declared_range=None, declared_violations=[], declared_source=None)
     else:
         dv = _outside(params, decl["ranges"])
         out.update(in_declared_range=not dv, declared_violations=dv, declared_source=decl["source"])
 
-    rep = load_report(report_path)
     po = (rep or {}).get("per_oracle", {}).get(name or "")
     if not po:
         out.update(
