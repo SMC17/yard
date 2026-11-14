@@ -7,6 +7,7 @@ Evidence-coupled parametric hull **design-search gym**.
 - Evidence JSON every step (ODD + claims + GSN stub)
 - Search: random, hill-climb, optional BoTorch (`--botorch`; pip install botorch torch)
 - Optional L2 panel/BEM: Capytaine → Cw/Cd-like (`--l2-panel`; pip install capytaine)
+- Fidelity as an action: `fidelity.FidelityChoiceEnv` (Box(8): morph + oracle choice), explicit cost budget, LF-mistrust fallback to HF, HF-measured claims
 - Optional expensive L3 teacher: OpenFOAM forceCoeffs → `L3_rans` Cd (`--l3-openfoam`)
 - Ship-D: 45-D schema + **49 algebraic constraints** + surface STL + **HP-primary ranking** (`hp_rank.rank_shipd`: calc_volumes + Michell-from-HP; env45 `use_hp_geometry` default on)
 
