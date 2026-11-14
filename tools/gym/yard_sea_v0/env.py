@@ -11,6 +11,10 @@ from .evidence import build_evidence, write_evidence
 from .hull import HullState, evaluate_l0
 from .monitors import apply_action, monitor_action
 from .multi_froude import multi_froude_score
+
+# "sea_state": calm L1 Rt + fast STAwave-2 mean added resistance in a head sea
+# (added_resistance.py); Capytaine stays a search-time / held-out cross-check.
+REWARD_MODES = ("single_fn", "multi_froude", "sea_state")
 from .provenance import (
     OptimizerRecord,
     deterministic_episode_id,
@@ -62,9 +66,11 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         fn_grid: tuple[float, ...] | None = None,
         wave_oracle: str = "auto",
         worst_case_weight: float = 1.0,
+        sea_conditions: Any = None,
     ) -> None:
-        if reward_mode not in ("single_fn", "multi_froude"):
-            raise ValueError("reward_mode must be 'single_fn' or 'multi_froude'")
+        self.sea_conditions = sea_conditions
+        if reward_mode not in REWARD_MODES:
+            raise ValueError(f"reward_mode must be one of {REWARD_MODES}")
         self.reward_mode = reward_mode
         self.fn_grid = fn_grid
         self.wave_oracle = wave_oracle
@@ -182,6 +188,10 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             )
             ok = acc["passed"] and mf["accepted"]
             reward = (2.0 * mf["score"] + _shape_terms(self.state, self.parent_vol)) if ok else -1.0
+        elif self.reward_mode == "sea_state":
+            mf = self._sea_score(self.state)
+            ok = acc["passed"] and mf["accepted"]
+            reward = (2.0 * mf["score"] + _shape_terms(self.state, self.parent_vol)) if ok else -1.0
         else:
             # Acceptance gate: an L1 number whose envelope checks fail earns no credit.
             reward = _reward(self.state, self.parent_ct, self.parent_vol) if acc["passed"] else -1.0
@@ -201,7 +211,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             seeds=dict(self.seeds),
         )
         if mf is not None:
-            pack["multi_froude"] = mf
+            pack["sea_state" if self.reward_mode == "sea_state" else "multi_froude"] = mf
         self.evidence_packs.append(pack)
         if self.evidence_dir:
             from pathlib import Path
@@ -219,9 +229,20 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         }
         return self._obs(), reward, terminated, truncated, info
 
+    def _sea_score(self, h: HullState) -> dict[str, Any]:
+        from .added_resistance import DEFAULT_SEA_CONDITIONS, sea_state_score
+
+        return sea_state_score(h, self.parent, self.sea_conditions or DEFAULT_SEA_CONDITIONS,
+                               worst_case_weight=self.worst_case_weight)
+
     def candidate_reward(self, h: HullState) -> float:
         """Reward ``step`` would assign to an already-monitored hull (for look-ahead search)."""
         acc = accept_l1(estimate_resistance(h))
+        if self.reward_mode == "sea_state":
+            ss = self._sea_score(h)
+            if not (acc.passed and ss["accepted"]):
+                return -1.0
+            return 2.0 * ss["score"] + _shape_terms(h, self.parent_vol)
         if self.reward_mode == "multi_froude":
             mf = multi_froude_score(
                 h, self.parent, self.fn_grid,
@@ -278,6 +299,10 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             )
             improved = bool(mf["accepted"] and mf["score"] is not None and mf["score"] > 0)
             measured["multi_froude_score"] = mf["score"]
+        elif self.reward_mode == "sea_state":
+            mf = self._sea_score(fresh)
+            improved = bool(mf["accepted"] and mf["score"] is not None and mf["score"] > 0)
+            measured["sea_state_score"] = mf["score"]
         if require_improvement and not improved:
             reasons.append("no_improvement_vs_parent")
         verdict = {
