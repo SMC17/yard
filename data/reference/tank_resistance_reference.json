@@ -1,0 +1,70 @@
+{
+  "schema": "yard.reference.tank_resistance.v1",
+  "convention": "C_T = R_T / (0.5 rho U^2 S0), model scale, calm deep water, free to sink and trim unless stated. S0 = wetted surface at rest as defined by each source.",
+  "licensing_note": "Raw source files are NOT redistributed here (licence unstated or restrictive); data/fetch/fetch_yard_data.py downloads and checksums them. The few numeric values below are individual factual measurements quoted with citation so validation reports are reproducible offline.",
+  "hulls": {
+    "KCS": {
+      "description": "KRISO Container Ship, bare hull with rudder, Tokyo 2015 Case 2.1 (= G2010 2.2b), model 1",
+      "full_scale": {"Lpp": 230.0, "B": 32.2, "T": 10.8, "vol": 52030.0, "S_wo_rudder": 9424.0, "S_rudder": 115.0, "Cb": 0.6505, "Cm": 0.9849, "lcb_pct": -1.48},
+      "model": {"scale": 31.6, "Lpp": 7.2786, "B": 1.0190, "T": 0.3418, "vol": 1.6490, "S0": 9.5518, "S0_over_L2": 0.1803, "rho": 999.5, "nu": 1.27e-6, "g": 9.81},
+      "bulb": "present (geometry not tabulated by the source; HM1984 bulb term omitted)",
+      "transom": "small, dry at design speed (omitted)",
+      "points": [
+        {"Fn": 0.108, "CT": 3.796e-3, "sinkage_x1e2_m": -0.090, "trim_deg": -0.017},
+        {"Fn": 0.152, "CT": 3.641e-3, "sinkage_x1e2_m": -0.275, "trim_deg": -0.053},
+        {"Fn": 0.195, "CT": 3.475e-3, "sinkage_x1e2_m": -0.599, "trim_deg": -0.097},
+        {"Fn": 0.227, "CT": 3.467e-3, "sinkage_x1e2_m": -0.944, "trim_deg": -0.127},
+        {"Fn": 0.260, "CT": 3.711e-3, "sinkage_x1e2_m": -1.394, "trim_deg": -0.169},
+        {"Fn": 0.282, "CT": 4.501e-3, "sinkage_x1e2_m": -1.702, "trim_deg": -0.159}
+      ],
+      "data_uncertainty_pct": 1.0,
+      "source": "Tokyo 2015 Workshop on CFD in Ship Hydrodynamics, Case 2.1 EFD (NMRI/KRISO), file vary_Fr_2-1.xls; particulars from kcs_gc.html",
+      "url": "https://t2015.nmri.go.jp/Instructions_KCS/Case_2.1/Case_2-1.html",
+      "dataset_id": "t2015_kcs_case21"
+    },
+    "JBC": {
+      "description": "Japan Bulk Carrier, bare hull w/o rudder, w/o ESD, Tokyo 2015 Case 1.1a (NMRI)",
+      "full_scale": {"Lpp": 280.0, "B": 45.0, "T": 16.5, "vol": 178369.9, "S0": 19556.1, "Cb": 0.8580, "Cm": 0.9981, "lcb_pct": 2.5475},
+      "model": {"scale": 40.0, "Lpp": 7.0, "B": 1.125, "T": 0.4125, "vol": 2.78703, "S0": 12.2206, "S0_over_L2": 0.2494, "rho": 998.2, "nu": 1.107e-6, "g": 9.80},
+      "bulb": "present (geometry not tabulated; omitted)",
+      "transom": "none at design draft",
+      "points": [
+        {"Fn": 0.142, "CT": 4.289e-3, "sinkage_pct_L": -0.086, "trim_pct_L": -0.18}
+      ],
+      "data_uncertainty_pct": 1.0,
+      "source": "Tokyo 2015 Workshop, Case 1.1a EFD (NMRI), file [Identifier]_V&V_1-1a.xls; particulars from jbc_gc.html",
+      "url": "https://t2015.nmri.go.jp/Instructions_JBC/Case_1-1a.html",
+      "dataset_id": "t2015_jbc_case11a"
+    },
+    "KVLCC2": {
+      "description": "KRISO VLCC 2nd variant, design draft, MOERI tank test with rudder (G2010 case)",
+      "full_scale": {"Lpp": 320.0, "B": 58.0, "T": 20.8, "vol": 312622.0, "S_wo_rudder": 27194.0, "Cb": 0.8098, "Cm": 0.9980, "lcb_pct": 3.48},
+      "model": {"scale": 58.0, "Lpp": 5.5172, "B": 1.0, "T": 0.3586, "vol": 1.6023, "S0": 8.1638, "S0_over_L2": 0.2682, "rho": 999.0, "Re": 4.6e6, "g": 9.81},
+      "bulb": "present (geometry not tabulated; omitted)",
+      "transom": "none",
+      "points": [
+        {"Fn": 0.142, "CT": 4.110e-3}
+      ],
+      "data_uncertainty_pct": 1.0,
+      "source": "MOERI towing-tank result as used by Gothenburg 2010 workshop; value and U_D=1.0%D as quoted in Eca/Hoekstra et al., 'Viscous-flow calculations for KVLCC2 in deep and shallow water' (doi:10.1007/978-94-007-6143-8_9), Table 3; particulars SIMMAN 2014",
+      "url": "https://simman2014.dk/ship-data/moeri-kvlcc2-tanker/geometry-and-conditions-moeri-kvlcc2-tanker/",
+      "dataset_id": "g2010_kvlcc2_moeri"
+    },
+    "DTMB5415": {
+      "description": "US Navy combatant DTMB 5415 bare hull, 5.72 m geosim tested at CSSRC (ITTC uncertainty-analysis worked example), fresh water 16.5 C",
+      "full_scale": {"Lpp": 142.0, "B": 19.06, "T": 6.15, "vol": 8424.4, "S_wo_rudder": 2972.6, "Cb": 0.507, "Cm": 0.821, "lcb_pct": -0.683},
+      "model": {"scale": 24.824, "Lpp": 5.720, "B": 0.7678, "T": 0.2477, "vol": 0.5507, "S0": 4.824, "rho": 998.85, "nu": 1.0948e-6, "g": 9.7946},
+      "bulb": "sonar dome (omitted)",
+      "transom": "immersed transom stern, area not tabulated (omitted)",
+      "points": [
+        {"Fn": 0.10, "CT": 3.93e-3, "U_D_pct": 3.2},
+        {"Fn": 0.28, "CT": 4.193e-3, "U_D_pct": 0.50},
+        {"Fn": 0.41, "CT": 6.460e-3, "U_D_pct": 0.32}
+      ],
+      "data_uncertainty_pct": 0.5,
+      "source": "ITTC Recommended Procedure 7.5-02-02-02.1 (2021), 'Example for uncertainty analysis of resistance tests in towing tanks', Table 15 (CT at 16.5 C, expanded uncertainty); full-scale particulars SIMMAN 2008; nu from ITTC 7.5-02-01-03 fresh water at 16.5 C",
+      "url": "https://www.ittc.info/media/11782/75-02-02-021.pdf",
+      "dataset_id": "ittc_5415_cssrc"
+    }
+  }
+}
