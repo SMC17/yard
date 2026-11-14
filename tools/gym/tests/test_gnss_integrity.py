@@ -69,3 +69,51 @@ def test_degraded_gnss_detected_at_start_with_trusted_prefix():
     out = simulate(sc, wrapper=_rta())
     g = out["runtime_assurance"]["gnss_integrity"]
     assert g["suspect"] and g["t_detect"] == 0.0
+
+
+def _drive(m, bias_fn, n=300, seed=0, noise=25.0):
+    rng = np.random.default_rng(seed)
+    for k in range(n):
+        t = 5.0 * k
+        b = bias_fn(t)
+        e = rng.normal(0, noise, 2)
+        m.update(t, Vessel(b[0] + e[0], 6.0 * t + b[1] + e[1], 0.0, 6.0))
+    return m
+
+
+def test_retrust_after_transient_clears_with_hysteresis():
+    m = GnssIntegrityMonitor()
+    m.reset(Vessel(0.0, 0.0, 0.0, 6.0))
+    _drive(m, lambda t: (250.0, 0.0) if 200 <= t < 400 else (0.0, 0.0))
+    ev = [e for e in m.events]
+    assert ev[0]["event"] == "suspect" and 200 <= ev[0]["t"] < 220
+    rt = [e for e in ev if e["event"] == "retrust"]
+    assert rt and rt[0]["t"] >= 400 + 5.0 * (m.retrust_n - 1)  # needs N consistent fixes after it clears
+    assert not m.suspect
+
+
+def test_no_retrust_while_bias_persists_and_latch_mode():
+    m = GnssIntegrityMonitor()
+    m.reset(Vessel(0.0, 0.0, 0.0, 6.0))
+    _drive(m, lambda t: (250.0, 0.0) if t >= 200 else (0.0, 0.0))
+    assert m.suspect and not any(e["event"] == "retrust" for e in m.events)
+    latch = GnssIntegrityMonitor(retrust_n=None)
+    latch.reset(Vessel(0.0, 0.0, 0.0, 6.0))
+    _drive(latch, lambda t: (250.0, 0.0) if 200 <= t < 400 else (0.0, 0.0))
+    assert latch.suspect and latch.summary()["n_retrust"] == 0
+
+
+def test_no_retrust_once_dr_uncertainty_exceeds_cap():
+    m = GnssIntegrityMonitor(retrust_max_sigma_m=20.0)
+    m.reset(Vessel(0.0, 0.0, 0.0, 6.0))
+    _drive(m, lambda t: (250.0, 0.0) if 100 <= t < 700 else (0.0, 0.0), n=400)
+    assert m.suspect and m.summary()["n_retrust"] == 0  # 600 s of coasting → σ_DR ≈ 60 m > cap
+
+
+def test_no_false_alarm_on_noisy_unbiased_gnss():
+    flags = 0
+    for seed in range(20):
+        m = GnssIntegrityMonitor()
+        m.reset(Vessel(0.0, 0.0, 0.0, 6.0))
+        flags += _drive(m, lambda t: (0.0, 0.0), n=600, seed=seed).t_detect is not None
+    assert flags <= 1
