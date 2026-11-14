@@ -85,7 +85,6 @@ def hillclimb_policy_factory(rng: np.random.Generator):
         nonlocal best_action
         candidates = [rng.uniform(-1.0, 1.0, size=7) for _ in range(8)]
         candidates.append(best_action)
-        from .env import _reward
         from .monitors import monitor_action
 
         best_a = candidates[0]
@@ -95,7 +94,7 @@ def hillclimb_policy_factory(rng: np.random.Generator):
             if not d.allow or d.projected is None:
                 score = -1.0
             else:
-                score = _reward(d.projected, env.parent_ct, env.parent_vol)
+                score = env.candidate_reward(d.projected)
             if score > best_score:
                 best_score = score
                 best_a = a
@@ -113,6 +112,8 @@ def run_search(
     evidence_root: Path | None = None,
     *,
     use_botorch: bool = False,
+    reward_mode: str = "single_fn",
+    wave_oracle: str = "l1",
 ) -> list[dict[str, Any]]:
     """Run random + hill-climb (and optional BoTorch) per parent.
 
@@ -129,6 +130,8 @@ def run_search(
             max_steps=steps,
             seed=seed + i,
             evidence_dir=str(ed) if ed else None,
+            reward_mode=reward_mode,
+            wave_oracle=wave_oracle,
         )
         for factory in (random_policy_factory, hillclimb_policy_factory):
             policy = factory(rng)
