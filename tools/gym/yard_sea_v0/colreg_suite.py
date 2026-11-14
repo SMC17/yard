@@ -18,7 +18,8 @@ of any published scenario catalogue. What it adds over the stub:
   target alters course during the blackout, so dead reckoning goes stale).
   Opt-in (not in the default ``VARIANTS`` table): ``gnss_spoof_ramp`` — GNSS
   correct at first, then a spoofing-like pull-off that grows linearly from an
-  onset time during the approach. Every variant also carries a small constant
+  onset time during the approach; ``gnss_glitch`` — a 150–400 m step that
+  clears after 200–400 s (tests re-trust). Every variant also carries a small constant
   heading/speed-log bias on the ``own_velocity`` channel (``DR_SENSOR_BIAS``,
   convention) so a dead-reckoning integrity monitor is never error-free.
 * **Target behaviour**: scripted (constant course / speed + scripted
@@ -70,7 +71,7 @@ NOT_A_COMPLIANCE_CLAIM = (
 )
 KINDS = ("head_on", "crossing_starboard", "crossing_port", "overtaking", "overtaken", "multi_ship")
 VARIANTS = ("nominal", "gnss_degraded", "comms_loss", "comms_loss_manoeuvre")
-EXTRA_VARIANTS = ("gnss_spoof_ramp",)
+EXTRA_VARIANTS = ("gnss_spoof_ramp", "gnss_glitch")
 ALL_VARIANTS = VARIANTS + EXTRA_VARIANTS
 # Constant heading [deg] and speed-log [m/s] bias seen by the own-ship velocity
 # sensors (gyro / log) — an evaluation convention, not a sensor specification.
@@ -190,6 +191,14 @@ def generate(kind: str, seed: int = 0, variant: str = "nominal", *, own_speed: f
         rate = rng.uniform(0.5, 1.5)  # m/s pull-off
         t0 = max(0.0, base_tcpa - rng.uniform(700.0, 1000.0))
         faults = [Fault("drift", "own_position", (rate * math.cos(ang), rate * math.sin(ang)), t0),
+                  Fault("noise", "own_position", 25.0)]
+    elif variant == "gnss_glitch":
+        # transient: a 150-400 m step that clears again (recovery / re-trust test)
+        ang = rng.uniform(0, 2 * math.pi)
+        b = rng.uniform(150.0, 400.0)
+        t0 = rng.uniform(100.0, 400.0)
+        faults = [Fault("bias", "own_position", (b * math.cos(ang), b * math.sin(ang)), t0,
+                        t0 + rng.uniform(200.0, 400.0)),
                   Fault("noise", "own_position", 25.0)]
     elif variant.startswith("comms_loss"):
         t0 = max(0.0, base_tcpa - rng.uniform(700.0, 900.0))

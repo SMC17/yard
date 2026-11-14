@@ -83,3 +83,45 @@ New opt-in variant `gnss_spoof_ramp` (not in the default 240-run table): GNSS co
   hold + RTA 2, hold + RTA + GNSS 1. Collision counts at this level are seed-sensitive. Pass-ok
   (≥ 0.8·dcpa_min) and the 5th-percentile minimum range (≈ 700 m → ≈ 1010 m on gnss_degraded,
   ≈ 385 m → ≈ 1030 m on the spoof ramp, baseline configs) are the steadier signal.
+
+### v1: re-trust with hysteresis (`gnss_dr_innovation_v1`)
+
+Changes from v0:
+* **Detection levels.** The per-fix test is now at α = 1e-5 and the 60 s window test at α = 1e-4,
+  using exact χ²(2) quantiles (−2 ln α). With 25 m noise and about 600 fixes per run, the old
+  per-fix 1e-3 would have false-alarmed in roughly half of all noisy runs.
+* **Window test variance** is now `P + R/n`. The DR error is common to all fixes in the window;
+  only the GNSS noise averages down.
+* **DR bias growth while coasting.** σ_bias = 0.1 m/s · τ (convention, at least the suite's injected
+  0.5° / 0.03 m/s) is added to the random-walk P.
+* **Re-trust.** While suspect, each fix is still tested against the coasting DR state at
+  α = 0.01. After `retrust_n` (default 24, i.e. 2 min) consecutive fixes pass both the per-fix and
+  window tests, GNSS is re-admitted with the grown P, and the stale innovation window is cleared.
+  Re-trust is not attempted once σ_DR > `retrust_max_sigma_m` (40 m, about 400 s of coasting):
+  beyond that a 120–150 m bias can no longer be told apart from DR drift, so the monitor stays on
+  DR. `retrust_n=None` restores v0 latching.
+* **New opt-in variant `gnss_glitch`:** a 150–400 m step starting at 100–400 s and clearing after
+  200–400 s, with 25 m noise throughout.
+* The summary keeps `suspect` as "ever flagged" and adds `suspect_at_end`, `events` and `n_retrust`.
+
+Results: hold-course stand-in + RTA + GNSS, 30 seeds × 6 kinds = 180 runs per variant. A false
+alarm is a flag raised while no position fault is active. A wrong re-trust is a re-trust while the
+injected offset is > 75 m.
+
+| variant | metric | latch (v0) | N = 24 (default) | N = 12 |
+|---|---|---|---|---|
+| nominal / comms_loss / comms_loss_manoeuvre (540) | runs with a false alarm | 0 | 0 | 0 |
+| gnss_degraded (persistent bias) | flagged / re-trusted / wrong re-trust | 180 / 0 / 0 | 180 / 0 / 0 | 180 / 0 / 0 |
+| gnss_spoof_ramp | flagged / re-trusted / wrong re-trust | 180 / 0 / 0 | 180 / 0 / 0 | 180 / 0 / 0 |
+| gnss_glitch | runs re-trusted | 0 | 43 | 102 |
+| gnss_glitch | median recovery after the glitch clears | – | 158 s | 95 s |
+| gnss_glitch | false re-alarms after re-trust (runs) | – | 2 | 6 |
+| gnss_glitch | fallback share | 0.98 | 0.81 | 0.56 |
+| gnss_glitch | collisions / pass-ok | 1 / 0.994 | 1 / 0.994 | 1 / 0.994 |
+| synthetic noisy unbiased GNSS (unit test, 20 × 600 fixes) | runs flagged | | ≤ 1 | |
+
+No wrong re-trusts were seen in any configuration. The main limit on recovery is the 40 m DR-sigma
+cap: glitches that leave the ship coasting for longer than about 400 s are never re-admitted.
+That is deliberate, because availability is traded for not re-admitting a biased fix. Lowering N
+roughly halves recovery time, at the cost of a few false re-alarms. The one glitch collision does
+not change with the re-trust setting.
