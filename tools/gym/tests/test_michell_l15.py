@@ -123,3 +123,20 @@ def test_cli_l15_flag(tmp_path: Path):
     assert manifest["l15_availability"]["available"] is True
     assert len(manifest["l15_summaries"]) >= 1
     assert all(s["fidelity"] == FIDELITY for s in manifest["l15_summaries"])
+
+
+def test_cw_s_is_wetted_surface_basis_of_same_rw():
+    from yard_sea_v0.hull import HullState
+    from yard_sea_v0.teachers import michell_l15
+
+    if not michell_l15.detect().available:
+        import pytest
+
+        pytest.skip("Michell vendor missing")
+    h = HullState(Fn=0.25)
+    r = michell_l15.run(h)
+    ratio = r["Cw_S"] / r["Cw"]
+    assert abs(ratio - r["L_m"] ** 2 / r["S_m2"]) < 1e-9 * ratio
+    from yard_sea_v0.multi_froude import evaluate_point
+
+    assert evaluate_point(h, 0.25, wave_oracle="michell").wave == r["Cw_S"]

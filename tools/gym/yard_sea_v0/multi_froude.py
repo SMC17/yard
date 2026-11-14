@@ -120,9 +120,12 @@ def _michell_cw(h: HullState) -> tuple[float | None, str | None]:
     from .teachers import michell_l15
 
     r = michell_l15.run(h)
-    cw = r.get("Cw")
+    cw = r.get("Cw_S")
     if r.get("skipped") or cw is None or not math.isfinite(float(cw)):
         return None, str(r.get("skip_reason") or "michell_failed")
+    # Wetted-surface basis, same as the friction / form-factor terms it is added to.
+    # (Ship-D's Cw is Rw / (q L^2); adding that to S-based Cf under-weighted the
+    # wave term by S/L^2 ~ 0.18 - see reports/validation/oracle_tank_validation.md.)
     return float(cw), None
 
 
