@@ -116,3 +116,23 @@ oracles behave and are not a validation result:
 
 The oracles disagree with each other, and that disagreement is the signal. Each one is a second
 model, not ground truth, and none of this is ITTC / class.
+
+## COLREG encounter scenario stub (`colreg_stub.py`, label `colreg_stub_v0`)
+
+This is a geometry-only stub for scenario-based collision-avoidance testing. It is **not** a COLREG
+compliance check and **not** a DNV, class or flag-state method. It borrows only the layout of
+scenario-based testing: a parameterised encounter, then the expected own-ship role, then one
+manoeuvre evaluated against simplified readings of the rules.
+
+- `classify(own, target)` returns head-on (Rule 14), crossing starboard/port (Rule 15),
+  overtaking/overtaken (Rule 13), CPA/TCPA, and the own-ship role
+  (`give_way` / `stand_on` / `none`) when DCPA and TCPA are inside the thresholds.
+- `evaluate_manoeuvre(own, target, alteration_deg)` applies an instantaneous course change. It
+  then checks four things: the turn is to starboard, the turn is "readily apparent" (Rule 8(b)),
+  the resulting passing distance, and that own ship does not cross ahead of the target. For a
+  stand-on vessel it instead checks that course is kept (Rule 17(a)(i)).
+- `scenario_suite()` builds a deterministic grid of collision-course encounters (CPA = 0).
+- The numeric thresholds in `Thresholds` are conventions, not rule text: 0.5 nmi DCPA, 20 min
+  TCPA, a ±6° head-on sector, and a 30° minimum alteration.
+- Not modelled: restricted visibility, narrow channels/TSS, vessel categories, multi-ship
+  encounters, ship dynamics, environment, sensor uncertainty, good seamanship.
