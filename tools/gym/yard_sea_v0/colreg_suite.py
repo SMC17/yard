@@ -21,6 +21,13 @@ of any published scenario catalogue. What it adds over the stub:
   onset time during the approach. Every variant also carries a small constant
   heading/speed-log bias on the ``own_velocity`` channel (``DR_SENSOR_BIAS``,
   convention) so a dead-reckoning integrity monitor is never error-free.
+* **Target behaviour**: scripted (constant course / speed + scripted
+  manoeuvres, the default) or, with ``simulate(..., reciprocal=True)``,
+  *rule-following*: each target runs its own copy of the baseline controller
+  from its own perspective (true AIS-like picture of own ship and the other
+  targets, same rate limit), so a give-way target alters to starboard and a
+  stand-on target keeps course until last resort. Scripted manoeuvres shift the
+  target's route.
 * **Own-ship dynamics**: constant speed, heading rate-limited to
   ``max_rot_deg_s`` (convention). Targets keep course and speed except for
   scripted manoeuvres. No hydrodynamics, wind, current, or ship domain.
@@ -255,7 +262,8 @@ def _ang(a: float, b: float) -> float:
 
 # ---------------------------------------------------------------- simulation
 def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thresholds(),
-             conv: SuiteConventions = SuiteConventions(), wrapper: Any = None) -> dict[str, Any]:
+             conv: SuiteConventions = SuiteConventions(), wrapper: Any = None,
+             reciprocal: bool = False) -> dict[str, Any]:
     """Run one scenario. ``policy(t, own_perceived, targets_perceived, route) -> course``.
 
     ``wrapper`` (optional) is a runtime-assurance object with
@@ -272,6 +280,8 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
     # roles judged without the look-ahead cap: every generated target is a real encounter
     init = [classify(own, tg, replace(th, tcpa_max_s=math.inf)) for tg in tgts]
     pending = [list(m) for m in sc.manoeuvres]
+    t_routes = [tg.course_deg for tg in tgts]
+    t_ctrl = [BaselineColregController(th=th, conv=conv) for _ in tgts] if reciprocal else None
     first_risk = 0.0 if any(c["risk_of_collision"] for c in init) else None
     min_rng = [math.inf] * len(tgts)
     trace: list[dict[str, Any]] = []
@@ -286,6 +296,7 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
         for m in pending:
             if m[0] is not None and t >= m[0]:
                 tgts[m[1]] = replace(tgts[m[1]], course_deg=_wrap360(tgts[m[1]].course_deg + m[2]))
+                t_routes[m[1]] = _wrap360(t_routes[m[1]] + m[2])
                 m[0] = None
         # perception
         p = inj.apply("own_position", t, (own.x, own.y))
@@ -328,6 +339,15 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
             trace.append({"t": t, "own": (own.x, own.y, own.course_deg), "cmd": cmd})
         # dynamics
         dc = max(-conv.max_rot_deg_s * conv.dt_s, min(conv.max_rot_deg_s * conv.dt_s, _ang(cmd, own.course_deg)))
+        if t_ctrl is not None:
+            new = []
+            for i, tg in enumerate(tgts):
+                others = [own] + [o for j, o in enumerate(tgts) if j != i]
+                tc = t_ctrl[i](t, tg, others, t_routes[i])
+                tdc = max(-conv.max_rot_deg_s * conv.dt_s,
+                          min(conv.max_rot_deg_s * conv.dt_s, _ang(tc, tg.course_deg)))
+                new.append(replace(tg, course_deg=_wrap360(tg.course_deg + tdc)))
+            tgts = new
         own = replace(own, course_deg=_wrap360(own.course_deg + dc)).at(conv.dt_s)
         tgts = [tg.at(conv.dt_s) for tg in tgts]
         t += conv.dt_s
@@ -347,6 +367,8 @@ def simulate(sc: Scenario, policy: Policy | None = None, *, th: Thresholds = Thr
         "faults": inj.summary(),
         "controller_log": list(getattr(policy, "log", [])),
         "runtime_assurance": wrapper.summary() if wrapper is not None else None,
+        "target_behaviour": "rule_following_baseline" if reciprocal else "scripted",
+        "target_logs": [list(c.log) for c in t_ctrl] if t_ctrl is not None else None,
         "trace_60s": trace, "notes": NOT_A_COMPLIANCE_CLAIM,
     }
 
@@ -379,7 +401,8 @@ def _rule_checks(init: list[dict[str, Any]], first_alt: dict[str, Any] | None,
 def run_suite(kinds: Sequence[str] = KINDS, variants: Sequence[str] = VARIANTS,
               seeds: Sequence[int] = (0, 1, 2), policy_factory: Callable[[], Policy] | None = None,
               wrapper_factory: Callable[[], Any] | None = None, *, th: Thresholds = Thresholds(),
-              conv: SuiteConventions = SuiteConventions(), keep_traces: bool = False) -> dict[str, Any]:
+              conv: SuiteConventions = SuiteConventions(), keep_traces: bool = False,
+              reciprocal: bool = False) -> dict[str, Any]:
     rows = []
     for k in kinds:
         for v in variants:
@@ -387,7 +410,8 @@ def run_suite(kinds: Sequence[str] = KINDS, variants: Sequence[str] = VARIANTS,
                 sc = generate(k, s, v, th=th)
                 pol = policy_factory() if policy_factory else BaselineColregController(th=th, conv=conv)
                 res = simulate(sc, pol, th=th, conv=conv,
-                               wrapper=wrapper_factory() if wrapper_factory else None)
+                               wrapper=wrapper_factory() if wrapper_factory else None,
+                               reciprocal=reciprocal)
                 if not keep_traces:
                     res.pop("trace_60s", None)
                 rows.append(res)
@@ -406,7 +430,7 @@ def run_suite(kinds: Sequence[str] = KINDS, variants: Sequence[str] = VARIANTS,
             "min_range_m_min": float(min(r["min_range_m"] for r in rs)),
             "time_to_resolve_s_median": float(np.median(ttr)) if ttr else None,
         }
-    return {"label": LABEL, "n": len(rows), "summary": table, "results": rows,
+    return {"label": LABEL, "n": len(rows), "summary": table, "results": rows, "reciprocal": reciprocal,
             "conventions": conv.__dict__, "thresholds": th.__dict__, "notes": NOT_A_COMPLIANCE_CLAIM}
 
 
@@ -419,8 +443,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="yard_sea_v0.colreg_suite")
     ap.add_argument("--seeds", type=int, default=5)
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--reciprocal", action="store_true", help="targets follow the rules too")
     a = ap.parse_args(argv)
-    res = run_suite(seeds=tuple(range(a.seeds)))
+    res = run_suite(seeds=tuple(range(a.seeds)), reciprocal=a.reciprocal)
     for key, row in res["summary"].items():
         print(f"{key:40s} n={row['n']} coll={row['collision_rate']:.2f} "
               f"pass={row['passing_ok_rate']:.2f} rules={row['rule_consistent_rate']:.2f} "
