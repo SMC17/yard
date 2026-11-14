@@ -5,7 +5,7 @@ Implemented (on `feat/yard-sea-v0-gym` / remaining-stones + local BoTorch/L3 loo
 - **DesignSearchEnv45 — true Box(45) Ship-D actions** (relative deltas, 30k 1–99% clamps)
 - L0 monitors, L1 **Zig HM1984 default** (`hm1984_zig` when `yard_sea_zig` present; else Python `simplified_py`), soft IS GZ@30 bonus
 - Evidence packs with ODD / claims / GSN stub / **Strip assurance overlay**
-- Random + hill-climb (+ **BoTorch** via `--botorch`), gallery CLI (`--shipd`, `--env45`, `--botorch`, `--l3-openfoam`, `--l15-michell`, `act45`)
+- Random + hill-climb (+ **BoTorch** via `--botorch`), gallery CLI (`--shipd`, `--env45`, `--botorch`, `--l3-openfoam`, `--l15-michell`, `--l2-panel`, `act45`)
 - Mesh export: CadQuery soft-chine loft (pip cadquery/ocp) + tapered-prism fallback + box; see `out/cadquery_result.md`
 - Ship-D 45-D schema, labels, sample CSV, projection → HullState
 - **Ship-D 49 algebraic constraints + surface STL** via vendored
@@ -15,7 +15,7 @@ Implemented (on `feat/yard-sea-v0-gym` / remaining-stones + local BoTorch/L3 loo
 - **HP Calc_Volumes hydrostatics** — `calc_volumes` / `hull_from_volumes`; optional env45 `use_hp_hydro`
 - **HP primary ranking** — `hp_rank.rank_shipd` (calc_volumes + Ship-D STL + Michell-from-HP); env45 `use_hp_geometry=True` by default when vendor present; `project_to_hull` fallback only (`out/hp_primary_result.md`)
 - **Michell L1.5 Ship-D waterlines** — `teachers.michell_l15.shipd_waterline_offsets` via HP `gen_MeshGridWL`; Wigley fallback retained (`out/michell_wl_result.md`)
-- **L2 Capytaine panel/BEM** — `teachers/panel_l2.py` (`detect`/`run` → Cw/Cd-like); CLI `--l2-panel`; skips if capytaine missing; not ITTC / not class (see `out/panel_l2_result.md`)
+- **L2 Capytaine panel/BEM** — `teachers/panel_l2.py` (`detect`/`run` → Cw/Cd-like); CLI `--l2-panel`; skips if capytaine missing; not ITTC / not class (`docs/attack_results/panel_l2_result.md`)
 - Zig L0 mirror under `gym/`, GitHub Actions pytest+gallery
 - Local: pytest green with constraint + STL + act45 tests (see `out/shipd_surface_result.md`, `out/act45_result.md`)
 
