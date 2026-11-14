@@ -43,7 +43,8 @@ def test_pack_has_harness_optimizer_seeds():
     s = pack["seeds"]
     assert s["base_seed"] == 7 and s["episode_index"] == 0
     assert s["episode_seed"] == episode_seed(7, 0)
-    assert pack["oracle"]["fidelity"] == "L1_holtrop_simplified"
+    # L1 default is Zig HM1984 when yard_sea_zig is built, else Python fallback.
+    assert pack["oracle"]["fidelity"] in ("hm1984_zig", "simplified_py")
 
 
 def test_budget_accounting_counts_every_step():

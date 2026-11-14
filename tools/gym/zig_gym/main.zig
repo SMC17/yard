@@ -11,12 +11,10 @@ fn writeL1(stdout: anytype, r: gym.ResistanceResult, fidelity: []const u8) !void
     try stdout.writeAll("}");
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
 
-    var args = try std.process.argsWithAllocator(allocator);
+    var args = try init.minimal.args.iterateAllocator(allocator);
     defer args.deinit();
     _ = args.next(); // exe
 
@@ -43,7 +41,7 @@ pub fn main() !void {
     if (args.next()) |s| h.Fn = try std.fmt.parseFloat(f64, s);
 
     var out_buf: [4096]u8 = undefined;
-    var file_writer = std.fs.File.stdout().writer(&out_buf);
+    var file_writer = std.Io.File.stdout().writer(init.io, &out_buf);
     const stdout = &file_writer.interface;
     try stdout.writeAll("{");
     try stdout.print("\"L\":{d:.10},\"B\":{d:.10},\"T\":{d:.10},\"Cb\":{d:.10},\"lcb_frac\":{d:.10},\"kg_frac\":{d:.10},\"Fn\":{d:.10}", .{
