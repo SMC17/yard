@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 
+from .acceptance import accept_l1
 from .evidence import build_evidence, write_evidence
 from .hull import HullState, evaluate_l0
 from .monitors import apply_action, monitor_action
@@ -55,6 +56,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         self.parent_ct = estimate_resistance(self.parent).Ct
         self.parent_vol = self.parent.volume()
         self.evidence_packs: list[dict[str, Any]] = []
+        self.last_claim: dict[str, Any] | None = None
         self.np_random = np.random.default_rng(seed)
         if _HAS_GYM:
             self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(7,), dtype=np.float32)
@@ -87,6 +89,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         self.parent_ct = estimate_resistance(self.parent).Ct
         self.parent_vol = self.parent.volume()
         self.evidence_packs = []
+        self.last_claim = None
         obs = self._obs()
         info = {"episode_id": self.episode_id, "parent_ct": self.parent_ct}
         return obs, info
@@ -125,7 +128,9 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         self.state = decision.projected
         l0 = evaluate_l0(self.state)
         res = estimate_resistance(self.state)
-        reward = _reward(self.state, self.parent_ct, self.parent_vol)
+        acc = accept_l1(res).to_dict()
+        # Acceptance gate: an L1 number whose envelope checks fail earns no credit.
+        reward = _reward(self.state, self.parent_ct, self.parent_vol) if acc["passed"] else -1.0
         pack = build_evidence(
             hull=self.state,
             l0=l0,
@@ -137,6 +142,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             action=action,
             monitor_allowed=True,
             monitor_reasons=[],
+            acceptance=acc,
         )
         self.evidence_packs.append(pack)
         if self.evidence_dir:
@@ -149,5 +155,66 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             "Rt_N": res.Rt_N,
             "monitor": decision.to_dict(),
             "rejected": False,
+            "acceptance": acc,
         }
         return self._obs(), reward, terminated, truncated, info
+
+    # ------------------------------------------------------------ measure-then-claim
+    def claim_done(
+        self,
+        claimed: dict[str, float] | None = None,
+        *,
+        rel_tol: float = 1e-6,
+        require_improvement: bool = True,
+    ) -> dict[str, Any]:
+        """Accept an agent's "done" only after re-measuring the final geometry.
+
+        The final hull is rebuilt from its parameter vector (no cached objects),
+        L0 and the L1 oracle are re-run, and the L1 acceptance gate is applied.
+        Any values the agent *claims* (``Ct``, ``gm0``, ``volume``) must match
+        the fresh measurement within ``rel_tol``. The verdict is appended to
+        ``evidence_packs`` as a ``claim`` record and returned.
+        """
+        fresh = HullState.from_vector(self.state.as_vector())
+        l0 = evaluate_l0(fresh)
+        res = estimate_resistance(fresh)
+        acc = accept_l1(res)
+        measured = {"Ct": res.Ct, "gm0": fresh.gm0(), "volume": fresh.volume()}
+        reasons: list[str] = []
+        if not l0.feasible:
+            reasons.append("l0_infeasible:" + ",".join(l0.violations))
+        if not acc.passed:
+            reasons.append("acceptance_failed:" + ",".join(acc.failed_checks))
+        mismatches = {}
+        for k, v in (claimed or {}).items():
+            if k not in measured:
+                reasons.append(f"unmeasurable_claim:{k}")
+                continue
+            m = measured[k]
+            if abs(float(v) - m) > rel_tol * max(abs(m), 1e-12):
+                mismatches[k] = {"claimed": float(v), "measured": m}
+        if mismatches:
+            reasons.append("claim_mismatch:" + ",".join(sorted(mismatches)))
+        improved = res.Ct < self.parent_ct
+        if require_improvement and not improved:
+            reasons.append("no_improvement_vs_parent")
+        verdict = {
+            "type": "claim",
+            "schema": "yard_sea_v0.claim.v1",
+            "episode_id": self.episode_id,
+            "step": self.step_count,
+            "accepted": not reasons,
+            "reasons": reasons,
+            "measured": measured,
+            "claimed": dict(claimed or {}),
+            "mismatches": mismatches,
+            "parent_ct": self.parent_ct,
+            "improved": improved,
+            "l0": l0.to_dict(),
+            "acceptance": acc.to_dict(),
+            "hull": fresh.to_dict(),
+            "notes": "Measure-then-claim: verdict from a fresh re-evaluation, not the agent's report.",
+        }
+        self.evidence_packs.append(verdict)
+        self.last_claim = verdict
+        return verdict

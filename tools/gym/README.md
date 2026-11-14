@@ -25,3 +25,20 @@ python -m yard_sea_v0 run-search --l3-openfoam --parents 1 --steps 4 --out out/l
 ```
 
 Not class/FAA/DoD approved. Public exploratory harness for SMC17/yard.
+
+## Acceptance gate and measure-then-claim
+
+Every oracle number now travels with an `acceptance` block (`yard_sea_v0/acceptance.py`,
+schema `yard_sea_v0.acceptance.v1`) holding the individual checks and an overall `passed`.
+
+- **L1** (`accept_l1`): finite Ct/Cf/Cw/k, Fn inside 0.10–0.35, Rn above the ITTC-57 floor,
+  Ct inside an exploratory plausibility band. An L1 step that fails earns reward −1, not credit.
+- **L3** (`accept_force_coeffs_file`): the whole forceCoeffs history is parsed and **Cd, Cl and
+  Cm** must each be settled over the trailing 20% window (≥20 samples, band ≤1% of mean or 1e-4).
+  Multi-fidelity Stage B only ranks on L3 Cd when the gate passed (`l3_accepted`).
+- **Measure-then-claim** (`DesignSearchEnv.claim_done`): an episode's "done/improved" is accepted
+  only after the final hull is rebuilt from its parameters and re-measured (L0 + L1 + gate); any
+  claimed values must match. `run_search` uses this verdict for `improved`.
+
+These are harness checks (iterative settling, envelope, consistency). They are not ITTC V&V,
+grid-convergence studies, or class acceptance.
