@@ -77,3 +77,19 @@ mode requires a positive grid score. Hill-climb look-ahead uses the same objecti
 Michell thin-ship Cw (about 10 ms per point), and with it the test suite shows a hull that edges the
 parent at Fn 0.195 but is about 3% worse at Fn 0.25. Published RANS work on KCS reports 45–50%; this
 checks the mechanism, not that magnitude.
+
+## Held-out oracle check and long-horizon drift (`--holdout`)
+
+`run-search --holdout` (or `run_search(..., holdout=True)`) re-scores every final design *after*
+search with an oracle the policy never saw. By default that is L1 viscous + L1.5 Michell wave
+averaged over the Froude grid (`holdout.make_holdout_fn`). Rewards are byte-identical with and
+without `--holdout`, and a test enforces it.
+
+- `holdout_check`: Spearman rank agreement, sign agreement, and a per-design `exploit` flag
+  (the reward oracle claims an improvement but the held-out oracle says the design is worse).
+- `trajectory_drift`: |seen − held-out| at **every** step of the episode, with final/max error and
+  slope, so surrogate error is judged on the long horizon rather than only the first step.
+- The gallery manifest gets a `holdout` summary (claimed / confirmed / exploit, max final drift).
+
+The held-out oracle is a second model, not ground truth. Plug L2/L3 teachers in via `holdout_fn=`
+when they're available.
