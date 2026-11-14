@@ -63,6 +63,44 @@ datasets:
     quantities: [Lpp, B, T, displacement, S, C_B, C_M, LCB, IGES hull geometry]
     used_for: model-scale particulars for validation; IGES lines are the path to real-geometry Michell / L2 / L3 validation
     status: ingested (particulars) / catalogued (IGES)
+  - id: t2015_kcs_hull_sva
+    name: KCS hull lines, Tokyo 2015 workshop (KCS_hull_SVA.igs, same as G2010 / SIMMAN 2014)
+    url: https://t2015.nmri.go.jp/kcs_gc.html
+    file_url: https://t2015.nmri.go.jp/file/Geometry_IGES_files/kcs/KCS_hull_SVA.zip
+    licence: unspecified (public workshop download) - not redistributed
+    citation: "Tokyo 2015 Workshop on CFD in Ship Hydrodynamics, NMRI. KRISO Container Ship (KCS) geometry."
+    size: 74 KB (zip), 55 IGES type-128 NURBS patches, full scale
+    quantities: [hull surface]
+    used_for: real-hull Michell offsets; Holtrop bulb A_BT / h_B and transom A_T; hydrostatic cross-check
+    status: fetch-script (tools/gym/yard_sea_v0/hull_lines.py reads it)
+  - id: g2000_kvlcc2_offsets
+    name: KVLCC2 body-plan offsets, Gothenburg 2000 workshop (kvlcc2.fix / kvlcc2.prf, KRISO)
+    url: https://www.nmri.go.jp/study/research_organization/fluid_performance/cfd/cfdws05/gothenburg2000/KVLCC/kvlcc_g&c.htm
+    file_url: https://www.nmri.go.jp/study/research_organization/fluid_performance/cfd/cfdws05/gothenburg2000/data/KVLCC2_data/kvlcc2_offsets.ZIP
+    licence: unspecified (public workshop download) - not redistributed
+    citation: "Gothenburg 2000 Workshop on Numerical Ship Hydrodynamics. KRISO 300K VLCC2 (KVLCC2) offsets."
+    size: 38 KB (zip), 65 stations x 100 points, full scale
+    quantities: [half-breadth offsets, centreline profile]
+    used_for: real-hull Michell offsets; Holtrop bulb inputs; hydrostatic cross-check
+    status: fetch-script
+  - id: g2000_dtmb5415_surface_grid
+    name: DTMB 5415 bare-hull surface grid, Gothenburg 2000 workshop (5415_static.net, model 5.72 m)
+    url: https://www.nmri.go.jp/study/research_organization/fluid_performance/cfd/cfdws05/gothenburg2000/5415/5415_g&c.htm
+    file_url: https://www.nmri.go.jp/study/research_organization/fluid_performance/cfd/cfdws05/gothenburg2000/data/5415/5415_static.net
+    licence: unspecified; the companion 5415.igs header states the geometry is copyrighted - not redistributed
+    citation: "Gothenburg 2000 Workshop on Numerical Ship Hydrodynamics. US Navy combatant DTMB 5415 geometry."
+    size: 468 KB, 193 x 49 structured grid
+    quantities: [hull surface]
+    used_for: real-hull Michell offsets; transom A_T; hydrostatic cross-check
+    status: fetch-script
+  - id: t2015_jbc_iges
+    name: JBC hull IGES, Tokyo 2015
+    url: https://t2015.nmri.go.jp/jbc_gc.html
+    licence: unspecified
+    quantities: [hull surface]
+    used_for: none yet
+    status: catalogued
+    reason: trimmed surfaces (IGES 143/141) need a trimming-curve evaluator; untrimmed NURBS would over-state the hull
   - id: ittc_5415_facility_bias
     name: ITTC Facility Bias World Wide Campaign (DTMB 5415, 11+10 tanks)
     url: https://www.ittc.info/
