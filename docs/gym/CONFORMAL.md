@@ -24,3 +24,11 @@ Reading: the cheap L1 and the L1.5 composite disagree by up to ~44% (90% level) 
 random hulls from the stated sampler — a large surrogate gap a multi-fidelity search
 should respect. LF→L1.5 is model-vs-model (surrogate disagreement, not physical truth).
 The tank calibration is physically grounded but tiny and non-exchangeable across hulls.
+
+## One implementation, two repos
+
+`yard_sea_v0/conformal.py` is the canonical, domain-neutral implementation; SMC17/strip vendors it
+byte-for-byte as `strip_uas_v0/conformal.py`. `tests/test_conformal_sync.py` in each repo pins the
+file SHA-256 and, when a sibling checkout is found (`CONFORMAL_SIBLING_REPO` or `../strip`,
+`../wide-strip`), asserts the two files are identical. Edit here, copy, update both pins.
+Domain wording lives in `conformal_yard.py` / `conformal_strip.py`, not in the shared module.
