@@ -1,5 +1,5 @@
 //! CLI for Python ctypes/subprocess bridge: emit JSON for L0/L1.
-//! Modes: l0 | l1 | l1_hm1984 | both | both_hm1984
+//! Modes: l0 | l1 | l1_hm1984 | both | both_hm1984  [L B T Cb lcb kg Fn [A_BT h_B A_T]]
 //!        hm1984_full L B T vol S Cb Cm Cp Cwp lcb_pct c_stern Fn nu rho [A_BT T_F h_B A_T]
 //!        (validation path: every Holtrop input explicit; bulb/transom optional, 0 = absent)
 const std = @import("std");
@@ -36,8 +36,8 @@ fn runFull(init: std.process.Init, args: anytype) !void {
         try stdout.flush();
         return;
     };
-    try stdout.print("{{\"l1\":{{\"Fn\":{d:.12},\"Rn\":{d:.12},\"Cf\":{d:.12},\"one_plus_k\":{d:.12},\"Cw\":{d:.12},\"C_bulb\":{d:.12},\"c_2\":{d:.12},\"c_5\":{d:.12},\"Ct_no_ca\":{d:.12},\"bulb\":{},\"transom\":{},\"fidelity\":\"hm1984_full_zig\"}}}}\n", .{
-        r.Fn, r.Rn, r.Cf, r.one_plus_k, r.Cw, r.Cb_bulb, r.c_2, r.c_5, r.Ct_no_ca, hp.bulb != null, hp.transom != null,
+    try stdout.print("{{\"l1\":{{\"Fn\":{d:.12},\"Rn\":{d:.12},\"Cf\":{d:.12},\"one_plus_k\":{d:.12},\"Cw\":{d:.12},\"C_bulb\":{d:.12},\"C_tr\":{d:.12},\"c_2\":{d:.12},\"c_5\":{d:.12},\"Ct_no_ca\":{d:.12},\"bulb\":{},\"transom\":{},\"fidelity\":\"hm1984_full_zig\"}}}}\n", .{
+        r.Fn, r.Rn, r.Cf, r.one_plus_k, r.Cw, r.Cb_bulb, r.C_tr, r.c_2, r.c_5, r.Ct_no_ca, hp.bulb != null, hp.transom != null,
     });
     try stdout.flush();
 }
@@ -71,6 +71,10 @@ pub fn main(init: std.process.Init) !void {
     if (args.next()) |s| h.lcb_frac = try std.fmt.parseFloat(f64, s);
     if (args.next()) |s| h.kg_frac = try std.fmt.parseFloat(f64, s);
     if (args.next()) |s| h.Fn = try std.fmt.parseFloat(f64, s);
+    // Optional Holtrop bulb / transom: A_BT h_B A_T (0 = absent)
+    if (args.next()) |s| h.abt_m2 = try std.fmt.parseFloat(f64, s);
+    if (args.next()) |s| h.hb_m = try std.fmt.parseFloat(f64, s);
+    if (args.next()) |s| h.at_m2 = try std.fmt.parseFloat(f64, s);
 
     var out_buf: [4096]u8 = undefined;
     var file_writer = std.Io.File.stdout().writer(init.io, &out_buf);

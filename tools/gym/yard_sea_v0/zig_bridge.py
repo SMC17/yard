@@ -58,6 +58,9 @@ def _hull_args(h: HullState) -> list[str]:
         f"{h.lcb_frac}",
         f"{h.kg_frac}",
         f"{h.Fn}",
+        f"{h.abt_m2}",
+        f"{h.hb_m}",
+        f"{h.at_m2}",
     ]
 
 

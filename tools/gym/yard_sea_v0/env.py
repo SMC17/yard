@@ -128,7 +128,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
             self.base_seed, self.episode_index, self.parent.as_vector()
         )
         self.state = HullState(**{k: getattr(self.parent, k) for k in (
-            "L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn"
+            "L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn", "abt_m2", "hb_m", "at_m2"
         )})
         self.step_count = 0
         self.parent_ct = estimate_resistance(self.parent).Ct
@@ -269,7 +269,7 @@ class DesignSearchEnv(gym.Env if _HAS_GYM else object):  # type: ignore[misc]
         the fresh measurement within ``rel_tol``. The verdict is appended to
         ``evidence_packs`` as a ``claim`` record and returned.
         """
-        fresh = HullState.from_vector(self.state.as_vector())
+        fresh = HullState(**{**HullState.from_vector(self.state.as_vector()).__dict__, **self.state.appendages()})
         l0 = evaluate_l0(fresh)
         res = estimate_resistance(fresh)
         acc = accept_l1(res)

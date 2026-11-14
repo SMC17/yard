@@ -28,6 +28,13 @@ class HullState:
     lcb_frac: float = 0.0  # LCB as fraction of L from midship
     kg_frac: float = 0.55  # KG / D approximation using D≈1.25*T
     Fn: float = 0.20
+    # Holtrop-Mennen bulb / transom inputs (0 = absent; not part of the action vector).
+    abt_m2: float = 0.0  # transverse bulb area at FP
+    hb_m: float = 0.0  # centroid height of A_BT above keel
+    at_m2: float = 0.0  # immersed transom area at rest
+
+    def appendages(self) -> dict[str, float]:
+        return {"abt_m2": self.abt_m2, "hb_m": self.hb_m, "at_m2": self.at_m2}
 
     def volume(self) -> float:
         return self.L * self.B * self.T * self.Cb

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -33,7 +35,7 @@ def apply_action(h: HullState, action: list[float] | tuple[float, ...]) -> HullS
             out.append(vals[i] + a * scales[i])
         else:
             out.append(vals[i] * (1.0 + a * scales[i]))
-    return HullState.from_vector(out).clamp_soft()
+    return replace(HullState.from_vector(out).clamp_soft(), **h.appendages())
 
 
 def monitor_action(h: HullState, action: list[float] | tuple[float, ...]) -> MonitorDecision:
