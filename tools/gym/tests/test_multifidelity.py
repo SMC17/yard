@@ -186,9 +186,22 @@ def test_cli_multifidelity_flags(tmp_path: Path):
 
 
 def test_stage_b_prefers_cd():
-    row = {"ct": 0.05, "Cd": 0.2, "l3_openfoam": {"Cd": 0.2, "Ct": 0.21}}
+    accepted = {"passed": True, "failed_checks": []}
+    row = {"ct": 0.05, "Cd": 0.2, "l3_openfoam": {"Cd": 0.2, "Ct": 0.21, "acceptance": accepted}}
     assert stage_b_score(row) == 0.2
     assert stage_a_score(row) == 0.05
+
+
+def test_stage_b_does_not_credit_unaccepted_l3():
+    """An L3 Cd without a passing acceptance gate falls back to the Stage-A score."""
+    no_gate = {"ct": 0.05, "Cd": 0.2, "l3_openfoam": {"Cd": 0.2, "Ct": 0.21}}
+    assert stage_b_score(no_gate) == 0.05
+    failed = {
+        "ct": 0.05,
+        "Cd": 0.2,
+        "l3_openfoam": {"Cd": 0.2, "acceptance": {"passed": False, "failed_checks": ["Cl_settled"]}},
+    }
+    assert stage_b_score(failed) == 0.05
 
 
 @pytest.mark.skipif(not botorch_available(), reason="botorch/torch not installed")
