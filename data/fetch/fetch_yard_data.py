@@ -41,6 +41,21 @@ SOURCES = {
         "file": "uci_yacht_hydrodynamics.zip",
         "sha256": "aa52b68f88c4bb552187a53ef4c5753fa178f6a36035a3771c5bc04e078487ac",
     },
+    "t2015_kcs_hull_sva": {
+        "url": "https://t2015.nmri.go.jp/file/Geometry_IGES_files/kcs/KCS_hull_SVA.zip",
+        "file": "t2015_kcs_hull_sva.zip",
+        "sha256": "b9e334853857b819bbddfd549f4599dde7cba57a9540893b873aaae56dc99a20",
+    },
+    "g2000_kvlcc2_offsets": {
+        "url": "https://www.nmri.go.jp/study/research_organization/fluid_performance/cfd/cfdws05/gothenburg2000/data/KVLCC2_data/kvlcc2_offsets.ZIP",
+        "file": "g2000_kvlcc2_offsets.zip",
+        "sha256": "693dfc1b07fe4759e2fa98ff8b6ac66c47ac579d14afae3f253a157d58a6e01f",
+    },
+    "g2000_dtmb5415_surface_grid": {
+        "url": "https://www.nmri.go.jp/study/research_organization/fluid_performance/cfd/cfdws05/gothenburg2000/data/5415/5415_static.net",
+        "file": "g2000_dtmb5415_static.net",
+        "sha256": "6cda8ea29d4efecab814737d32d487916ed7ba5cbbc85242e77a44ba36612a34",
+    },
     "dsyhs_modelscale": {
         "url": "https://data.4tu.nl/file/d0db7d79-a31d-492d-95a1-30dd9a17063f/19ef2212-90f9-4e95-b1cd-9b5ef410ef16",
         "file": "DSYHS_all_measurements_modelscale.xlsx",
