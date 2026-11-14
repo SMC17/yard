@@ -92,6 +92,27 @@ without `--holdout`, and a test enforces it.
   slope, so surrogate error is judged on the long horizon rather than only the first step.
 - The gallery manifest gets a `holdout` summary (claimed / confirmed / exploit, max final drift).
 
+### Long-horizon drift flag (`--drift-horizon`, `--drift-threshold`)
+
+With `--holdout`, every episode also gets a `drift_check` record (`holdout.long_horizon_drift_check`).
+It goes in the evidence directory, the episode log, and `row["drift"]["long_horizon"]`.
+
+- **What is measured:** at each accepted step, `seen` and `held-out` are each the *cumulative*
+  relative Ct improvement vs the parent. So `|seen − held-out|` is the cumulative error of the
+  surrogate against the reference, as a fraction of parent Ct.
+- **Horizon:** the number of accepted steps checked. The default is the full episode, because a
+  short horizon misses drift that only shows up late, and a test covers that case.
+- **Threshold:** the default is **0.10**. That is a conservative *convention, not a validated
+  limit*, and it is recorded as `threshold_source: default_convention_not_validated`.
+  `exceeded` is set when the max error within the horizon is above the threshold, and
+  `first_exceeding_step` says where that happened.
+- **Flag only:** `affects_reward: false`. Rewards are byte-identical with and without the check,
+  and a test enforces it.
+
+Example: 3 parents × 2 policies, 30 steps, seed 0, HM1984 reward vs the Michell held-out
+oracle. 4 of 6 episodes were flagged at 10%; one first exceeded at step 18. Both oracles are
+models, so a flag means "the oracles disagree here", not "the surrogate is wrong".
+
 `--holdout-oracle` selects the held-out oracle (`holdout.make_holdout_fn(oracle=...)`):
 
 | oracle | model | sees | notes |

@@ -85,6 +85,21 @@ def main(argv: list[str] | None = None) -> int:
         help="Post-hoc held-out oracle check + drift diagnostics (never enters reward)",
     )
     run.add_argument(
+        "--drift-horizon",
+        type=int,
+        default=None,
+        help="With --holdout: accepted steps checked for long-horizon drift (default: full episode)",
+    )
+    run.add_argument(
+        "--drift-threshold",
+        type=float,
+        default=None,
+        help=(
+            "With --holdout: flag when |seen - held-out| cumulative improvement error exceeds this "
+            "fraction of parent Ct (default 0.10, a convention, not a validated limit). Flag only"
+        ),
+    )
+    run.add_argument(
         "--holdout-oracle",
         choices=("michell", "hm1984", "capytaine_l2"),
         default="michell",
@@ -162,6 +177,8 @@ def main(argv: list[str] | None = None) -> int:
             wave_oracle=args.wave_oracle,
             holdout=args.holdout,
             holdout_oracle=args.holdout_oracle,
+            drift_horizon=args.drift_horizon,
+            drift_threshold=args.drift_threshold,
         )
         print(
             f"Wrote {args.out} improved={manifest['n_improved']} "

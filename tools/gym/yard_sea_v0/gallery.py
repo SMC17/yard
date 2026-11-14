@@ -77,6 +77,10 @@ def _holdout_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
         "n_confirmed": sum(1 for h in claimed if h["confirmed"]),
         "n_exploit": sum(1 for h in claimed if h["exploit"]),
         "max_final_drift": max(finals) if finals else None,
+        "n_drift_flagged": sum(1 for d in drifts if (d.get("long_horizon") or {}).get("exceeded")),
+        "drift_threshold": next(
+            (d["long_horizon"]["threshold"] for d in drifts if d.get("long_horizon")), None
+        ),
     }
 
 
@@ -98,6 +102,8 @@ def write_gallery(
     wave_oracle: str = "auto",
     holdout: bool = False,
     holdout_oracle: str = "michell",
+    drift_horizon: int | None = None,
+    drift_threshold: float | None = None,
 ) -> dict[str, Any]:
     out_dir = Path(out_dir)
     children_dir = out_dir / "children"
@@ -188,6 +194,7 @@ def write_gallery(
             parents, steps=steps, seed=seed, evidence_root=evidence_dir, use_botorch=use_botorch,
             reward_mode=reward_mode, wave_oracle=wave_oracle, holdout=holdout,
             holdout_oracle=holdout_oracle,
+            drift_horizon=drift_horizon, drift_threshold=drift_threshold,
         )
         l3_dir = out_dir / "l3_openfoam"
         avail = detect_openfoam() if l3_openfoam else None

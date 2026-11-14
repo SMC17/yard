@@ -290,6 +290,70 @@ def trajectory_drift(
     }
 
 
+# Convention, not a validated threshold: flag an episode when the reward oracle's
+# cumulative improvement estimate is off from the held-out oracle's by more than
+# 10% of parent Ct at any step within the horizon. Chosen to be conservative
+# (cheap-oracle improvements here are typically a few %); tune per study.
+DEFAULT_DRIFT_THRESHOLD = 0.10
+
+
+def long_horizon_drift_check(
+    states: Sequence[HullState],
+    parent: HullState,
+    *,
+    horizon: int | None = None,
+    threshold: float = DEFAULT_DRIFT_THRESHOLD,
+    seen_fn: ScoreFn = seen_improvement,
+    holdout_fn: ScoreFn | None = None,
+    episode_id: str | None = None,
+) -> dict[str, Any]:
+    """Flag (never penalise) long-rollout drift between the reward oracle and a held-out oracle.
+
+    ``seen`` and ``holdout`` are each the *cumulative* relative Ct improvement
+    vs the parent at that step, so ``|seen - holdout|`` is the cumulative
+    surrogate-vs-reference error as a fraction of parent Ct. ``horizon`` is the
+    number of accepted steps checked (default: all of them, i.e. the full
+    episode). ``exceeded`` is True when the max error within the horizon is
+    above ``threshold``; None when no step had a finite reference value.
+    """
+    if threshold <= 0 or not math.isfinite(threshold):
+        raise ValueError("threshold must be a positive finite fraction")
+    if horizon is not None and horizon < 1:
+        raise ValueError("horizon must be >= 1 or None (full episode)")
+    window = list(states) if horizon is None else list(states)[:horizon]
+    dr = trajectory_drift(window, parent, seen_fn=seen_fn, holdout_fn=holdout_fn)
+    errs = [e for e in dr["abs_error"] if math.isfinite(e)]
+    first_bad = next(
+        (i for i, e in enumerate(dr["abs_error"]) if math.isfinite(e) and e > threshold), None
+    )
+    return {
+        "type": "drift_check",
+        "schema": "yard_sea_v0.drift_check.v1",
+        "episode_id": episode_id,
+        "horizon": len(window),
+        "horizon_requested": horizon,
+        "n_available": len(states),
+        "n_finite": len(errs),
+        "threshold": float(threshold),
+        "threshold_source": (
+            "default_convention_not_validated" if threshold == DEFAULT_DRIFT_THRESHOLD else "user"
+        ),
+        "metric": "max_abs_cumulative_rel_ct_error",
+        "max_error": max(errs) if errs else None,
+        "final_error": dr["final_error"],
+        "first_exceeding_step": first_bad,
+        "exceeded": (max(errs) > threshold) if errs else None,
+        "seen_oracle": getattr(seen_fn, "__name__", "seen"),
+        "holdout_oracle": getattr(holdout_fn, "__name__", "holdout_multi_froude_michell"),
+        "affects_reward": False,
+        "notes": (
+            "Flag only: recorded in evidence, never fed to the reward or the policy. "
+            "Error is measured against a second model, not ground truth; the default "
+            "threshold is a convention, not a validated limit."
+        ),
+    }
+
+
 def states_from_evidence(packs: Sequence[dict[str, Any]]) -> list[HullState]:
     keys = ("L", "B", "T", "Cb", "lcb_frac", "kg_frac", "Fn")
     out = []
