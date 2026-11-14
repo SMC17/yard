@@ -102,16 +102,36 @@ It goes in the evidence directory, the episode log, and `row["drift"]["long_hori
   surrogate against the reference, as a fraction of parent Ct.
 - **Horizon:** the number of accepted steps checked. The default is the full episode, because a
   short horizon misses drift that only shows up late, and a test covers that case.
-- **Threshold:** the default is **0.10**. That is a conservative *convention, not a validated
-  limit*, and it is recorded as `threshold_source: default_convention_not_validated`.
-  `exceeded` is set when the max error within the horizon is above the threshold, and
-  `first_exceeding_step` says where that happened.
+- **Threshold:** the default is resolved **per oracle pair from measured tank data**
+  (`holdout.resolve_drift_threshold`, `threshold_source: empirical_tank_validation`). For two
+  oracles with relative errors e_a, e_b vs truth, a parent→child step changes their improvement
+  estimates by Δe_a − Δe_b to first order; the default is the 95th percentile of
+  |Δe_a − Δe_b| over all pairs of measured reference points (|ΔFn| ≤ 0.06) in
+  `reports/validation/oracle_tank_validation.json`. HM1984 reward vs Michell held-out: **0.180**
+  (40 pairs; same-hull-only 0.177). Pairs the report does not cover (Capytaine box proxy, or a
+  held-out oracle sharing the reward's wave model) fall back to the **0.10** convention
+  (`default_convention_not_validated`). The derivation is copied into `threshold_derivation`.
+  `--drift-threshold` still overrides (`threshold_source: user`). `exceeded` is set when the max
+  error within the horizon is above the threshold; `first_exceeding_step` says where.
 - **Flag only:** `affects_reward: false`. Rewards are byte-identical with and without the check,
   and a test enforces it.
 
-Example: 3 parents × 2 policies, 30 steps, seed 0, HM1984 reward vs the Michell held-out
-oracle. 4 of 6 episodes were flagged at 10%; one first exceeded at step 18. Both oracles are
-models, so a flag means "the oracles disagree here", not "the surrogate is wrong".
+Example: 3 parents × 2 policies, 30 steps, seed 0, HM1984 reward vs the Michell held-out oracle
+(Michell wave term on the wetted-surface basis, yard#29). Max drift ranged 0.14–0.39; at the old
+0.10 convention all 6 episodes were flagged (no discrimination), at the empirical 0.18 default 3 of
+6 are, first exceeding at steps 3, 9 and 11. Both oracles are models, so a flag means "the
+disagreement is larger than their measured errors explain", not "the surrogate is wrong".
+
+### Tank validation and applicability envelope
+
+`python -m yard_sea_v0.validation reports/validation` re-scores every resistance oracle on public
+towing-tank C_T (KCS ×6 Fn, JBC, KVLCC2, DTMB 5415 ×3; `data/reference/`, catalogue in
+`data/CATALOG.md`). Mean |E%D|: HM1984 (gym mapping) 8.4%, Python simplified 7.9%, Michell
+(synthetic offsets) 16.1%. Every L1 acceptance block and evidence pack then carries an
+**advisory** applicability record (`yard_sea_v0.applicability`): inside the method's declared
+range, and inside the box of reference points where that oracle was within ±10% (and not nearest
+to a failed point). Outside → `outside_validated_envelope` claim with status `flagged`; reward and
+the acceptance verdict are unchanged.
 
 `--holdout-oracle` selects the held-out oracle (`holdout.make_holdout_fn(oracle=...)`):
 

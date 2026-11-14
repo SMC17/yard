@@ -41,15 +41,21 @@ class Check:
     value: float | None = None
     threshold: float | None = None
     detail: str = ""
+    # Advisory checks are recorded (evidence, failed advisories listed) but never
+    # change the verdict: e.g. "outside the oracle's validated envelope".
+    advisory: bool = False
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d = {
             "name": self.name,
             "passed": bool(self.passed),
             "value": _json_float(self.value),
             "threshold": _json_float(self.threshold),
             "detail": self.detail,
         }
+        if self.advisory:
+            d["advisory"] = True
+        return d
 
 
 @dataclass
@@ -60,11 +66,16 @@ class AcceptanceResult:
 
     @property
     def passed(self) -> bool:
-        return bool(self.checks) and all(c.passed for c in self.checks)
+        gating = [c for c in self.checks if not c.advisory]
+        return bool(gating) and all(c.passed for c in gating)
 
     @property
     def failed_checks(self) -> list[str]:
-        return [c.name for c in self.checks if not c.passed]
+        return [c.name for c in self.checks if not c.passed and not c.advisory]
+
+    @property
+    def failed_advisories(self) -> list[str]:
+        return [c.name for c in self.checks if not c.passed and c.advisory]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -72,6 +83,7 @@ class AcceptanceResult:
             "oracle": self.oracle,
             "passed": self.passed,
             "failed_checks": self.failed_checks,
+            "failed_advisories": self.failed_advisories,
             "checks": [c.to_dict() for c in self.checks],
             "notes": self.notes
             or "Harness acceptance only; not ITTC V&V, not class, not certification.",
@@ -200,8 +212,14 @@ def accept_force_coeffs_file(path: str | Path | None, **kw: Any) -> AcceptanceRe
 
 
 # --------------------------------------------------------------------------- L1
-def accept_l1(resistance: Mapping[str, Any] | Any) -> AcceptanceResult:
-    """L1 envelope acceptance (finite terms, Fn/Rn inside the formula's stated band)."""
+def accept_l1(resistance: Mapping[str, Any] | Any, *, hull: Any | None = None) -> AcceptanceResult:
+    """L1 envelope acceptance (finite terms, Fn/Rn inside the formula's stated band).
+
+    With ``hull`` given, two *advisory* checks are appended from
+    ``yard_sea_v0.applicability``: inside the method's declared range, and inside
+    the envelope where this oracle was validated against tank data. They are
+    recorded but do not change ``passed``.
+    """
     r = resistance.to_dict() if hasattr(resistance, "to_dict") else dict(resistance or {})
     res = AcceptanceResult(oracle=str(r.get("fidelity", "L1")))
     for k in ("Ct", "Cf", "Cw", "k1"):
@@ -223,6 +241,16 @@ def accept_l1(resistance: Mapping[str, Any] | Any) -> AcceptanceResult:
     )
     if _finite(r.get("Cw")):
         res.checks.append(Check("Cw_non_negative", float(r["Cw"]) >= 0.0, float(r["Cw"]), 0.0))
+    if hull is not None:
+        from .applicability import assess
+
+        ap = assess(hull, r.get("fidelity"))
+        if ap["in_declared_range"] is not None:
+            res.checks.append(Check("in_declared_method_range", ap["in_declared_range"],
+                                    detail="; ".join(ap["declared_violations"]), advisory=True))
+        if ap["in_validated_envelope"] is not None:
+            res.checks.append(Check("in_tank_validated_envelope", ap["in_validated_envelope"],
+                                    detail="; ".join(ap["envelope_violations"]), advisory=True))
     return res
 
 
