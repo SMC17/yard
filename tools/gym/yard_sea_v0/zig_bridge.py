@@ -43,6 +43,13 @@ def resolve_zig_binary(explicit: str | Path | None = None) -> Path:
         return Path(which)
     if _DEFAULT_BIN.is_file():
         return _DEFAULT_BIN
+    # Monorepo: SMC17/yard has gym/ at repo root; tools/gym package sits two levels down.
+    alt = _PKG_ROOT.parent.parent / "gym" / "zig-out" / "bin" / "yard_sea_zig"
+    if alt.is_file():
+        return alt
+    alt2 = _PKG_ROOT / "gym" / "zig-out" / "bin" / "yard_sea_zig"
+    if alt2.is_file():
+        return alt2
     raise FileNotFoundError(
         "yard_sea_zig not found; build with `cd zig_gym && zig build` "
         f"(expected {_DEFAULT_BIN})"
@@ -115,6 +122,19 @@ def estimate_resistance_zig(
     l1 = data["l1"]
     if "error" in l1:
         raise RuntimeError(f"zig HM1984 failed: {l1.get('error')}")
+    # Evidence-pack fidelity tags: hm1984_zig vs simplified_py (Python fallback).
+    if fidelity == "hm1984":
+        fid_tag = "hm1984_zig"
+        notes = "Vendored yard Holtrop-Mennen 1984 (Zig); not ITTC powering claim."
+    else:
+        # Zig mirror of Python Holtrop-simplified (parity path).
+        fid_tag = str(l1.get("fidelity") or "L1_holtrop_simplified")
+        notes = (
+            "Exploratory HM-style estimate for ranking only; not ITTC powering claim."
+        )
+    raw = str(l1.get("fidelity") or "")
+    if fidelity == "hm1984" or "hm1984" in raw.lower() or "1984" in raw:
+        fid_tag = "hm1984_zig"
     return ResistanceResult(
         Fn=float(l1["Fn"]),
         Rn=float(l1["Rn"]),
@@ -123,19 +143,8 @@ def estimate_resistance_zig(
         Cw=float(l1["Cw"]),
         Rt_N=float(l1["Rt_N"]),
         Ct=float(l1["Ct"]),
-        fidelity=str(
-            l1.get(
-                "fidelity",
-                "L1_holtrop_hm1984" if fidelity == "hm1984" else "L1_holtrop_simplified",
-            )
-        ),
-        notes=(
-            "Vendored yard Holtrop-Mennen 1984 (Zig); not ITTC powering claim."
-            if fidelity == "hm1984"
-            else (
-                "Exploratory HM-style estimate for ranking only; not ITTC powering claim."
-            )
-        ),
+        fidelity=fid_tag,
+        notes=notes,
     )
 
 

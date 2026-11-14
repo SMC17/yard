@@ -1,6 +1,6 @@
 """L1 calm-water resistance surrogate (Holtrop-Mennen inspired, exploratory).
 
-Fidelity: L1 — suitable for design-search ranking of box-like / high-Cb hulls.
+Fidelity: L1 — Zig HM1984 (hm1984_zig) when binary present; else Python simplified_py.
 NOT ITTC powering, NOT model-test validated, NOT class-society grade.
 Formulas loosely follow Holtrop & Mennen 1982/1984 structure with simplifications
 where full appendage/bulb terms do not apply to this parametric state.
@@ -24,7 +24,7 @@ class ResistanceResult:
     Cw: float
     Rt_N: float
     Ct: float
-    fidelity: str = "L1_holtrop_simplified"
+    fidelity: str = "simplified_py"
     notes: str = (
         "Exploratory HM-style estimate for ranking only; not ITTC powering claim."
     )
@@ -53,12 +53,14 @@ def estimate_resistance(
     h: HullState,
     nu: float = 1.19e-6,
     *,
-    prefer_zig_hm1984: bool = False,
+    prefer_zig_hm1984: bool = True,
 ) -> ResistanceResult:
     """Return calm-water total resistance estimate at h.Fn.
 
-    If prefer_zig_hm1984 and yard_sea_zig is available, use Zig HM1984
-    (see teachers.zig_l1 / zig_bridge). Otherwise Python Holtrop-simplified.
+    Default: prefer Zig HM1984 when yard_sea_zig is present and works
+    (fidelity ``hm1984_zig``). Falls back to Python Holtrop-simplified
+    (``simplified_py``) if the binary is missing or HM1984 fails.
+    Set prefer_zig_hm1984=False to force the Python path (parity tests).
     """
     if prefer_zig_hm1984:
         try:
@@ -120,6 +122,10 @@ def estimate_resistance(
         Cw=Cw,
         Rt_N=Rt,
         Ct=Ct,
+        fidelity="simplified_py",
+        notes=(
+            "Exploratory HM-style estimate for ranking only; not ITTC powering claim."
+        ),
     )
 
 

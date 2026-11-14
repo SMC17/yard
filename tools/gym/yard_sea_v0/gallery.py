@@ -108,7 +108,9 @@ def write_gallery(
     parent_meta = []
     for i, p in enumerate(parents):
         r = estimate_resistance(p)
-        parent_meta.append({"index": i, "ct": r.Ct, "hull": p.to_dict()})
+        parent_meta.append(
+            {"index": i, "ct": r.Ct, "l1_fidelity": r.fidelity, "hull": p.to_dict()}
+        )
     mf_summary: dict[str, Any] | None = None
     l3_summaries: list[dict[str, Any]] = []
     l15_summaries: list[dict[str, Any]] = []
@@ -318,6 +320,7 @@ def write_gallery(
         "n_results": len(results),
         "n_improved": len(improved),
         "parents": parent_meta,
+        "l1_fidelity_default": (parent_meta[0].get("l1_fidelity") if parent_meta else None),
         "best_delta_ct": max(deltas) if deltas else -1e9,
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
@@ -329,7 +332,7 @@ def write_gallery(
         f"- Improved Ct vs parent: {len(improved)}",
         f"- Best ΔCt: {manifest['best_delta_ct']:.6f}",
         "",
-        "Fidelity: L0 monitors + L1 Holtrop-simplified. Not ITTC powering / not class.",
+        "Fidelity: L0 monitors + L1 default Zig HM1984 (hm1984_zig) when yard_sea_zig present; else Python Holtrop-simplified (simplified_py). Not ITTC powering / not class.",
         f"- BoTorch: {'on' if use_botorch else 'off'}",
         f"- Multifidelity: {'on' if multifidelity else 'off'}"
         + (f" (l3_top={l3_top}, cost_aware={cost_aware})" if multifidelity else ""),
