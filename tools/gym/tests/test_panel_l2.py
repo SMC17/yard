@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -19,11 +20,20 @@ from yard_sea_v0.teachers.panel_l2 import (
     run,
 )
 
+# Capytaine is optional (requirements.txt lists it commented out). Tests that need a
+# real BEM solve skip when it is absent, unless YARD_REQUIRE_CAPYTAINE=1 (set by the
+# dedicated CI job that installs it), in which case absence is a hard failure.
+_HAVE_CAPYTAINE = detect().available
+needs_capytaine = pytest.mark.skipif(
+    not _HAVE_CAPYTAINE and os.environ.get("YARD_REQUIRE_CAPYTAINE") != "1",
+    reason="capytaine not installed (optional L2 dependency)",
+)
 
+
+@needs_capytaine
 def test_detect_capytaine():
     avail = detect()
     assert isinstance(avail, PanelAvailability)
-    # Capytaine is installed in the yard-sea-v0 venv for this box.
     assert avail.available is True
     assert avail.version is not None
 
@@ -44,6 +54,7 @@ def test_run_skips_when_missing():
     assert "not ittc" in r["notes"].lower()
 
 
+@needs_capytaine
 def test_run_parallelepiped_finite_cw_cd():
     h = HullState(L=20.0, B=4.0, T=2.0, Cb=0.7, Fn=0.20)
     r = run(h, resolution=(8, 3, 3))
@@ -61,6 +72,7 @@ def test_run_parallelepiped_finite_cw_cd():
     assert "not class" in r["notes"].lower()
 
 
+@needs_capytaine
 def test_run_stl_path(tmp_path: Path):
     from yard_sea_v0.mesh import export_hull_stl
 
@@ -79,6 +91,7 @@ def test_run_stl_path(tmp_path: Path):
         assert np.isfinite(r["Cd"])
 
 
+@needs_capytaine
 def test_cli_l2_flag(tmp_path: Path):
     from yard_sea_v0.cli import main
 
