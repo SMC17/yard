@@ -1,0 +1,7 @@
+# yard (SMC17/yard)
+
+> Naval architecture and marine engineering in Zig across 72 primitive modules (BEM hydrodynamics, AUVs, AIS, seakeeping, maneuvering, mooring).
+
+- Repository: https://github.com/SMC17/yard
+- Companion Unified Substrate: https://github.com/SMC17/zinging
+- Profile: https://github.com/SMC17
