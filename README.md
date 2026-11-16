@@ -2,11 +2,7 @@
 
 Naval architecture and marine engineering in Zig.
 
-**North star:** AF/Navy capture as sub/support/prime-on-narrow — shared doc in
-[SMC17/sovereign-experience](https://github.com/SMC17/sovereign-experience)
-`docs/NORTH_STAR.md`. Yard is the naval (Navy) programme under that compass;
-near product is evidence-bearing marine engineering tooling, not Maxsurf/NAPA
-replacement.
+Evidence-bearing marine engineering and ship-hydrodynamics tooling in Zig.
 
 72 primitive modules plus integrated design, fleet, competition, and viewer
 packages in one repository. Consolidated 2026-07-07 from the individual
