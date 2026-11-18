@@ -265,6 +265,10 @@ pub fn build(b: *std.Build) void {
         }
     }
 
+    const test_step = b.step("test", "Run test-core and test-all");
+    test_step.dependOn(test_core);
+    test_step.dependOn(test_all);
+
     const run_example = b.step("run-example", "Run box-barge intact stability example");
     const exe = b.addExecutable(.{
         .name = "box-barge-example",

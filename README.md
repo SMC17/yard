@@ -124,6 +124,7 @@ route ensemble, then bound to a replay head before Arena scores it.
 # Requires Zig 0.16.0
 git clone https://github.com/SMC17/yard.git
 cd yard
+zig build test           # test-core + test-all (1688 tests)
 zig build test-core      # hydro + stability + compose + spiral + benchmark
 zig build test-all       # all 72 primitive-module suites
 zig build test-frontier  # Mercury + Arena + fleet + telemetry + viewer + governed 1778 conflict
