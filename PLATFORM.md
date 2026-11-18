@@ -147,7 +147,7 @@ zig build test
 From workspace root:
 
 ```sh
-zig build test-core           # 75 tests: core + viz + examples
+zig build test-core           # 159 tests: core + viz + examples
 zig build run-example         # canonical box-barge case
 zig build run-full-assessment # stability + Holtrop resistance
 python tools/cli/yard-cli.py stability --L 10 --B 4 --T 1.5 --kg 1.0 --json
